@@ -530,6 +530,86 @@ Calls `onState(asyncPending)` first, then `onState(asyncFulfilled(result))` on s
 
 ---
 
+### `safeAwait(promise)`
+
+Go-style `[error, result]` tuple — replaces `try/catch` with an inline check on the error position.
+
+```ts
+import { safeAwait } from '@stardust/core';
+
+const [err, data] = await safeAwait(fetch('/api/user').then((r) => r.json()));
+if (err) return; // handle error
+console.log(data); // typed T, not T | null
+```
+
+Non-`Error` rejections (strings, numbers, `null`) are normalised to `Error` automatically.
+
+**Type**
+
+```ts
+type SafeAwaitResult<T> = readonly [error: null, result: T] | readonly [error: Error, result: null];
+
+function safeAwait<T>(promise: Promise<T>): Promise<SafeAwaitResult<T>>;
+```
+
+---
+
+### `createSingleFlight()` / `safeSingleFlight`
+
+Deduplicates concurrent async calls — while a task is in-flight every subsequent call for the same flight shares the same `Promise`. One execution, N callers resolved together. The gate clears on settlement so the next call starts a fresh execution.
+
+```ts
+import { createSingleFlight, safeSingleFlight } from '@stardust/core';
+
+// scoped — independent gate per resource
+const loadUser = createSingleFlight();
+const user = await loadUser(() => api.fetchUser(id)); // called once even with 10 concurrent calls
+
+// module-level singleton — shared gate across all callers
+const result = await safeSingleFlight(() => expensiveInit());
+```
+
+**When to prefer over `createMutex`**: use single-flight when concurrent callers can share one result (e.g. fetching a resource). Use `createMutex` when each caller must trigger its own side-effect.
+
+**Type**
+
+```ts
+type SingleFlight = <T>(task: () => Promise<T>) => Promise<T>;
+
+function createSingleFlight(): SingleFlight;
+const safeSingleFlight: SingleFlight;
+```
+
+---
+
+### `createMutex()` / `safeMutex`
+
+Serialises concurrent async calls — N calls run N times, one at a time in submission order. Use when a method has multi-step side-effects (fetch → state write → cross-store dispatch) that must not interleave.
+
+```ts
+import { createMutex, safeMutex } from '@stardust/core';
+
+// scoped mutex per resource — independent from the singleton
+const saveMutex = createMutex();
+await saveMutex(() => api.save(payload)); // second call waits for first to settle
+
+// module-level singleton
+await safeMutex(() => dispatch('asyncLoadDefaults'));
+```
+
+Errors in one task do not stall the queue — subsequent tasks always proceed.
+
+**Type**
+
+```ts
+type Mutex = <T>(task: (() => T | Promise<T>) | Promise<T> | T) => Promise<T>;
+
+function createMutex(): Mutex;
+const safeMutex: Mutex;
+```
+
+---
+
 ## Path Access
 
 `getByPath` and `setByPath` accept dot/bracket path strings with full type inference:
@@ -603,4 +683,7 @@ Snapshots must be `structuredClone`-compatible:
 | `async-state.ts`               | `AsyncState`, `AsyncIdle`, `AsyncPending`, `AsyncFulfilled`, `AsyncRejected`, `asyncIdle`, `asyncPending`, `asyncFulfilled`, `asyncRejected`, `runAsync` | Standard async state shape                             |
 | `connect-debug-log.ts`         | `connectDebugLog`, `ConnectDebugLogOptions`                                                                                                              | Console logger via `stardust:store` namespace          |
 | `path-utils.ts`                | `PathsOf`, `ValueAtPath`, `parsePath`, `copyOnWritePath`                                                                                                 | Path types and structural sharing                      |
+| `safe-await.ts`                | `safeAwait`, `SafeAwaitResult`                                                                                                                           | Go-style `[error, result]` tuple for `Promise`         |
+| `single-flight.ts`             | `createSingleFlight`, `safeSingleFlight`, `SingleFlight`                                                                                                 | Deduplicates concurrent async calls                    |
+| `mutex.ts`                     | `createMutex`, `safeMutex`, `Mutex`                                                                                                                      | Serialises concurrent async calls                      |
 | `react.ts` (`@stardust/react`) | `useStore`, `UseStoreOptions`, `useSuspenseStore`, `createStoreContext`, `CreateStoreContextOptions`, `StoreContextResult`                               | React-specific entry point (keeps core zero-React-dep) |

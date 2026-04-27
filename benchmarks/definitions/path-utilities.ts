@@ -1,22 +1,12 @@
 /**
  * Path utilities — low-level path parsing and navigation.
  *
- * These are the building blocks used by getByPath/setByPath:
- * - parsePath: converts "user.address.city" → ["user", "address", "city"]
- *   (cached internally, so repeated calls are near-free)
- * - getAtPath: reads a value by pre-parsed segments
- * - setAtPath: mutates in-place by pre-parsed segments
- *
- * parsePath supports dot notation and bracket syntax: "phones[0].label"
- *
- * N = 100,000 iterations per benchmark.
+ * parsePath is cached internally so repeated calls are near-free.
+ * getAtPath reads by pre-parsed segments; setAtPath mutates in-place.
  */
 
 import { getAtPath, parsePath, setAtPath } from '@stardust/core';
-import { sink } from '../runner.ts';
-import type { Bench } from './types.ts';
-
-// ── Initial values ──────────────────────────────────────────────────────────
+import { bench, group } from '../mitata.ts';
 
 type Nested = {
   user: { name: string; address: { city: string; zip: string } };
@@ -38,58 +28,42 @@ const ARRAY_INITIAL: WithArray = {
   ],
 };
 
-const N = 100_000;
+group('Path utilities', () => {
+  bench('parsePath("count")', () => parsePath('count'));
+  bench('parsePath("user.address.city")', () => parsePath('user.address.city'));
+  bench('parsePath("phones[0].label")', () => parsePath('phones[0].label'));
 
-export function register(bench: Bench): void {
-  bench('Path utilities', 'parsePath("count")', N, () => {
-    sink(parsePath('count'));
-  });
-
-  bench('Path utilities', 'parsePath("user.address.city")', N, () => {
-    sink(parsePath('user.address.city'));
-  });
-
-  bench('Path utilities', 'parsePath("phones[0].label")', N, () => {
-    sink(parsePath('phones[0].label'));
-  });
-
-  {
+  bench('getAtPath top-level', function* () {
     const obj = { count: 42 };
     const segs = parsePath('count');
-    bench('Path utilities', 'getAtPath top-level', N, () => {
-      sink(getAtPath(obj, segs));
-    });
-  }
+    yield () => getAtPath(obj, segs);
+  });
 
-  {
+  bench('getAtPath 3-deep', function* () {
     const obj = NESTED_INITIAL;
     const segs = parsePath('user.address.city');
-    bench('Path utilities', 'getAtPath 3-deep', N, () => {
-      sink(getAtPath(obj, segs));
-    });
-  }
+    yield () => getAtPath(obj, segs);
+  });
 
-  {
+  bench('getAtPath array index', function* () {
     const obj = ARRAY_INITIAL;
     const segs = parsePath('phones[1].label');
-    bench('Path utilities', 'getAtPath array index', N, () => {
-      sink(getAtPath(obj, segs));
-    });
-  }
+    yield () => getAtPath(obj, segs);
+  });
 
-  {
+  bench('setAtPath top-level', function* () {
     const segs = parsePath('count');
-    bench('Path utilities', 'setAtPath top-level', N, () => {
+    yield () => {
       const obj = { count: 0 };
       setAtPath(obj, segs, 42);
-    });
-  }
+    };
+  });
 
-  {
+  bench('setAtPath 3-deep', function* () {
     const segs = parsePath('user.address.city');
-    bench('Path utilities', 'setAtPath 3-deep', N, () => {
+    yield () => {
       const obj = structuredClone(NESTED_INITIAL);
       setAtPath(obj, segs, 'Vancouver');
-    });
-  }
-}
+    };
+  });
+});

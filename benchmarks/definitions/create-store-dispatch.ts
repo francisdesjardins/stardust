@@ -1,28 +1,15 @@
 /**
  * createStoreDispatch — dispatch indirection overhead.
  *
- * Measures the cost of routing through `dispatch(action, ...args)` versus
- * calling the store method directly. The dispatch function does a single
- * property lookup + spread — this benchmark quantifies that overhead.
- *
  * Each pair benchmarks the same operation via direct call and via dispatch,
- * so the difference isolates the dispatch indirection cost.
- *
- * N = 100,000 iterations per benchmark.
+ * isolating the single property lookup + spread cost of the indirection.
  */
 
 import { createStore, createStoreDispatch } from '@stardust/core';
-import { sink } from '../runner.ts';
-import type { Bench } from './types.ts';
+import { bench, group } from '../mitata.ts';
 
-const GROUP = 'createStoreDispatch';
-
-const N = 100_000;
-
-export function register(bench: Bench): void {
-  // ── update: direct vs dispatch ──────────────────────────────────────────
-
-  {
+group('createStoreDispatch', () => {
+  bench('update() — direct', function* () {
     const store = createStore({ count: 0 }, ({ update }) => ({
       increment() {
         update((d) => {
@@ -30,14 +17,13 @@ export function register(bench: Bench): void {
         });
       },
     }));
-    bench(GROUP, 'update() — direct', N, () => {
+    yield () =>
       store.update((d) => {
         d.count += 1;
       });
-    });
-  }
+  });
 
-  {
+  bench('dispatch("update") — via dispatch', function* () {
     const store = createStore({ count: 0 }, ({ update }) => ({
       increment() {
         update((d) => {
@@ -46,77 +32,62 @@ export function register(bench: Bench): void {
       },
     }));
     const dispatch = createStoreDispatch(store, { builtin: ['update'] });
-    bench(GROUP, 'dispatch("update") — via dispatch', N, () => {
+    yield () =>
       dispatch('update', (d) => {
         d.count += 1;
       });
-    });
-  }
+  });
 
-  // ── setByPath: direct vs dispatch ───────────────────────────────────────
-
-  {
+  bench('setByPath() — direct', function* () {
     const store = createStore({ user: { name: 'Alice' } }, () => ({}));
     let i = 0;
-    bench(GROUP, 'setByPath() — direct', N, () => {
-      store.setByPath('user.name', `name-${i++}`);
-    });
-  }
+    yield () => store.setByPath('user.name', `name-${i++}`);
+  });
 
-  {
+  bench('dispatch("setByPath") — via dispatch', function* () {
     const store = createStore({ user: { name: 'Alice' } }, () => ({}));
     const dispatch = createStoreDispatch(store, { builtin: ['setByPath'] });
     let i = 0;
-    bench(GROUP, 'dispatch("setByPath") — via dispatch', N, () => {
-      dispatch('setByPath', 'user.name', `name-${i++}`);
-    });
-  }
+    yield () => dispatch('setByPath', 'user.name', `name-${i++}`);
+  });
 
-  // ── domain method: direct vs dispatch ───────────────────────────────────
-
-  {
+  bench('domain method — direct', function* () {
     const store = createStore({ count: 0 }, ({ get }) => ({
       getCount(): number {
         return get().count;
       },
     }));
-    bench(GROUP, 'domain method — direct', N, () => {
-      sink(store.getCount());
-    });
-  }
+    yield () => store.getCount();
+  });
 
-  {
+  bench('dispatch("getCount") — via dispatch', function* () {
     const store = createStore({ count: 0 }, ({ get }) => ({
       getCount(): number {
         return get().count;
       },
     }));
     const dispatch = createStoreDispatch(store);
-    bench(GROUP, 'dispatch("getCount") — via dispatch', N, () => {
-      sink(dispatch('getCount'));
-    });
-  }
+    yield () => dispatch('getCount');
+  });
 
-  // ── batch: direct vs dispatch ───────────────────────────────────────────
-
-  {
+  bench('batch() — direct', function* () {
     const store = createStore({ count: 0 }, () => ({}));
-    bench(GROUP, 'batch() — direct', N, () => {
+    yield () => {
       store.batch(() => {
         store.setByPath('count', 1);
         store.setByPath('count', 2);
       });
-    });
-  }
+    };
+  });
 
-  {
+  bench('dispatch("batch") — via dispatch', function* () {
     const store = createStore({ count: 0 }, () => ({}));
     const dispatch = createStoreDispatch(store, { builtin: ['batch', 'setByPath'] });
-    bench(GROUP, 'dispatch("batch") — via dispatch', N, () => {
+    yield () => {
       dispatch('batch', () => {
         dispatch('setByPath', 'count', 1);
         dispatch('setByPath', 'count', 2);
       });
-    });
-  }
-}
+    };
+  });
+});

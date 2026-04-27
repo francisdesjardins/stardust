@@ -6,12 +6,12 @@ Reactive state library — framework-agnostic core + React adapter + SolidJS ada
 
 ## Packages
 
-| Package           | Description                                                                                      |
-| ----------------- | ------------------------------------------------------------------------------------------------ |
-| `@stardust/core`  | Zero-dep store primitives: `createStore`, `watch`, `createDerivedStore`, async state, path utils |
-| `@stardust/react` | React hooks: `useStore`, `useSuspenseStore`, `createStoreContext`                                |
-| `@stardust/solid` | SolidJS adapter: `useStore`, `useSuspenseStore`                                                  |
-| `playground`      | Interactive demo app (private, not published)                                                    |
+| Package           | Description                                                                                                                                        |
+| ----------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `@stardust/core`  | Zero-dep store primitives: `createStore`, `watch`, `createDerivedStore`, async state, path utils, `safeAwait`, `createMutex`, `createSingleFlight` |
+| `@stardust/react` | React hooks: `useStore`, `useSuspenseStore`, `createStoreContext`                                                                                  |
+| `@stardust/solid` | SolidJS adapter: `useStore`, `useSuspenseStore`                                                                                                    |
+| `playground`      | Interactive demo app (private, not published)                                                                                                      |
 
 ## Commands
 
@@ -28,6 +28,8 @@ npm run format           # Format code
 npm test                 # All tests (core unit + react CT)
 npm run bench            # Store benchmarks (1 round, quick dev check)
 npm run bench:stable     # Fresh baseline (clears history, 10 × 5-round runs)
+npm run ncu              # Check for dependency updates (dry run)
+npm run ncu:update       # Update all workspace package.json files to latest
 ```
 
 ## Testing
@@ -56,11 +58,10 @@ Tests are colocated in `__tests__/` next to the file under test. Each package de
 Node CLI at `benchmarks/` — runs from the monorepo root. Resolves `@stardust/core` via `tsconfig.node.json` paths (no prior build needed).
 
 ```bash
-npm run bench            # Single run
-npm run bench:stable     # 10 × 5-round runs for stable CV stats
+npm run bench            # Run benchmarks (mitata handles warmup + sample collection)
 ```
 
-Results written to `benchmarks/results/` (gitignored). Playground Lab tab auto-runs the benchmark via Vite plugin and displays results with per-group "View Code" buttons.
+Powered by [mitata](https://github.com/evanwashere/mitata). Results written to `benchmarks/results/latest.json` (gitignored) and consumed by the playground Lab tab via `vite-plugin-bench`. Each definition file in `benchmarks/definitions/` uses the generator pattern (`function*`) to separate setup from the measured hot path.
 
 ## Architecture
 

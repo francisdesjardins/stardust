@@ -16,7 +16,6 @@ npm run build      # from monorepo root — builds playground to playground/dist
 | `/getting-started` | `pages/getting-started/` | `@stardust/core`  |
 | `/react`           | `pages/react/`           | `@stardust/react` |
 | `/solid`           | `pages/solid/`           | `@stardust/solid` |
-| `/lab`             | `pages/lab/`             | benchmarks        |
 
 ## Adding an Example
 

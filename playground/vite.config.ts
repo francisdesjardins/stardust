@@ -3,8 +3,6 @@ import react, { reactCompilerPreset } from '@vitejs/plugin-react';
 import { resolve } from 'path';
 import { defineConfig } from 'vite';
 import solid from 'vite-plugin-solid';
-import { benchPlugin } from './vite-plugin-bench';
-
 const hashRouter = process.env['VITE_HASH_ROUTER'] === 'true';
 
 export default defineConfig({
@@ -22,7 +20,6 @@ export default defineConfig({
       include: /(?<!\.solid)\.(tsx|ts|jsx|js)$/,
       presets: [reactCompilerPreset()],
     }),
-    benchPlugin(),
   ],
   resolve: {
     alias: {
