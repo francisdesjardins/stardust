@@ -1,6 +1,7 @@
 import { Grid } from '@mui/material';
 import { ExampleCard } from '@/entities/example';
 import { PageLayout } from '@/shared/ui/PageLayout/PageLayout';
+import { StarfieldBanner } from '@/shared/ui/StarfieldBanner/StarfieldBanner';
 import { AsyncStateExample } from '../examples/async-state';
 import { CreateStoreExample } from '../examples/create-store';
 import { DerivedStoreExample } from '../examples/derived-store';
@@ -11,6 +12,7 @@ export const GettingStartedPage = () => (
     title="Getting Started"
     description="Core store primitives — framework-agnostic, zero dependencies."
   >
+    <StarfieldBanner />
     <Grid container spacing={3}>
       <Grid size={{ xs: 12, md: 6 }}>
         <ExampleCard

@@ -1,3 +1,4 @@
+import BuildIcon from '@mui/icons-material/Build';
 import CodeIcon from '@mui/icons-material/Code';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import ScienceIcon from '@mui/icons-material/Science';
@@ -16,6 +17,7 @@ const SIDEBAR_WIDTH = 220;
 
 const navItems = [
   { path: '/getting-started', label: 'Getting Started', icon: PlayArrowIcon },
+  { path: '/utilities', label: 'Utilities', icon: BuildIcon },
   { path: '/react', label: 'React', icon: CodeIcon },
   { path: '/solid', label: 'SolidJS', icon: ScienceIcon },
 ] as const;

@@ -1,3 +1,11 @@
+import arrayMethodsSrc from '@/pages/utilities/examples/array-methods.tsx?raw';
+import storeDispatchSrc from '@/pages/utilities/examples/store-dispatch.tsx?raw';
+import produceSrc from '@/pages/utilities/examples/produce.tsx?raw';
+import pathUtilsSrc from '@/pages/utilities/examples/path-utils.tsx?raw';
+import safeAwaitSrc from '@/pages/utilities/examples/safe-await.tsx?raw';
+import mutexSrc from '@/pages/utilities/examples/mutex.tsx?raw';
+import singleFlightSrc from '@/pages/utilities/examples/single-flight.tsx?raw';
+import debugLogSrc from '@/pages/utilities/examples/debug-log.tsx?raw';
 import createStoreSrc from '@/pages/getting-started/examples/create-store.tsx?raw';
 import derivedStoreSrc from '@/pages/getting-started/examples/derived-store.tsx?raw';
 import asyncStateSrc from '@/pages/getting-started/examples/async-state.tsx?raw';
@@ -20,6 +28,16 @@ export const codeSamples: Record<string, string> = {
   'use-store': useStoreSrc,
   'use-suspense-store': useSuspenseStoreSrc,
   'create-store-context': createStoreContextSrc,
+
+  // Utilities
+  'array-methods': arrayMethodsSrc,
+  'store-dispatch': storeDispatchSrc,
+  produce: produceSrc,
+  'path-utils': pathUtilsSrc,
+  'safe-await': safeAwaitSrc,
+  mutex: mutexSrc,
+  'single-flight': singleFlightSrc,
+  'debug-log': debugLogSrc,
 
   // SolidJS
   'solid-counter': solidCounterSrc,
