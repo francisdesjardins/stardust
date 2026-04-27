@@ -114,10 +114,10 @@
   ],
   "sources": {
     "D:/workspace/francisdesjardins/2025/stardust/packages/react/playwright/index.html": {
-      "timestamp": 1777260950735.3784
+      "timestamp": 1777263657543.2976
     },
     "D:/workspace/francisdesjardins/2025/stardust/packages/react/playwright/index.ts": {
-      "timestamp": 1777260950735.3784
+      "timestamp": 1777263657543.2976
     },
     "D:/workspace/francisdesjardins/2025/stardust/node_modules/react/index.js": {
       "timestamp": 1777121455389.9355
@@ -125,83 +125,41 @@
     "D:/workspace/francisdesjardins/2025/stardust/node_modules/react-dom/client.js": {
       "timestamp": 1777121455340.942
     },
-    "D:/workspace/francisdesjardins/2025/stardust/packages/react/src/__tests__/use-store-context.story.tsx": {
-      "timestamp": 1777107474318.8962
-    },
-    "D:/workspace/francisdesjardins/2025/stardust/packages/react/src/__tests__/create-store-context/two-providers.story.tsx": {
-      "timestamp": 1777107475410.5784
-    },
-    "D:/workspace/francisdesjardins/2025/stardust/packages/react/src/__tests__/use-store.story.tsx": {
-      "timestamp": 1777107474566.9038
-    },
-    "D:/workspace/francisdesjardins/2025/stardust/packages/react/src/__tests__/use-suspense-store.story.tsx": {
-      "timestamp": 1777107474722.7676
-    },
-    "D:/workspace/francisdesjardins/2025/stardust/packages/react/src/__tests__/create-store-context/equals.story.tsx": {
-      "timestamp": 1777107475157.3247
+    "D:/workspace/francisdesjardins/2025/stardust/packages/react/src/__tests__/create-store-context/context-injection.story.tsx": {
+      "timestamp": 1777263657550.9932
     },
     "D:/workspace/francisdesjardins/2025/stardust/packages/react/src/__tests__/create-store-context/counter.story.tsx": {
-      "timestamp": 1777107475025.2964
+      "timestamp": 1777263657551.6091
+    },
+    "D:/workspace/francisdesjardins/2025/stardust/packages/react/src/__tests__/use-suspense-store.story.tsx": {
+      "timestamp": 1777263657554.1172
+    },
+    "D:/workspace/francisdesjardins/2025/stardust/packages/react/src/__tests__/use-store.story.tsx": {
+      "timestamp": 1777263657554.1172
+    },
+    "D:/workspace/francisdesjardins/2025/stardust/packages/react/src/__tests__/use-store-context.story.tsx": {
+      "timestamp": 1777263657551.6091
+    },
+    "D:/workspace/francisdesjardins/2025/stardust/packages/react/src/__tests__/create-store-context/equals.story.tsx": {
+      "timestamp": 1777263657551.6091
+    },
+    "D:/workspace/francisdesjardins/2025/stardust/packages/react/src/__tests__/create-store-context/two-providers.story.tsx": {
+      "timestamp": 1777263657551.6091
     },
     "D:/workspace/francisdesjardins/2025/stardust/packages/react/src/__tests__/create-store-context/initial.story.tsx": {
-      "timestamp": 1777107475283.3652
-    },
-    "D:/workspace/francisdesjardins/2025/stardust/packages/react/src/__tests__/create-store-context/context-injection.story.tsx": {
-      "timestamp": 1777107474893.459
+      "timestamp": 1777263657551.6091
     },
     "D:/workspace/francisdesjardins/2025/stardust/node_modules/react/cjs/react.production.js": {
       "timestamp": 1777121455940.3506
     },
-    "D:/workspace/francisdesjardins/2025/stardust/node_modules/react/jsx-runtime.js": {
-      "timestamp": 1777121455511.796
-    },
-    "D:/workspace/francisdesjardins/2025/stardust/packages/react/dist/esm/index.js": {
-      "timestamp": 1777259608456.028
-    },
-    "D:/workspace/francisdesjardins/2025/stardust/packages/react/src/__tests__/use-store/context.story.tsx": {
-      "timestamp": 1777107475543.258
-    },
     "D:/workspace/francisdesjardins/2025/stardust/node_modules/react-dom/cjs/react-dom-client.production.js": {
       "timestamp": 1777121455958.6067
     },
-    "D:/workspace/francisdesjardins/2025/stardust/packages/react/src/__tests__/use-store/derived-single.story.tsx": {
-      "timestamp": 1777107475934.1072
+    "D:/workspace/francisdesjardins/2025/stardust/node_modules/react/jsx-runtime.js": {
+      "timestamp": 1777121455511.796
     },
-    "D:/workspace/francisdesjardins/2025/stardust/packages/react/src/__tests__/use-store/derived-multi.story.tsx": {
-      "timestamp": 1777107475805.91
-    },
-    "D:/workspace/francisdesjardins/2025/stardust/packages/react/src/__tests__/use-store/multi-slice.story.tsx": {
-      "timestamp": 1777107476333.4883
-    },
-    "D:/workspace/francisdesjardins/2025/stardust/packages/react/src/__tests__/use-store/derived-equality.story.tsx": {
-      "timestamp": 1777107475674.7668
-    },
-    "D:/workspace/francisdesjardins/2025/stardust/packages/react/src/__tests__/use-store/produce.story.tsx": {
-      "timestamp": 1777107476463.8948
-    },
-    "D:/workspace/francisdesjardins/2025/stardust/packages/react/src/__tests__/use-store/selector.story.tsx": {
-      "timestamp": 1777107476591.358
-    },
-    "D:/workspace/francisdesjardins/2025/stardust/packages/react/src/__tests__/use-store/full-snapshot.story.tsx": {
-      "timestamp": 1777107476203.8584
-    },
-    "D:/workspace/francisdesjardins/2025/stardust/packages/react/src/__tests__/use-store/equals.story.tsx": {
-      "timestamp": 1777107476076.0457
-    },
-    "D:/workspace/francisdesjardins/2025/stardust/packages/react/src/__tests__/use-suspense-store/harnesses.story.tsx": {
-      "timestamp": 1777107476870.106
-    },
-    "D:/workspace/francisdesjardins/2025/stardust/packages/react/dist/esm/use-store.js": {
-      "timestamp": 1777259608456.028
-    },
-    "D:/workspace/francisdesjardins/2025/stardust/packages/react/dist/esm/use-suspense-store.js": {
-      "timestamp": 1777259608456.028
-    },
-    "D:/workspace/francisdesjardins/2025/stardust/packages/react/dist/esm/create-store-context.js": {
-      "timestamp": 1777259608456.028
-    },
-    "D:/workspace/francisdesjardins/2025/stardust/packages/core/src/index.ts": {
-      "timestamp": 1777121920238.0361
+    "D:/workspace/francisdesjardins/2025/stardust/packages/react/src/index.ts": {
+      "timestamp": 1777263657561.0037
     },
     "D:/workspace/francisdesjardins/2025/stardust/node_modules/react-dom/index.js": {
       "timestamp": 1777121455438.921
@@ -209,56 +167,98 @@
     "D:/workspace/francisdesjardins/2025/stardust/node_modules/scheduler/index.js": {
       "timestamp": 1777121455335.302
     },
+    "D:/workspace/francisdesjardins/2025/stardust/packages/react/src/__tests__/use-store/derived-multi.story.tsx": {
+      "timestamp": 1777263657554.1172
+    },
+    "D:/workspace/francisdesjardins/2025/stardust/packages/react/src/__tests__/use-store/selector.story.tsx": {
+      "timestamp": 1777263657554.1172
+    },
+    "D:/workspace/francisdesjardins/2025/stardust/packages/react/src/__tests__/use-store/produce.story.tsx": {
+      "timestamp": 1777263657554.1172
+    },
+    "D:/workspace/francisdesjardins/2025/stardust/packages/react/src/__tests__/use-store/derived-equality.story.tsx": {
+      "timestamp": 1777263657554.1172
+    },
+    "D:/workspace/francisdesjardins/2025/stardust/packages/react/src/__tests__/use-store/multi-slice.story.tsx": {
+      "timestamp": 1777263657554.1172
+    },
+    "D:/workspace/francisdesjardins/2025/stardust/packages/react/src/__tests__/use-store/context.story.tsx": {
+      "timestamp": 1777263657554.1172
+    },
+    "D:/workspace/francisdesjardins/2025/stardust/packages/react/src/__tests__/use-store/full-snapshot.story.tsx": {
+      "timestamp": 1777263657554.1172
+    },
+    "D:/workspace/francisdesjardins/2025/stardust/packages/react/src/__tests__/use-suspense-store/harnesses.story.tsx": {
+      "timestamp": 1777263657559.9802
+    },
+    "D:/workspace/francisdesjardins/2025/stardust/packages/react/src/__tests__/use-store/derived-single.story.tsx": {
+      "timestamp": 1777263657554.1172
+    },
+    "D:/workspace/francisdesjardins/2025/stardust/packages/react/src/__tests__/use-store/equals.story.tsx": {
+      "timestamp": 1777263657554.1172
+    },
+    "D:/workspace/francisdesjardins/2025/stardust/packages/core/src/index.ts": {
+      "timestamp": 1777263657526.9365
+    },
     "D:/workspace/francisdesjardins/2025/stardust/node_modules/react/cjs/react-jsx-runtime.production.js": {
       "timestamp": 1777121455851.7034
     },
-    "D:/workspace/francisdesjardins/2025/stardust/packages/react/src/__tests__/use-suspense-store/error-boundary.story.tsx": {
-      "timestamp": 1777107476717.6628
+    "D:/workspace/francisdesjardins/2025/stardust/packages/react/src/use-suspense-store.ts": {
+      "timestamp": 1777263657561.0037
+    },
+    "D:/workspace/francisdesjardins/2025/stardust/packages/react/src/use-store.ts": {
+      "timestamp": 1777263657561.0037
+    },
+    "D:/workspace/francisdesjardins/2025/stardust/packages/react/src/create-store-context.tsx": {
+      "timestamp": 1777263657560.5679
     },
     "D:/workspace/francisdesjardins/2025/stardust/node_modules/react-dom/cjs/react-dom.production.js": {
       "timestamp": 1777121456813.2495
     },
-    "D:/workspace/francisdesjardins/2025/stardust/packages/core/src/async-state.ts": {
-      "timestamp": 1777121530497.5896
+    "D:/workspace/francisdesjardins/2025/stardust/packages/react/src/__tests__/use-suspense-store/error-boundary.story.tsx": {
+      "timestamp": 1777263657554.1172
     },
     "D:/workspace/francisdesjardins/2025/stardust/node_modules/scheduler/cjs/scheduler.production.js": {
       "timestamp": 1777121455754.8245
     },
-    "D:/workspace/francisdesjardins/2025/stardust/packages/core/src/shallow-equal.ts": {
-      "timestamp": 1777090437910.36
-    },
-    "D:/workspace/francisdesjardins/2025/stardust/packages/core/src/create-derived-store.ts": {
-      "timestamp": 1777090437719.7715
-    },
-    "D:/workspace/francisdesjardins/2025/stardust/packages/core/src/create-store-dispatch.ts": {
-      "timestamp": 1777090437759.4387
+    "D:/workspace/francisdesjardins/2025/stardust/packages/core/src/async-state.ts": {
+      "timestamp": 1777263657526.2148
     },
     "D:/workspace/francisdesjardins/2025/stardust/packages/core/src/produce.ts": {
-      "timestamp": 1777090437874.1782
-    },
-    "D:/workspace/francisdesjardins/2025/stardust/packages/core/src/path-utils.ts": {
-      "timestamp": 1777121530523.4614
-    },
-    "D:/workspace/francisdesjardins/2025/stardust/packages/core/src/watch.ts": {
-      "timestamp": 1777090437940.4492
+      "timestamp": 1777263657526.9365
     },
     "D:/workspace/francisdesjardins/2025/stardust/packages/core/src/create-array-methods.ts": {
-      "timestamp": 1777090437678.1714
+      "timestamp": 1777263657526.9365
     },
-    "D:/workspace/francisdesjardins/2025/stardust/packages/core/src/connect-debug-log.ts": {
-      "timestamp": 1777166648295.3518
+    "D:/workspace/francisdesjardins/2025/stardust/packages/core/src/shallow-equal.ts": {
+      "timestamp": 1777263657526.9365
+    },
+    "D:/workspace/francisdesjardins/2025/stardust/packages/core/src/watch.ts": {
+      "timestamp": 1777263657531.049
+    },
+    "D:/workspace/francisdesjardins/2025/stardust/packages/core/src/create-derived-store.ts": {
+      "timestamp": 1777263657526.9365
     },
     "D:/workspace/francisdesjardins/2025/stardust/packages/core/src/create-store.ts": {
-      "timestamp": 1777090437786.4556
+      "timestamp": 1777263657526.9365
+    },
+    "D:/workspace/francisdesjardins/2025/stardust/packages/core/src/create-store-dispatch.ts": {
+      "timestamp": 1777263657526.9365
+    },
+    "D:/workspace/francisdesjardins/2025/stardust/packages/core/src/connect-debug-log.ts": {
+      "timestamp": 1777263657526.9365
+    },
+    "D:/workspace/francisdesjardins/2025/stardust/packages/core/src/path-utils.ts": {
+      "timestamp": 1777263657526.9365
     },
     "D:/workspace/francisdesjardins/2025/stardust/packages/core/src/utils/normalize-error.ts": {
-      "timestamp": 1777090523634.1995
+      "timestamp": 1777263657531.049
     },
     "D:/workspace/francisdesjardins/2025/stardust/packages/core/src/utils/is-nullish.ts": {
-      "timestamp": 1777090523662.1494
+      "timestamp": 1777263657531.049
     },
     "D:/workspace/francisdesjardins/2025/stardust/packages/core/src/utils/logger.ts": {
-      "timestamp": 1777166637806.8208
+      "timestamp": 1777263657531.049
     }
   },
   "deps": {
@@ -278,10 +278,10 @@
       "D:\\workspace\\francisdesjardins\\2025\\stardust\\packages\\core\\src\\produce.ts",
       "D:\\workspace\\francisdesjardins\\2025\\stardust\\packages\\core\\src\\shallow-equal.ts",
       "D:\\workspace\\francisdesjardins\\2025\\stardust\\packages\\core\\src\\watch.ts",
-      "D:\\workspace\\francisdesjardins\\2025\\stardust\\packages\\react\\dist\\esm\\index.js",
-      "D:\\workspace\\francisdesjardins\\2025\\stardust\\packages\\react\\dist\\esm\\use-store.js",
-      "D:\\workspace\\francisdesjardins\\2025\\stardust\\packages\\react\\dist\\esm\\create-store-context.js",
-      "D:\\workspace\\francisdesjardins\\2025\\stardust\\packages\\react\\dist\\esm\\use-suspense-store.js"
+      "D:\\workspace\\francisdesjardins\\2025\\stardust\\packages\\react\\src\\index.ts",
+      "D:\\workspace\\francisdesjardins\\2025\\stardust\\packages\\react\\src\\create-store-context.tsx",
+      "D:\\workspace\\francisdesjardins\\2025\\stardust\\packages\\react\\src\\use-store.ts",
+      "D:\\workspace\\francisdesjardins\\2025\\stardust\\packages\\react\\src\\use-suspense-store.ts"
     ],
     "D:\\workspace\\francisdesjardins\\2025\\stardust\\packages\\react\\src\\__tests__\\create-store-context\\context-injection.story.tsx": [
       "D:\\workspace\\francisdesjardins\\2025\\stardust\\packages\\react\\src\\__tests__\\create-store-context\\context-injection.story.tsx",
@@ -299,10 +299,10 @@
       "D:\\workspace\\francisdesjardins\\2025\\stardust\\packages\\core\\src\\produce.ts",
       "D:\\workspace\\francisdesjardins\\2025\\stardust\\packages\\core\\src\\shallow-equal.ts",
       "D:\\workspace\\francisdesjardins\\2025\\stardust\\packages\\core\\src\\watch.ts",
-      "D:\\workspace\\francisdesjardins\\2025\\stardust\\packages\\react\\dist\\esm\\index.js",
-      "D:\\workspace\\francisdesjardins\\2025\\stardust\\packages\\react\\dist\\esm\\use-store.js",
-      "D:\\workspace\\francisdesjardins\\2025\\stardust\\packages\\react\\dist\\esm\\create-store-context.js",
-      "D:\\workspace\\francisdesjardins\\2025\\stardust\\packages\\react\\dist\\esm\\use-suspense-store.js"
+      "D:\\workspace\\francisdesjardins\\2025\\stardust\\packages\\react\\src\\index.ts",
+      "D:\\workspace\\francisdesjardins\\2025\\stardust\\packages\\react\\src\\create-store-context.tsx",
+      "D:\\workspace\\francisdesjardins\\2025\\stardust\\packages\\react\\src\\use-store.ts",
+      "D:\\workspace\\francisdesjardins\\2025\\stardust\\packages\\react\\src\\use-suspense-store.ts"
     ],
     "D:\\workspace\\francisdesjardins\\2025\\stardust\\packages\\react\\src\\__tests__\\create-store-context\\equals.story.tsx": [
       "D:\\workspace\\francisdesjardins\\2025\\stardust\\packages\\react\\src\\__tests__\\create-store-context\\equals.story.tsx",
@@ -320,10 +320,10 @@
       "D:\\workspace\\francisdesjardins\\2025\\stardust\\packages\\core\\src\\produce.ts",
       "D:\\workspace\\francisdesjardins\\2025\\stardust\\packages\\core\\src\\shallow-equal.ts",
       "D:\\workspace\\francisdesjardins\\2025\\stardust\\packages\\core\\src\\watch.ts",
-      "D:\\workspace\\francisdesjardins\\2025\\stardust\\packages\\react\\dist\\esm\\index.js",
-      "D:\\workspace\\francisdesjardins\\2025\\stardust\\packages\\react\\dist\\esm\\use-store.js",
-      "D:\\workspace\\francisdesjardins\\2025\\stardust\\packages\\react\\dist\\esm\\create-store-context.js",
-      "D:\\workspace\\francisdesjardins\\2025\\stardust\\packages\\react\\dist\\esm\\use-suspense-store.js"
+      "D:\\workspace\\francisdesjardins\\2025\\stardust\\packages\\react\\src\\index.ts",
+      "D:\\workspace\\francisdesjardins\\2025\\stardust\\packages\\react\\src\\create-store-context.tsx",
+      "D:\\workspace\\francisdesjardins\\2025\\stardust\\packages\\react\\src\\use-store.ts",
+      "D:\\workspace\\francisdesjardins\\2025\\stardust\\packages\\react\\src\\use-suspense-store.ts"
     ],
     "D:\\workspace\\francisdesjardins\\2025\\stardust\\packages\\react\\src\\__tests__\\create-store-context\\initial.story.tsx": [
       "D:\\workspace\\francisdesjardins\\2025\\stardust\\packages\\react\\src\\__tests__\\create-store-context\\initial.story.tsx",
@@ -341,10 +341,10 @@
       "D:\\workspace\\francisdesjardins\\2025\\stardust\\packages\\core\\src\\produce.ts",
       "D:\\workspace\\francisdesjardins\\2025\\stardust\\packages\\core\\src\\shallow-equal.ts",
       "D:\\workspace\\francisdesjardins\\2025\\stardust\\packages\\core\\src\\watch.ts",
-      "D:\\workspace\\francisdesjardins\\2025\\stardust\\packages\\react\\dist\\esm\\index.js",
-      "D:\\workspace\\francisdesjardins\\2025\\stardust\\packages\\react\\dist\\esm\\use-store.js",
-      "D:\\workspace\\francisdesjardins\\2025\\stardust\\packages\\react\\dist\\esm\\create-store-context.js",
-      "D:\\workspace\\francisdesjardins\\2025\\stardust\\packages\\react\\dist\\esm\\use-suspense-store.js"
+      "D:\\workspace\\francisdesjardins\\2025\\stardust\\packages\\react\\src\\index.ts",
+      "D:\\workspace\\francisdesjardins\\2025\\stardust\\packages\\react\\src\\create-store-context.tsx",
+      "D:\\workspace\\francisdesjardins\\2025\\stardust\\packages\\react\\src\\use-store.ts",
+      "D:\\workspace\\francisdesjardins\\2025\\stardust\\packages\\react\\src\\use-suspense-store.ts"
     ],
     "D:\\workspace\\francisdesjardins\\2025\\stardust\\packages\\react\\src\\__tests__\\create-store-context\\two-providers.story.tsx": [
       "D:\\workspace\\francisdesjardins\\2025\\stardust\\packages\\react\\src\\__tests__\\create-store-context\\two-providers.story.tsx",
@@ -362,10 +362,10 @@
       "D:\\workspace\\francisdesjardins\\2025\\stardust\\packages\\core\\src\\produce.ts",
       "D:\\workspace\\francisdesjardins\\2025\\stardust\\packages\\core\\src\\shallow-equal.ts",
       "D:\\workspace\\francisdesjardins\\2025\\stardust\\packages\\core\\src\\watch.ts",
-      "D:\\workspace\\francisdesjardins\\2025\\stardust\\packages\\react\\dist\\esm\\index.js",
-      "D:\\workspace\\francisdesjardins\\2025\\stardust\\packages\\react\\dist\\esm\\use-store.js",
-      "D:\\workspace\\francisdesjardins\\2025\\stardust\\packages\\react\\dist\\esm\\create-store-context.js",
-      "D:\\workspace\\francisdesjardins\\2025\\stardust\\packages\\react\\dist\\esm\\use-suspense-store.js"
+      "D:\\workspace\\francisdesjardins\\2025\\stardust\\packages\\react\\src\\index.ts",
+      "D:\\workspace\\francisdesjardins\\2025\\stardust\\packages\\react\\src\\create-store-context.tsx",
+      "D:\\workspace\\francisdesjardins\\2025\\stardust\\packages\\react\\src\\use-store.ts",
+      "D:\\workspace\\francisdesjardins\\2025\\stardust\\packages\\react\\src\\use-suspense-store.ts"
     ],
     "D:\\workspace\\francisdesjardins\\2025\\stardust\\packages\\react\\src\\__tests__\\use-store-context.story.tsx": [
       "D:\\workspace\\francisdesjardins\\2025\\stardust\\packages\\react\\src\\__tests__\\use-store-context.story.tsx",
@@ -384,10 +384,10 @@
       "D:\\workspace\\francisdesjardins\\2025\\stardust\\packages\\core\\src\\produce.ts",
       "D:\\workspace\\francisdesjardins\\2025\\stardust\\packages\\core\\src\\shallow-equal.ts",
       "D:\\workspace\\francisdesjardins\\2025\\stardust\\packages\\core\\src\\watch.ts",
-      "D:\\workspace\\francisdesjardins\\2025\\stardust\\packages\\react\\dist\\esm\\index.js",
-      "D:\\workspace\\francisdesjardins\\2025\\stardust\\packages\\react\\dist\\esm\\use-store.js",
-      "D:\\workspace\\francisdesjardins\\2025\\stardust\\packages\\react\\dist\\esm\\create-store-context.js",
-      "D:\\workspace\\francisdesjardins\\2025\\stardust\\packages\\react\\dist\\esm\\use-suspense-store.js"
+      "D:\\workspace\\francisdesjardins\\2025\\stardust\\packages\\react\\src\\index.ts",
+      "D:\\workspace\\francisdesjardins\\2025\\stardust\\packages\\react\\src\\create-store-context.tsx",
+      "D:\\workspace\\francisdesjardins\\2025\\stardust\\packages\\react\\src\\use-store.ts",
+      "D:\\workspace\\francisdesjardins\\2025\\stardust\\packages\\react\\src\\use-suspense-store.ts"
     ],
     "D:\\workspace\\francisdesjardins\\2025\\stardust\\packages\\react\\src\\__tests__\\use-store.story.tsx": [
       "D:\\workspace\\francisdesjardins\\2025\\stardust\\packages\\react\\src\\__tests__\\use-store.story.tsx",
@@ -406,10 +406,10 @@
       "D:\\workspace\\francisdesjardins\\2025\\stardust\\packages\\core\\src\\produce.ts",
       "D:\\workspace\\francisdesjardins\\2025\\stardust\\packages\\core\\src\\shallow-equal.ts",
       "D:\\workspace\\francisdesjardins\\2025\\stardust\\packages\\core\\src\\watch.ts",
-      "D:\\workspace\\francisdesjardins\\2025\\stardust\\packages\\react\\dist\\esm\\index.js",
-      "D:\\workspace\\francisdesjardins\\2025\\stardust\\packages\\react\\dist\\esm\\use-store.js",
-      "D:\\workspace\\francisdesjardins\\2025\\stardust\\packages\\react\\dist\\esm\\create-store-context.js",
-      "D:\\workspace\\francisdesjardins\\2025\\stardust\\packages\\react\\dist\\esm\\use-suspense-store.js",
+      "D:\\workspace\\francisdesjardins\\2025\\stardust\\packages\\react\\src\\index.ts",
+      "D:\\workspace\\francisdesjardins\\2025\\stardust\\packages\\react\\src\\create-store-context.tsx",
+      "D:\\workspace\\francisdesjardins\\2025\\stardust\\packages\\react\\src\\use-store.ts",
+      "D:\\workspace\\francisdesjardins\\2025\\stardust\\packages\\react\\src\\use-suspense-store.ts",
       "D:\\workspace\\francisdesjardins\\2025\\stardust\\packages\\react\\src\\__tests__\\use-store\\derived-multi.story.tsx",
       "D:\\workspace\\francisdesjardins\\2025\\stardust\\packages\\react\\src\\__tests__\\use-store\\derived-single.story.tsx",
       "D:\\workspace\\francisdesjardins\\2025\\stardust\\packages\\react\\src\\__tests__\\use-store\\full-snapshot.story.tsx",
@@ -435,10 +435,10 @@
       "D:\\workspace\\francisdesjardins\\2025\\stardust\\packages\\core\\src\\produce.ts",
       "D:\\workspace\\francisdesjardins\\2025\\stardust\\packages\\core\\src\\shallow-equal.ts",
       "D:\\workspace\\francisdesjardins\\2025\\stardust\\packages\\core\\src\\watch.ts",
-      "D:\\workspace\\francisdesjardins\\2025\\stardust\\packages\\react\\dist\\esm\\index.js",
-      "D:\\workspace\\francisdesjardins\\2025\\stardust\\packages\\react\\dist\\esm\\use-store.js",
-      "D:\\workspace\\francisdesjardins\\2025\\stardust\\packages\\react\\dist\\esm\\create-store-context.js",
-      "D:\\workspace\\francisdesjardins\\2025\\stardust\\packages\\react\\dist\\esm\\use-suspense-store.js",
+      "D:\\workspace\\francisdesjardins\\2025\\stardust\\packages\\react\\src\\index.ts",
+      "D:\\workspace\\francisdesjardins\\2025\\stardust\\packages\\react\\src\\create-store-context.tsx",
+      "D:\\workspace\\francisdesjardins\\2025\\stardust\\packages\\react\\src\\use-store.ts",
+      "D:\\workspace\\francisdesjardins\\2025\\stardust\\packages\\react\\src\\use-suspense-store.ts",
       "D:\\workspace\\francisdesjardins\\2025\\stardust\\packages\\react\\src\\__tests__\\use-suspense-store\\error-boundary.story.tsx"
     ]
   }

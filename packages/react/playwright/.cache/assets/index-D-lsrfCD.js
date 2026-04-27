@@ -1,6 +1,6 @@
-import { g as getDefaultExportFromCjs, r as reactExports } from './index-C2HjpCzT.js';
+import { g as getDefaultExportFromCjs, r as reactExports } from './index-D2bWAGip.js';
 
-var jsxRuntime$2 = { exports: {} };
+var jsxRuntime$2 = {exports: {}};
 
 var reactJsxRuntime_production = {};
 
@@ -16,65 +16,66 @@ var reactJsxRuntime_production = {};
 
 var hasRequiredReactJsxRuntime_production;
 
-function requireReactJsxRuntime_production() {
-  if (hasRequiredReactJsxRuntime_production) return reactJsxRuntime_production;
-  hasRequiredReactJsxRuntime_production = 1;
-  ('use strict');
-  var REACT_ELEMENT_TYPE = Symbol.for('react.transitional.element'),
-    REACT_FRAGMENT_TYPE = Symbol.for('react.fragment');
-  function jsxProd(type, config, maybeKey) {
-    var key = null;
-    void 0 !== maybeKey && (key = '' + maybeKey);
-    void 0 !== config.key && (key = '' + config.key);
-    if ('key' in config) {
-      maybeKey = {};
-      for (var propName in config) 'key' !== propName && (maybeKey[propName] = config[propName]);
-    } else maybeKey = config;
-    config = maybeKey.ref;
-    return {
-      $$typeof: REACT_ELEMENT_TYPE,
-      type: type,
-      key: key,
-      ref: void 0 !== config ? config : null,
-      props: maybeKey,
-    };
-  }
-  reactJsxRuntime_production.Fragment = REACT_FRAGMENT_TYPE;
-  reactJsxRuntime_production.jsx = jsxProd;
-  reactJsxRuntime_production.jsxs = jsxProd;
-  return reactJsxRuntime_production;
+function requireReactJsxRuntime_production () {
+	if (hasRequiredReactJsxRuntime_production) return reactJsxRuntime_production;
+	hasRequiredReactJsxRuntime_production = 1;
+	"use strict";
+	var REACT_ELEMENT_TYPE = Symbol.for("react.transitional.element"),
+	  REACT_FRAGMENT_TYPE = Symbol.for("react.fragment");
+	function jsxProd(type, config, maybeKey) {
+	  var key = null;
+	  void 0 !== maybeKey && (key = "" + maybeKey);
+	  void 0 !== config.key && (key = "" + config.key);
+	  if ("key" in config) {
+	    maybeKey = {};
+	    for (var propName in config)
+	      "key" !== propName && (maybeKey[propName] = config[propName]);
+	  } else maybeKey = config;
+	  config = maybeKey.ref;
+	  return {
+	    $$typeof: REACT_ELEMENT_TYPE,
+	    type: type,
+	    key: key,
+	    ref: void 0 !== config ? config : null,
+	    props: maybeKey
+	  };
+	}
+	reactJsxRuntime_production.Fragment = REACT_FRAGMENT_TYPE;
+	reactJsxRuntime_production.jsx = jsxProd;
+	reactJsxRuntime_production.jsxs = jsxProd;
+	return reactJsxRuntime_production;
 }
 
 var jsxRuntime$1 = jsxRuntime$2.exports;
 
 var hasRequiredJsxRuntime;
 
-function requireJsxRuntime() {
-  if (hasRequiredJsxRuntime) return jsxRuntime$2.exports;
-  hasRequiredJsxRuntime = 1;
-  ('use strict');
-  if (true) {
-    jsxRuntime$2.exports = requireReactJsxRuntime_production();
-  } else {
-    module.exports = require('./cjs/react-jsx-runtime.development.js');
-  }
-  return jsxRuntime$2.exports;
+function requireJsxRuntime () {
+	if (hasRequiredJsxRuntime) return jsxRuntime$2.exports;
+	hasRequiredJsxRuntime = 1;
+	"use strict";
+	if (true) {
+	  jsxRuntime$2.exports = requireReactJsxRuntime_production();
+	} else {
+	  module.exports = require("./cjs/react-jsx-runtime.development.js");
+	}
+	return jsxRuntime$2.exports;
 }
 
 var jsxRuntimeExports = requireJsxRuntime();
-const jsxRuntime = /*@__PURE__*/ getDefaultExportFromCjs(jsxRuntimeExports);
+const jsxRuntime = /*@__PURE__*/getDefaultExportFromCjs(jsxRuntimeExports);
 
 function normalizeError(err) {
   return err instanceof Error ? err : new Error(String(err));
 }
 
-const asyncIdle = { status: 'idle' };
-const asyncPending = { status: 'pending' };
+const asyncIdle = { status: "idle" };
+const asyncPending = { status: "pending" };
 function asyncFulfilled(data) {
-  return { status: 'fulfilled', data };
+  return { status: "fulfilled", data };
 }
 function asyncRejected(error) {
-  return { status: 'rejected', error: normalizeError(error) };
+  return { status: "rejected", error: normalizeError(error) };
 }
 async function runAsync(task, onState) {
   onState(asyncPending);
@@ -89,12 +90,12 @@ async function runAsync(task, onState) {
   }
 }
 
-const storageKey = 'stardust:log';
+const storageKey = "stardust:log";
 const colors = {
-  store: '#FFC107',
+  store: "#FFC107"
 };
 const labelStyle = (color) => `color:${color};font-weight:bold;padding:1px 4px;border-radius:2px`;
-const resetStyle = 'color:inherit';
+const resetStyle = "color:inherit";
 let sessionOverride;
 function getPattern() {
   if (sessionOverride !== void 0) {
@@ -106,7 +107,7 @@ function getPattern() {
     return null;
   }
 }
-const namespacePrefix = 'stardust:';
+const namespacePrefix = "stardust:";
 function normalize(token) {
   const t = token.trim();
   return t.startsWith(namespacePrefix) ? t.slice(namespacePrefix.length) : t;
@@ -116,20 +117,20 @@ function matches(namespace) {
   if (!pattern) {
     return false;
   }
-  if (pattern === '*') {
+  if (pattern === "*") {
     return true;
   }
-  return pattern.split(',').some((p) => {
+  return pattern.split(",").some((p) => {
     const n = normalize(p);
-    return namespace === n || namespace.startsWith(n + ':');
+    return namespace === n || namespace.startsWith(n + ":");
   });
 }
 function resolveColor(namespace) {
   if (colors[namespace]) {
     return colors[namespace];
   }
-  const idx = namespace.lastIndexOf(':');
-  return idx !== -1 ? resolveColor(namespace.slice(0, idx)) : '#999';
+  const idx = namespace.lastIndexOf(":");
+  return idx !== -1 ? resolveColor(namespace.slice(0, idx)) : "#999";
 }
 function createLogger(namespace) {
   const color = resolveColor(namespace);
@@ -138,7 +139,7 @@ function createLogger(namespace) {
     if (!matches(namespace)) {
       return;
     }
-    const resolved = typeof data === 'function' ? data() : data;
+    const resolved = typeof data === "function" ? data() : data;
     if (resolved !== void 0) {
       console[method](`%c${prefix}%c ${message}`, labelStyle(color), resetStyle, resolved);
     } else {
@@ -146,19 +147,19 @@ function createLogger(namespace) {
     }
   }
   function log(message, data) {
-    emit('debug', message, data);
+    emit("debug", message, data);
   }
   log.warn = (message, data) => {
-    emit('warn', message, data);
+    emit("warn", message, data);
   };
   log.error = (message, data) => {
-    emit('error', message, data);
+    emit("error", message, data);
   };
   log.group = (message, data) => {
     if (!matches(namespace)) {
       return;
     }
-    const resolved = typeof data === 'function' ? data() : data;
+    const resolved = typeof data === "function" ? data() : data;
     console.groupCollapsed(`%c${prefix}%c ${message}`, labelStyle(color), resetStyle);
     if (resolved !== void 0) {
       console.debug(resolved);
@@ -173,35 +174,37 @@ function setLogLevel(pattern, persist = false) {
     if (persist) {
       try {
         globalThis.localStorage.removeItem(storageKey);
-      } catch {}
+      } catch {
+      }
     }
   } else {
     sessionOverride = pattern;
     if (persist) {
       try {
         globalThis.localStorage.setItem(storageKey, pattern);
-      } catch {}
+      } catch {
+      }
     }
   }
 }
 
 const BUILTIN_KEYS$1 = /* @__PURE__ */ new Set([
-  'subscribe',
-  'getSnapshot',
-  'set',
-  'update',
-  'getByPath',
-  'setByPath',
-  'batch',
-  'reset',
-  'setContext',
+  "subscribe",
+  "getSnapshot",
+  "set",
+  "update",
+  "getByPath",
+  "setByPath",
+  "batch",
+  "reset",
+  "setContext"
 ]);
-function computeDiff(prev, next, path = '') {
+function computeDiff(prev, next, path = "") {
   const result = {};
   if (Object.is(prev, next)) {
     return result;
   }
-  if (prev !== null && next !== null && typeof prev === 'object' && typeof next === 'object') {
+  if (prev !== null && next !== null && typeof prev === "object" && typeof next === "object") {
     if (Array.isArray(prev) && Array.isArray(next)) {
       const len = Math.max(prev.length, next.length);
       for (let i = 0; i < len; i++) {
@@ -212,24 +215,28 @@ function computeDiff(prev, next, path = '') {
     if (!Array.isArray(prev) && !Array.isArray(next)) {
       const keys = /* @__PURE__ */ new Set([...Object.keys(prev), ...Object.keys(next)]);
       for (const key of keys) {
-        const nested = computeDiff(prev[key], next[key], path ? `${path}.${key}` : key);
+        const nested = computeDiff(
+          prev[key],
+          next[key],
+          path ? `${path}.${key}` : key
+        );
         Object.assign(result, nested);
       }
       return result;
     }
   }
-  result[path || '(root)'] = { from: prev, to: next };
+  result[path || "(root)"] = { from: prev, to: next };
   return result;
 }
 function connectDebugLog(store, options) {
   const onLog = options?.onLog;
-  const logger = onLog ? null : createLogger(options?.name ? `store:${options.name}` : 'store');
+  const logger = onLog ? null : createLogger(options?.name ? `store:${options.name}` : "store");
   const initSnapshot = store.getSnapshot();
   if (onLog) {
-    onLog('init', computeDiff(void 0, initSnapshot), 0, 0);
+    onLog("init", computeDiff(void 0, initSnapshot), 0, 0);
   } else {
     if (logger) {
-      logger.group('init #0000', () => computeDiff(void 0, initSnapshot));
+      logger.group("init #0000", () => computeDiff(void 0, initSnapshot));
     }
   }
   let currentAction;
@@ -262,31 +269,31 @@ function connectDebugLog(store, options) {
   const originalBatch = store.batch;
   const originalReset = store.reset;
   const mutableStore = store;
-  mutableStore['set'] = function wrappedSet(next) {
+  mutableStore["set"] = function wrappedSet(next) {
     if (trackingDepth === 0) {
-      trackAction('set');
+      trackAction("set");
     }
     originalSet.call(store, next);
   };
-  mutableStore['update'] = function wrappedUpdate(recipe) {
+  mutableStore["update"] = function wrappedUpdate(recipe) {
     if (trackingDepth === 0) {
-      trackAction('update');
+      trackAction("update");
     }
     originalUpdate.call(store, recipe);
   };
-  mutableStore['setByPath'] = function wrappedSetByPath(path, value) {
+  mutableStore["setByPath"] = function wrappedSetByPath(path, value) {
     if (trackingDepth === 0) {
       trackAction(`setByPath(${path})`);
     }
     originalSetByPath.call(store, path, value);
   };
-  mutableStore['reset'] = function wrappedReset(next) {
+  mutableStore["reset"] = function wrappedReset(next) {
     if (trackingDepth === 0) {
-      trackAction('reset');
+      trackAction("reset");
     }
     originalReset.call(store, next);
   };
-  mutableStore['batch'] = function wrappedBatch(fn) {
+  mutableStore["batch"] = function wrappedBatch(fn) {
     if (trackingDepth > 0) {
       originalBatch.call(store, fn);
       return;
@@ -298,18 +305,18 @@ function connectDebugLog(store, options) {
     originalBatch.call(store, () => {
       fn();
       inBatch = false;
-      currentAction = `batch(${batchActions.join(', ')})`;
+      currentAction = `batch(${batchActions.join(", ")})`;
       batchActions = [];
     });
   };
   const originals = [];
   function wrapMethods(obj, prefix) {
     for (const key of Object.keys(obj)) {
-      if (prefix === '' && BUILTIN_KEYS$1.has(key)) {
+      if (prefix === "" && BUILTIN_KEYS$1.has(key)) {
         continue;
       }
       const value = obj[key];
-      if (typeof value === 'function') {
+      if (typeof value === "function") {
         const actionName = prefix ? `${prefix}.${key}` : key;
         originals.push({ fn: value, owner: obj, key });
         const original = value;
@@ -342,16 +349,16 @@ function connectDebugLog(store, options) {
           }
           return result;
         };
-      } else if (value !== null && typeof value === 'object' && !Array.isArray(value)) {
+      } else if (value !== null && typeof value === "object" && !Array.isArray(value)) {
         wrapMethods(value, prefix ? `${prefix}.${key}` : key);
       }
     }
   }
-  wrapMethods(mutableStore, '');
+  wrapMethods(mutableStore, "");
   const unsubscribeStore = store.subscribe(() => {
     if (currentAction === void 0) {
       logger?.warn(
-        '⚠️ Untracked store mutation detected — a stale reference to a pre-wrap method was called directly. Please use the store methods exposed by connectDebugLog instead.'
+        "⚠️ Untracked store mutation detected — a stale reference to a pre-wrap method was called directly. Please use the store methods exposed by connectDebugLog instead."
       );
       return;
     }
@@ -370,20 +377,21 @@ function connectDebugLog(store, options) {
       onLog(action, computeDiff(prev, next), durationMs, actionId ?? 0);
     } else {
       if (logger) {
-        const idTag = actionId !== void 0 ? ` #${String(actionId).padStart(4, '0')}` : '';
-        logger.group(`${action}${idTag} (${durationMs.toFixed(2)}ms)`, () =>
-          computeDiff(prev, next)
+        const idTag = actionId !== void 0 ? ` #${String(actionId).padStart(4, "0")}` : "";
+        logger.group(
+          `${action}${idTag} (${durationMs.toFixed(2)}ms)`,
+          () => computeDiff(prev, next)
         );
       }
     }
   });
   return function disconnect() {
     unsubscribeStore();
-    mutableStore['set'] = originalSet;
-    mutableStore['update'] = originalUpdate;
-    mutableStore['setByPath'] = originalSetByPath;
-    mutableStore['batch'] = originalBatch;
-    mutableStore['reset'] = originalReset;
+    mutableStore["set"] = originalSet;
+    mutableStore["update"] = originalUpdate;
+    mutableStore["setByPath"] = originalSetByPath;
+    mutableStore["batch"] = originalBatch;
+    mutableStore["reset"] = originalReset;
     for (const entry of originals) {
       entry.owner[entry.key] = entry.fn;
     }
@@ -416,7 +424,7 @@ function parsePath(path) {
 function getAtPath(obj, segments) {
   let curr = obj;
   for (const seg of segments) {
-    if (isNullish(curr) || typeof curr !== 'object') {
+    if (isNullish(curr) || typeof curr !== "object") {
       return void 0;
     }
     curr = curr[seg];
@@ -426,7 +434,7 @@ function getAtPath(obj, segments) {
 function setAtPath(obj, segments, value) {
   let curr = obj;
   for (let i = 0; i < segments.length - 1; i++) {
-    if (isNullish(curr) || typeof curr !== 'object') {
+    if (isNullish(curr) || typeof curr !== "object") {
       return;
     }
     const seg = segments[i];
@@ -436,7 +444,7 @@ function setAtPath(obj, segments, value) {
     curr = curr[seg];
   }
   const last = segments[segments.length - 1];
-  if (segments.length > 0 && last !== void 0 && !isNullish(curr) && typeof curr === 'object') {
+  if (segments.length > 0 && last !== void 0 && !isNullish(curr) && typeof curr === "object") {
     curr[last] = value;
   }
 }
@@ -452,7 +460,7 @@ function copyOnWritePath(root, segments, value) {
       return root;
     }
     const child = parent[seg];
-    if (isNullish(child) || typeof child !== 'object') {
+    if (isNullish(child) || typeof child !== "object") {
       return root;
     }
     const childCopy = Array.isArray(child) ? [...child] : { ...child };
@@ -495,7 +503,7 @@ function createStoreSubscription(initialSnapshot, options) {
     setSnapshot(nextSnapshot) {
       snapshot = nextSnapshot;
     },
-    notify,
+    notify
   };
 }
 function createStore(initialSnapshot, methods, options) {
@@ -539,7 +547,7 @@ function createStore(initialSnapshot, methods, options) {
     commit(draft);
   }
   function set(next) {
-    const resolved = typeof next === 'function' ? next(sub.getSnapshot()) : next;
+    const resolved = typeof next === "function" ? next(sub.getSnapshot()) : next;
     if (equals(resolved, sub.getSnapshot())) {
       return;
     }
@@ -561,7 +569,7 @@ function createStore(initialSnapshot, methods, options) {
       commit(clone(resetSnapshot));
       return;
     }
-    const resolved = typeof next === 'function' ? next(clone(resetSnapshot)) : next;
+    const resolved = typeof next === "function" ? next(clone(resetSnapshot)) : next;
     resetSnapshot = clone(resolved);
     commit(resolved);
   }
@@ -576,7 +584,7 @@ function createStore(initialSnapshot, methods, options) {
     reset,
     setContext(ctx) {
       contextCell.value = ctx;
-    },
+    }
   };
   const api = {
     get: sub.getSnapshot,
@@ -594,7 +602,7 @@ function createStore(initialSnapshot, methods, options) {
       store.batch(fn);
     },
     reset,
-    getContext,
+    getContext
   };
   const domainMethods = methods(api);
   return Object.assign(store, domainMethods);
@@ -652,7 +660,7 @@ function createArrayMethods(api, arrayPath, defaults, methods) {
           setArray(next);
         }
       }
-    },
+    }
   };
   const arrayApi = { getArray, setArray };
   const domainMethods = methods !== void 0 ? methods(arrayApi) : {};
@@ -709,17 +717,24 @@ function createDerivedStore(sources, derive, options) {
     },
     getSnapshot() {
       return sub.getSnapshot();
-    },
+    }
   };
 }
 
-const BUILTIN_KEYS = ['set', 'update', 'getByPath', 'setByPath', 'batch', 'reset'];
+const BUILTIN_KEYS = [
+  "set",
+  "update",
+  "getByPath",
+  "setByPath",
+  "batch",
+  "reset"
+];
 const NON_DOMAIN_KEYS = /* @__PURE__ */ new Set([
-  'subscribe',
-  'getSnapshot',
-  'setContext',
-  'reset',
-  ...BUILTIN_KEYS,
+  "subscribe",
+  "getSnapshot",
+  "setContext",
+  "reset",
+  ...BUILTIN_KEYS
 ]);
 function createStoreDispatch(store, options) {
   let allowed = null;
@@ -752,7 +767,7 @@ function createStoreDispatch(store, options) {
       throw new Error(`dispatch: action "${action}" is not in the allowed set`);
     }
     const method = store[action];
-    if (typeof method !== 'function') {
+    if (typeof method !== "function") {
       throw new Error(`dispatch: unknown action "${action}"`);
     }
     return method(...args);
@@ -769,7 +784,7 @@ function shallowEqual(a, b) {
   if (Object.is(a, b)) {
     return true;
   }
-  if (typeof a !== 'object' || typeof b !== 'object' || a === null || b === null) {
+  if (typeof a !== "object" || typeof b !== "object" || a === null || b === null) {
     return false;
   }
   const keysA = Object.keys(a);
@@ -806,7 +821,6 @@ function watch(store, selectorOrCallback, callback, options) {
   });
 }
 
-//#region src/use-store.ts
 function identity(x) {
   return x;
 }
@@ -814,11 +828,13 @@ function useStore(store, arg2) {
   return useStoreCore(store, arg2);
 }
 function useStoreCore(store, arg2) {
-  const opts = typeof arg2 === 'function' ? void 0 : arg2;
-  const select = typeof arg2 === 'function' ? arg2 : opts?.select;
+  const opts = typeof arg2 === "function" ? void 0 : arg2;
+  const select = typeof arg2 === "function" ? arg2 : opts?.select;
   const ctx = opts?.context;
   const equals = opts?.equals;
-  if (ctx !== void 0) store.setContext?.(ctx);
+  if (ctx !== void 0) {
+    store.setContext?.(ctx);
+  }
   const sel = select ?? identity;
   const eq = equals ?? Object.is;
   const cache = reactExports.useRef(sel(store.getSnapshot()));
@@ -833,61 +849,60 @@ function useStoreCore(store, arg2) {
   };
   const getSnapshot = () => {
     const next = sel(store.getSnapshot());
-    if (eq(cache.current, next)) return cache.current;
+    if (eq(cache.current, next)) {
+      return cache.current;
+    }
     cache.current = next;
     return cache.current;
   };
   return reactExports.useSyncExternalStore(subscribe, getSnapshot, getSnapshot);
 }
 
-//#region src/create-store-context.tsx
 function createStoreContext(factory, options) {
   const {
-    name = 'StoreContext',
+    name = "StoreContext",
     cleanup = (store) => {
       store.reset();
-    },
+    }
   } = options ?? {};
   const Context = reactExports.createContext(null);
   const Provider = ({ children, initial, context }) => {
     const [store] = reactExports.useState(() => factory(initial));
-    if (context !== void 0) store.setContext(context);
+    if (context !== void 0) {
+      store.setContext(context);
+    }
     reactExports.useEffect(() => {
-      if (cleanup === null) return;
+      if (cleanup === null) {
+        return;
+      }
       return () => {
         cleanup(store);
       };
     }, [store]);
-    return /* @__PURE__ */ jsxRuntimeExports.jsx(Context.Provider, {
-      value: store,
-      children,
-    });
+    return /* @__PURE__ */ jsxRuntimeExports.jsx(Context.Provider, { value: store, children });
   };
   Provider.displayName = `${name}.Provider`;
   const useStoreContext = () => {
     const store = reactExports.useContext(Context);
-    if (store === null)
+    if (store === null) {
       throw new Error(`[${name}] useStoreContext must be called inside <${name}.Provider>.`);
+    }
     return store;
   };
   function useSnapshot(selector, equals) {
-    return useStoreCore(useStoreContext(), {
-      select: selector,
-      equals,
-    });
+    const store = useStoreContext();
+    const opts = { select: selector, equals };
+    return useStoreCore(store, opts);
   }
-  return {
-    Provider,
-    useStoreContext,
-    useSnapshot,
-  };
+  return { Provider, useStoreContext, useSnapshot };
 }
 
-//#region src/use-suspense-store.ts
-var pendingPromises = /* @__PURE__ */ new WeakMap();
+const pendingPromises = /* @__PURE__ */ new WeakMap();
 function getOrCreatePendingPromise(store) {
   const cached = pendingPromises.get(store);
-  if (cached !== void 0) return cached;
+  if (cached !== void 0) {
+    return cached;
+  }
   const { promise, resolve } = Promise.withResolvers();
   const unsubscribe = store.subscribe(() => {
     pendingPromises.delete(store);
@@ -898,26 +913,18 @@ function getOrCreatePendingPromise(store) {
   return promise;
 }
 function useSuspenseStore(store, select, options) {
-  if (options?.context !== void 0) store.setContext?.(options.context);
-  const state = reactExports.useSyncExternalStore(store.subscribe, () =>
-    select(store.getSnapshot())
-  );
-  if (state.status === 'fulfilled') return state.data;
-  if (state.status === 'rejected') throw state.error;
+  if (options?.context !== void 0) {
+    store.setContext?.(options.context);
+  }
+  const state = reactExports.useSyncExternalStore(store.subscribe, () => select(store.getSnapshot()));
+  if (state.status === "fulfilled") {
+    return state.data;
+  }
+  if (state.status === "rejected") {
+    throw state.error;
+  }
   throw getOrCreatePendingPromise(store);
 }
 
-export {
-  createStore as a,
-  createDerivedStore as b,
-  createStoreContext as c,
-  asyncIdle as d,
-  asyncPending as e,
-  asyncFulfilled as f,
-  useSuspenseStore as g,
-  asyncRejected as h,
-  jsxRuntimeExports as j,
-  shallowEqual as s,
-  useStore as u,
-};
-//# sourceMappingURL=index-CHDL1A9q.js.map
+export { createStore as a, createDerivedStore as b, createStoreContext as c, asyncIdle as d, asyncPending as e, asyncFulfilled as f, useSuspenseStore as g, asyncRejected as h, jsxRuntimeExports as j, shallowEqual as s, useStore as u };
+//# sourceMappingURL=index-D-lsrfCD.js.map
