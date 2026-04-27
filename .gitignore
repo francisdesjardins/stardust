@@ -26,10 +26,10 @@ RATING.md
 Thumbs.db
 
 # Playwright
-/playwright-report/
-/blob-report/
-/playwright/.cache/
-/playwright/.auth/
+playwright-report/
+blob-report/
+playwright/.cache/
+playwright/.auth/
 
 # Benchmarks
 benchmarks/results/

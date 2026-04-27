@@ -24,7 +24,9 @@ group('createArrayMethods', () => {
   bench('arrayMethods.add()', function* () {
     const store = createStore({ phones: [] as WithArray['phones'] }, (api) => ({
       phones: createArrayMethods(api, 'phones', PHONE_DEFAULTS),
-      clear() { api.set({ phones: [] }); },
+      clear() {
+        api.set({ phones: [] });
+      },
     }));
     yield () => {
       store.phones.add({ number: '555' });
@@ -35,7 +37,9 @@ group('createArrayMethods', () => {
   bench('arrayMethods.remove()', function* () {
     const store = createStore(structuredClone(ARRAY_INITIAL), (api) => ({
       phones: createArrayMethods(api, 'phones', PHONE_DEFAULTS),
-      reset() { api.set(structuredClone(ARRAY_INITIAL)); },
+      reset() {
+        api.set(structuredClone(ARRAY_INITIAL));
+      },
     }));
     yield () => {
       store.phones.remove(1);
