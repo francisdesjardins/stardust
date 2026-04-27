@@ -28,6 +28,7 @@ export default defineConfig({
       resolve: {
         alias: {
           '@stardust/core': resolve(__dirname, '../core/src/index.ts'),
+          '@stardust/react': resolve(__dirname, './src/index.ts'),
         },
       },
       // Cast required: project uses Vite 8; experimental-ct-core bundles Vite 6 — Plugin types are structurally incompatible.
