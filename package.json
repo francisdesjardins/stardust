@@ -1,0 +1,61 @@
+{
+  "name": "stardust-monorepo",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "workspaces": [
+    "packages/core",
+    "packages/react",
+    "packages/solid",
+    "playground"
+  ],
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "dev": "npm run dev --workspace=playground",
+    "build": "npm run build --workspace=packages/core && npm run build --workspace=packages/react && npm run build --workspace=packages/solid",
+    "build:core": "npm run build --workspace=packages/core",
+    "build:react": "npm run build --workspace=packages/react",
+    "build:solid": "npm run build --workspace=packages/solid",
+    "playground:build": "npm run build --workspace=playground",
+    "playground:build:file": "npm run build:file --workspace=playground",
+    "playground:preview": "npm run preview --workspace=playground",
+    "type-check": "npm run type-check --workspaces --if-present",
+    "lint": "eslint packages/core/src packages/react/src packages/solid/src playground/src eslint.config.js",
+    "lint:fix": "eslint packages/core/src packages/react/src packages/solid/src playground/src eslint.config.js --fix",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "test": "npm run test --workspaces --if-present",
+    "bench": "cross-env NODE_OPTIONS=--expose-gc npx tsx benchmarks/run.ts",
+    "bench:stable": "cross-env NODE_OPTIONS=--expose-gc npx tsx benchmarks/fresh-stable.ts",
+    "ncu": "npm-check-updates"
+  },
+  "overrides": {
+    "eslint-plugin-react-hooks": {
+      "eslint": "$eslint"
+    },
+    "eslint-plugin-react-refresh": {
+      "eslint": "$eslint"
+    }
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@total-typescript/ts-reset": "0.6.1",
+    "@types/eslint": "^9.6.1",
+    "@types/node": "^25.6.0",
+    "cross-env": "10.1.0",
+    "eslint": "^10.2.1",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-prettier": "5.5.5",
+    "eslint-plugin-react-hooks": "^7.1.1",
+    "eslint-plugin-react-refresh": "^0.5.2",
+    "globals": "^17.5.0",
+    "mitata": "1.0.34",
+    "npm-check-updates": "21.0.3",
+    "prettier": "^3.8.3",
+    "rimraf": "^6.1.3",
+    "typescript": "6.0.3",
+    "typescript-eslint": "^8.59.0"
+  }
+}

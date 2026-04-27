@@ -1,0 +1,20 @@
+{
+  "extends": "../tsconfig.json",
+  "compilerOptions": {
+    "jsx": "react-jsx",
+    "outDir": "./dist",
+    "rootDir": "..",
+    "paths": {
+      "@/*": ["./src/*"],
+      "@stardust/core": ["../packages/core/src/index.ts"],
+      "@stardust/core/*": ["../packages/core/src/*"],
+      "@stardust/react": ["../packages/react/src/index.ts"],
+      "@stardust/react/*": ["../packages/react/src/*"],
+      "@stardust/solid": ["../packages/solid/src/index.ts"],
+      "@stardust/solid/*": ["../packages/solid/src/*"]
+    }
+  },
+  "files": ["../reset.d.ts"],
+  "include": ["src/**/*", "vite.config.ts", "vite-plugin-bench.ts"],
+  "exclude": ["node_modules", "dist"]
+}

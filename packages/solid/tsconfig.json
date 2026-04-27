@@ -1,0 +1,18 @@
+{
+  "extends": "../../tsconfig.json",
+  "compilerOptions": {
+    "jsx": "preserve",
+    "jsxImportSource": "solid-js",
+    "outDir": "./dist",
+    "rootDir": "..",
+    "paths": {
+      "@stardust/core": ["../core/src/index.ts"],
+      "@stardust/core/*": ["../core/src/*"],
+      "@stardust/solid": ["./src/index.ts"],
+      "@stardust/solid/*": ["./src/*"]
+    }
+  },
+  "files": ["../../reset.d.ts"],
+  "include": ["src/**/*", "../core/src/**/*"],
+  "exclude": ["node_modules", "dist", "../core/src/__tests__"]
+}

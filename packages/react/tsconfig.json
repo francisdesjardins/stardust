@@ -1,0 +1,17 @@
+{
+  "extends": "../../tsconfig.json",
+  "compilerOptions": {
+    "jsx": "react-jsx",
+    "outDir": "./dist",
+    "rootDir": "..",
+    "paths": {
+      "@stardust/core": ["../core/src/index.ts"],
+      "@stardust/core/*": ["../core/src/*"],
+      "@stardust/react": ["./src/index.ts"],
+      "@stardust/react/*": ["./src/*"]
+    }
+  },
+  "files": ["../../reset.d.ts"],
+  "include": ["src/**/*", "../core/src/**/*"],
+  "exclude": ["node_modules", "dist", "../core/src/__tests__"]
+}

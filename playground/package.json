@@ -1,0 +1,38 @@
+{
+  "name": "@stardust/playground",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite .",
+    "build": "vite build .",
+    "build:file": "cross-env VITE_HASH_ROUTER=true vite build .",
+    "preview": "vite preview .",
+    "type-check": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@stardust/core": "*",
+    "@stardust/react": "*",
+    "@stardust/solid": "*"
+  },
+  "devDependencies": {
+    "@emotion/react": "^11.14.0",
+    "@emotion/styled": "^11.14.1",
+    "@mui/icons-material": "^9.0.0",
+    "@mui/material": "^9.0.0",
+    "@rolldown/plugin-babel": "0.2.3",
+    "@tanstack/react-router": "1.168.24",
+    "@types/react": "^19.2.14",
+    "@types/react-dom": "^19.2.3",
+    "@types/react-syntax-highlighter": "^15.5.13",
+    "@vitejs/plugin-react": "^6.0.1",
+    "babel-plugin-react-compiler": "1.0.0",
+    "cross-env": "10.1.0",
+    "react": "^19.2.5",
+    "react-dom": "^19.2.5",
+    "react-syntax-highlighter": "^16.1.1",
+    "solid-js": "1.9.12",
+    "vite": "^8.0.10",
+    "vite-plugin-solid": "^2.11.12"
+  }
+}
