@@ -28,8 +28,8 @@ Thumbs.db
 # Playwright
 playwright-report/
 blob-report/
-playwright/.cache/
-playwright/.auth/
+**/playwright/.cache/
+**/playwright/.auth/
 
 # Benchmarks
 benchmarks/results/
