@@ -28,8 +28,8 @@
     "format:check": "prettier --check .",
     "test": "npm run test --workspaces --if-present",
     "bench": "cross-env NODE_OPTIONS=--expose-gc npx tsx benchmarks/run.ts",
-    "bench:stable": "cross-env NODE_OPTIONS=--expose-gc npx tsx benchmarks/fresh-stable.ts",
-    "ncu": "npm-check-updates"
+    "ncu": "npm-check-updates --workspaces",
+    "ncu:update": "npm-check-updates --workspaces -u"
   },
   "overrides": {
     "eslint-plugin-react-hooks": {
@@ -52,7 +52,7 @@
     "eslint-plugin-react-refresh": "^0.5.2",
     "globals": "^17.5.0",
     "mitata": "1.0.34",
-    "npm-check-updates": "21.0.3",
+    "npm-check-updates": "22.0.1",
     "prettier": "^3.8.3",
     "rimraf": "^6.1.3",
     "typescript": "6.0.3",

@@ -16,6 +16,8 @@ npm test                                 # All tests (core unit + react CT + sol
 npm run test:unit                        # Unit tests only (core + solid)
 npm run bench                            # Store benchmarks (1 round, quick dev check)
 npm run bench:stable                     # Fresh baseline (clears history, 10 × 5-round runs)
+npm run ncu                              # Check for dependency updates (dry run)
+npm run ncu:update                       # Update all workspace package.json files to latest
 ```
 
 ### Per-package test commands
@@ -38,11 +40,11 @@ Test files live in colocated `__tests__/` folders. Every change to `src/` must i
 
 ## Packages
 
-| Package           | Entry point    | Purpose                                                           |
-| ----------------- | -------------- | ----------------------------------------------------------------- |
-| `@stardust/core`  | `src/index.ts` | Store primitives — zero React dependency                          |
-| `@stardust/react` | `src/index.ts` | React hooks: `useStore`, `useSuspenseStore`, `createStoreContext` |
-| `@stardust/solid` | `src/index.ts` | SolidJS hooks: `useStore`, `useSuspenseStore` (experimental)      |
+| Package           | Entry point    | Purpose                                                                                             |
+| ----------------- | -------------- | --------------------------------------------------------------------------------------------------- |
+| `@stardust/core`  | `src/index.ts` | Store primitives — zero React dependency; includes `safeAwait`, `createMutex`, `createSingleFlight` |
+| `@stardust/react` | `src/index.ts` | React hooks: `useStore`, `useSuspenseStore`, `createStoreContext`                                   |
+| `@stardust/solid` | `src/index.ts` | SolidJS hooks: `useStore`, `useSuspenseStore` (experimental)                                        |
 
 ## Code Style
 

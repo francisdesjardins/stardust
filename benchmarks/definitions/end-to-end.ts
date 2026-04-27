@@ -1,23 +1,13 @@
 /**
  * End-to-end: store update + listener notification.
  *
- * Measures the full cost of a state change as a React component would
- * experience it: mutation → clone → snapshot replacement → subscriber
- * callbacks. This is the "real-world" path — every other benchmark
- * isolates a single layer.
- *
- * Scaling axis: number of listeners (1 → 10) and write method
- * (update() vs setByPath). setByPath + listeners combines structural
- * sharing, path parsing, and fan-out in a single call.
- *
- * N = 100,000 for simple update + few listeners,
- * N_SMALL = 10,000 for setByPath + 10 listeners (clone + path + fan-out).
+ * Full cost as a React component would experience it: mutation → clone →
+ * snapshot replacement → subscriber callbacks. Scaling axis: listener count
+ * and write method (update() vs setByPath).
  */
 
 import { createStore } from '@stardust/core';
-import type { Bench } from './types.ts';
-
-// ── Initial values ──────────────────────────────────────────────────────────
+import { bench, group } from '../mitata.ts';
 
 type Flat = { count: number; label: string; active: boolean };
 type Nested = {
@@ -31,11 +21,8 @@ const NESTED_INITIAL: Nested = {
   scores: [10, 20, 30, 40, 50],
 };
 
-const N = 100_000;
-const N_SMALL = 10_000;
-
-export function register(bench: Bench): void {
-  {
+group('End-to-end: store + listeners', () => {
+  bench('update() + 1 listener', function* () {
     const store = createStore({ ...FLAT_INITIAL }, ({ update }) => ({
       increment() {
         update((d) => {
@@ -44,12 +31,10 @@ export function register(bench: Bench): void {
       },
     }));
     store.subscribe(() => {});
-    bench('End-to-end: store + listeners', 'update() + 1 listener', N, () => {
-      store.increment();
-    });
-  }
+    yield () => store.increment();
+  });
 
-  {
+  bench('update() + 10 listeners', function* () {
     const store = createStore({ ...FLAT_INITIAL }, ({ update }) => ({
       increment() {
         update((d) => {
@@ -57,21 +42,13 @@ export function register(bench: Bench): void {
         });
       },
     }));
-    for (let i = 0; i < 10; i++) {
-      store.subscribe(() => {});
-    }
-    bench('End-to-end: store + listeners', 'update() + 10 listeners', N, () => {
-      store.increment();
-    });
-  }
+    for (let i = 0; i < 10; i++) store.subscribe(() => {});
+    yield () => store.increment();
+  });
 
-  {
+  bench('setByPath + 10 listeners nested', function* () {
     const store = createStore(structuredClone(NESTED_INITIAL), () => ({}));
-    for (let i = 0; i < 10; i++) {
-      store.subscribe(() => {});
-    }
-    bench('End-to-end: store + listeners', 'setByPath + 10 listeners nested', N_SMALL, () => {
-      store.setByPath('user.address.city', 'Vancouver');
-    });
-  }
-}
+    for (let i = 0; i < 10; i++) store.subscribe(() => {});
+    yield () => store.setByPath('user.address.city', 'Vancouver');
+  });
+});

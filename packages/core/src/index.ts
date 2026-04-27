@@ -35,9 +35,18 @@ export type {
   StoreDispatch,
 } from './create-store-dispatch';
 
+export { createMutex, safeMutex } from './mutex';
+export type { Mutex } from './mutex';
+
 export { produce } from './produce';
 
+export { safeAwait } from './safe-await';
+export type { SafeAwaitResult } from './safe-await';
+
 export { shallowEqual } from './shallow-equal';
+
+export { createSingleFlight, safeSingleFlight } from './single-flight';
+export type { SingleFlight } from './single-flight';
 
 export { watch } from './watch';
 export type { WatchOptions } from './watch';

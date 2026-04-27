@@ -1,4 +1,3 @@
-import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
 import CodeIcon from '@mui/icons-material/Code';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import ScienceIcon from '@mui/icons-material/Science';
@@ -19,7 +18,6 @@ const navItems = [
   { path: '/getting-started', label: 'Getting Started', icon: PlayArrowIcon },
   { path: '/react', label: 'React', icon: CodeIcon },
   { path: '/solid', label: 'SolidJS', icon: ScienceIcon },
-  { path: '/lab', label: 'Lab', icon: AutoAwesomeIcon },
 ] as const;
 
 type SidebarProps = {

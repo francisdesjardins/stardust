@@ -66,6 +66,9 @@ const slice = useStore(counter, {
 - **Dispatch wrapper**: [`createStoreDispatch`](README.md#createstoredispatchstore-options) → restrict what methods can be called
 - **Debug logging**: [`connectDebugLog`](README.md#connectdebuglogstore-options) → console observer, no extension needed
 - **Async state shape**: [`AsyncState<T>` / `runAsync`](README.md#async-state) → standard `idle | pending | fulfilled | rejected` union for store snapshots
+- **Safe async**: [`safeAwait`](README.md#safeawaitpromise) → Go-style `[err, result]` tuple, no try/catch
+- **Deduplicate concurrent calls**: [`createSingleFlight`](README.md#createsinglflightcreatesingleflight--safesingleflight) → N callers share one execution
+- **Serialize concurrent calls**: [`createMutex`](README.md#createmutex--safemutex) → N calls run N times, one at a time
 
 ## Need more?
 

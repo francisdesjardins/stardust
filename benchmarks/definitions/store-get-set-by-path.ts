@@ -1,31 +1,13 @@
 /**
  * Store — getByPath() / setByPath() — string-path accessors on a live store.
  *
- * These combine parsePath + getAtPath/setAtPath with full store machinery
- * (subscription emit, snapshot replacement). Compare with:
- * - "Path utilities" for raw parsePath/getAtPath/setAtPath without store overhead
- * - "createStore — get / set" for whole-state replacement (no path parsing)
- * - "copyOnWritePath" for structural-sharing writes (no subscription emit)
- *
- * getByPath is read-only — no clone, no emit — so it should be very fast.
- * setByPath clones via copyOnWritePath then emits to subscribers, so it
- * carries the cost of both structural sharing and notification.
- *
- * N = 100,000 for reads, N_SMALL = 10,000 for writes (clone + emit per call).
- *
- * Stability notes (observed CV from latest stable run):
- * - getByPath (all paths): CV ~5–8% — stable; read path has no allocation
- *   and no emission, so GC and JIT variance are minimal.
- * - setByPath (all paths): CV ~19–20% — GC pressure from copyOnWritePath
- *   object allocation per call. Min is roughly half of max across rounds.
- *   Median is reliable; compare medians across runs rather than raw ops/s.
+ * Combines parsePath + getAtPath/setAtPath with full store machinery.
+ * Compare with "Path utilities" (no store overhead) and "copyOnWritePath"
+ * (no subscription emit).
  */
 
 import { createStore } from '@stardust/core';
-import { sink } from '../runner.ts';
-import type { Bench } from './types.ts';
-
-// ── Initial values ──────────────────────────────────────────────────────────
+import { bench, group } from '../mitata.ts';
 
 type Flat = { count: number; label: string; active: boolean };
 type Nested = {
@@ -49,49 +31,34 @@ const ARRAY_INITIAL: WithArray = {
   ],
 };
 
-const N = 100_000;
-const N_SMALL = 10_000;
-
-export function register(bench: Bench): void {
-  {
+group('Store — getByPath / setByPath', () => {
+  bench('getByPath("count")', function* () {
     const store = createStore({ ...FLAT_INITIAL }, () => ({}));
-    bench('Store — getByPath / setByPath', 'getByPath("count")', N, () => {
-      sink(store.getByPath('count'));
-    });
-  }
+    yield () => store.getByPath('count');
+  });
 
-  {
+  bench('getByPath("user.address.city")', function* () {
     const store = createStore(structuredClone(NESTED_INITIAL), () => ({}));
-    bench('Store — getByPath / setByPath', 'getByPath("user.address.city")', N, () => {
-      sink(store.getByPath('user.address.city'));
-    });
-  }
+    yield () => store.getByPath('user.address.city');
+  });
 
-  {
+  bench('getByPath("phones[0].label")', function* () {
     const store = createStore(structuredClone(ARRAY_INITIAL), () => ({}));
-    bench('Store — getByPath / setByPath', 'getByPath("phones[0].label")', N, () => {
-      sink(store.getByPath('phones[0].label'));
-    });
-  }
+    yield () => store.getByPath('phones[0].label');
+  });
 
-  {
+  bench('setByPath("count", 42)', function* () {
     const store = createStore({ ...FLAT_INITIAL }, () => ({}));
-    bench('Store — getByPath / setByPath', 'setByPath("count", 42)', N_SMALL, () => {
-      store.setByPath('count', 42);
-    });
-  }
+    yield () => store.setByPath('count', 42);
+  });
 
-  {
+  bench('setByPath("user.address.city")', function* () {
     const store = createStore(structuredClone(NESTED_INITIAL), () => ({}));
-    bench('Store — getByPath / setByPath', 'setByPath("user.address.city")', N_SMALL, () => {
-      store.setByPath('user.address.city', 'Vancouver');
-    });
-  }
+    yield () => store.setByPath('user.address.city', 'Vancouver');
+  });
 
-  {
+  bench('setByPath("phones[0].label")', function* () {
     const store = createStore(structuredClone(ARRAY_INITIAL), () => ({}));
-    bench('Store — getByPath / setByPath', 'setByPath("phones[0].label")', N_SMALL, () => {
-      store.setByPath('phones[0].label', 'work');
-    });
-  }
-}
+    yield () => store.setByPath('phones[0].label', 'work');
+  });
+});
