@@ -1,19 +1,13 @@
 /**
  * createStore — update() uses structuredClone + mutate internally.
  *
- * update() clones the entire state, lets you mutate the clone, then
- * replaces the store snapshot. This is the ergonomic but slower path —
- * compare with "structuredClone baseline" to see the clone overhead,
- * and "createStore — get / set" for the zero-clone alternative.
- *
- * N = 100,000 iterations for fast ops, N_SMALL = 10,000 for array
- * operations that modify state each iteration.
+ * The ergonomic but slower path — compare with "structuredClone baseline"
+ * to see the clone overhead, and "createStore — get / set" for the
+ * zero-clone alternative.
  */
 
 import { createStore } from '@stardust/core';
-import type { Bench } from './types.ts';
-
-// ── Initial values ──────────────────────────────────────────────────────────
+import { bench, group } from '../mitata.ts';
 
 type Flat = { count: number; label: string; active: boolean };
 type Nested = {
@@ -27,11 +21,8 @@ const NESTED_INITIAL: Nested = {
   scores: [10, 20, 30, 40, 50],
 };
 
-const N = 100_000;
-const N_SMALL = 10_000;
-
-export function register(bench: Bench): void {
-  {
+group('createStore — update', () => {
+  bench('update() single field flat', function* () {
     const store = createStore({ ...FLAT_INITIAL }, ({ update }) => ({
       increment() {
         update((d) => {
@@ -39,12 +30,10 @@ export function register(bench: Bench): void {
         });
       },
     }));
-    bench('createStore — update', 'update() single field flat', N, () => {
-      store.increment();
-    });
-  }
+    yield () => store.increment();
+  });
 
-  {
+  bench('update() multi-field flat', function* () {
     const store = createStore({ ...FLAT_INITIAL }, ({ update }) => ({
       mutateAll() {
         update((d) => {
@@ -54,12 +43,10 @@ export function register(bench: Bench): void {
         });
       },
     }));
-    bench('createStore — update', 'update() multi-field flat', N, () => {
-      store.mutateAll();
-    });
-  }
+    yield () => store.mutateAll();
+  });
 
-  {
+  bench('update() deeply nested', function* () {
     const store = createStore(structuredClone(NESTED_INITIAL), ({ update }) => ({
       changeCity() {
         update((d) => {
@@ -67,12 +54,10 @@ export function register(bench: Bench): void {
         });
       },
     }));
-    bench('createStore — update', 'update() deeply nested', N, () => {
-      store.changeCity();
-    });
-  }
+    yield () => store.changeCity();
+  });
 
-  {
+  bench('update() array push (reset each)', function* () {
     const store = createStore({ items: [1, 2, 3] }, ({ update }) => ({
       push() {
         update((d) => {
@@ -85,9 +70,9 @@ export function register(bench: Bench): void {
         });
       },
     }));
-    bench('createStore — update', 'update() array push (reset each)', N_SMALL, () => {
+    yield () => {
       store.push();
       store.reset();
-    });
-  }
-}
+    };
+  });
+});
