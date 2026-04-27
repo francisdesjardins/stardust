@@ -9,7 +9,7 @@ test('serializes concurrent calls — second starts after first settles', async 
     await new Promise((res) => setTimeout(res, 20));
     order.push(1);
   });
-  const second = mutex(async () => {
+  const second = mutex(() => {
     order.push(2);
   });
 
@@ -43,10 +43,10 @@ test('error in one task does not stall subsequent tasks', async () => {
   const mutex = createMutex();
   const results: string[] = [];
 
-  const first = mutex(async () => {
+  const first = mutex(() => {
     throw new Error('fail');
   });
-  const second = mutex(async () => {
+  const second = mutex(() => {
     results.push('second ran');
   });
 
@@ -87,7 +87,7 @@ test('eager form: already-running promise is awaited in queue order', async () =
     await new Promise((res) => setTimeout(res, 20));
     order.push(1);
   });
-  const second = mutex(async () => {
+  const second = mutex(() => {
     order.push(2);
   });
 
@@ -104,7 +104,7 @@ test('safeMutex singleton serializes calls', async () => {
     await new Promise((res) => setTimeout(res, 10));
     order.push(1);
   });
-  const second = safeMutex(async () => {
+  const second = safeMutex(() => {
     order.push(2);
   });
 
@@ -118,10 +118,10 @@ test('different mutexes are independent gates', async () => {
   const order: string[] = [];
 
   await Promise.all([
-    mutexA(async () => {
+    mutexA(() => {
       order.push('A');
     }),
-    mutexB(async () => {
+    mutexB(() => {
       order.push('B');
     }),
   ]);

@@ -47,13 +47,11 @@ test('error propagates to all concurrent callers', async () => {
 
   const results = await Promise.allSettled([flight(task), flight(task)]);
 
-  expect(results[0]?.status).toBe('rejected');
-  expect(results[1]?.status).toBe('rejected');
-  if (results[0]?.status === 'rejected') {
-    expect(results[0].reason).toBe(err);
-  }
-  if (results[1]?.status === 'rejected') {
-    expect(results[1].reason).toBe(err);
+  for (const r of results) {
+    expect(r.status).toBe('rejected');
+    if (r.status === 'rejected') {
+      expect(r.reason).toBe(err);
+    }
   }
 });
 
