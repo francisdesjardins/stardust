@@ -44,7 +44,7 @@ group('createDerivedStore', () => {
     let i = 0;
     const stores = [a, b, c];
     yield () => {
-      stores[i % 3]!.tick();
+      stores[i % 3].tick();
       i++;
       return derived.getSnapshot();
     };
@@ -95,7 +95,9 @@ group('createDerivedStore', () => {
       },
     }));
     const derived = createDerivedStore([counter], (c) => c.count * 2);
-    for (let i = 0; i < 10; i++) derived.subscribe(() => {});
+    for (let i = 0; i < 10; i++) {
+      derived.subscribe(() => {});
+    }
     yield () => {
       counter.tick();
       return derived.getSnapshot();
@@ -109,7 +111,9 @@ group('createDerivedStore', () => {
       },
     }));
     const derived = createDerivedStore([counter], (c) => c.count * 2);
-    for (let i = 0; i < 100; i++) derived.subscribe(() => {});
+    for (let i = 0; i < 100; i++) {
+      derived.subscribe(() => {});
+    }
     yield () => {
       counter.tick();
       return derived.getSnapshot();
@@ -123,7 +127,9 @@ group('createDerivedStore', () => {
       },
     }));
     const derived = createDerivedStore([counter], (c) => c.count * 2);
-    for (let i = 0; i < 1_000; i++) derived.subscribe(() => {});
+    for (let i = 0; i < 1_000; i++) {
+      derived.subscribe(() => {});
+    }
     yield () => {
       counter.tick();
       return derived.getSnapshot();

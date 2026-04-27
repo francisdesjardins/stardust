@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+#### `@stardust/react`
+
+- `createStoreContext()` — `cleanup` option renamed to `onUnmount`; default changed from `store.reset()` to `null`. The previous default called `store.reset()` on the public store object, which resolves to any user-defined domain method named `reset` (via `Object.assign` in `createStore`) rather than the built-in baseline restore. In React StrictMode's double-mount cycle the old default fired between mount cycles, silently clobbering the store's initial value. The store is now garbage-collected on true unmount with no automatic teardown; pass `onUnmount` explicitly to handle non-GC resources (timers, sockets).
+
 ### Added
 
 #### `@stardust/core`

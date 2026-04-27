@@ -62,7 +62,7 @@ const slice = useStore(counter, {
 - **Derived state**: [`createDerivedStore`](README.md#createderivedstoresources-derive-options) → computed store that updates when sources change
 - **Watch outside React**: [`watch`](README.md#watchstore-selector-callback-options) → `(next, prev)` callback, unsubscribe returned, zero React dep
 - **Context injection**: Pass a context object to store methods; no singletons
-- **React context boundary**: [`createStoreContext`](README.md#createstorestorecontextfactory-options) → isolated per-`Provider` store instances, resets on unmount
+- **React context boundary**: [`createStoreContext`](README.md#createstorestorecontextfactory-options) → isolated per-`Provider` store instances; optional `onUnmount` hook for explicit teardown
 - **Dispatch wrapper**: [`createStoreDispatch`](README.md#createstoredispatchstore-options) → restrict what methods can be called
 - **Debug logging**: [`connectDebugLog`](README.md#connectdebuglogstore-options) → console observer, no extension needed
 - **Async state shape**: [`AsyncState<T>` / `runAsync`](README.md#async-state) → standard `idle | pending | fulfilled | rejected` union for store snapshots
