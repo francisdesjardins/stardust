@@ -1,6 +1,7 @@
 import { expect, test } from '@playwright/experimental-ct-react';
 import { CounterContextHarness } from './create-store-context/counter.story';
 import { PricingContextHarness } from './create-store-context/context-injection.story';
+import { DomainResetHarness } from './create-store-context/domain-reset.story';
 import { EqualsContextHarness } from './create-store-context/equals.story';
 import { CounterWithInitialHarness } from './create-store-context/initial.story';
 import { TwoProvidersHarness } from './create-store-context/two-providers.story';
@@ -56,6 +57,24 @@ test.describe('createStoreContext', () => {
     await component.getByTestId('inc-a').click();
     await expect(component.getByTestId('count-a')).toHaveText('1');
     await expect(component.getByTestId('count-b')).toHaveText('0');
+  });
+
+  // ── Domain reset does not clobber initial value (StrictMode regression) ──
+
+  test('user-defined reset domain method does not fire on mount — initial value preserved', async ({
+    mount,
+  }) => {
+    // Regression: the old default onUnmount called store.reset() which resolved to the
+    // user's domain reset() (count → 0) during StrictMode's onUnmount pass between
+    // double-mount cycles. Default onUnmount is now null so this should stay at 10.
+    const component = await mount(<DomainResetHarness />);
+    await expect(component.getByTestId('count')).toHaveText('10');
+  });
+
+  test('user-defined reset domain method still callable via button', async ({ mount }) => {
+    const component = await mount(<DomainResetHarness />);
+    await component.getByRole('button', { name: 'Reset' }).click();
+    await expect(component.getByTestId('count')).toHaveText('0');
   });
 
   // ── useSnapshot with equals ─────────────────────────────────────────────

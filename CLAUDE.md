@@ -88,7 +88,7 @@ All mutations short-circuit notification when `equals(prev, next)` returns `true
 - The selected value is cached in a `useRef`. The `subscribe` wrapper checks equality before calling the listener; `getSnapshot` returns the cached reference when data is unchanged.
 - Context is injected via `setContext()` before the `useSyncExternalStore` subscribe call, so store methods receive it synchronously from the first render.
 
-`createStoreContext()` wraps a factory in React Context. Each `Provider` mount creates a fresh store instance (via `useState` lazy initializer) and destroys it on unmount.
+`createStoreContext()` wraps a factory in React Context. Each `Provider` mount creates a fresh store instance (via `useState` lazy initializer); the store is garbage-collected on unmount. An optional `onUnmount` hook handles explicit teardown of non-GC resources (timers, sockets). Default is `null` — do not pass `store.reset()` here as it resolves to any user-defined domain method of that name, not the built-in baseline restore.
 
 `useSuspenseStore()` implements the React Suspense protocol: throws a `Promise` while idle/pending, throws an `Error` when rejected, returns `T` when fulfilled. A `WeakMap` caches pending promises to avoid creating a new one per render.
 

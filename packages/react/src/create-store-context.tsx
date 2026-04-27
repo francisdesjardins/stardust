@@ -30,10 +30,14 @@ export type CreateStoreContextOptions<
   readonly name?: string | undefined;
   /**
    * Called when the Provider unmounts.
-   * Defaults to `store.reset()`.
-   * Pass `null` to opt out of cleanup entirely.
+   * Defaults to `null` (no-op) — the store is garbage-collected with the Provider.
+   * Pass a function to run explicit teardown (e.g. cancel timers, reset state).
+   *
+   * Avoid `store.reset()` here: if a user-defined domain method named `reset` exists
+   * it will shadow the built-in baseline restore and produce unexpected behavior in
+   * React StrictMode's double-mount cycle.
    */
-  readonly cleanup?: ((store: Store<TSnapshot, TMethods, TContext>) => void) | null | undefined;
+  readonly onUnmount?: ((store: Store<TSnapshot, TMethods, TContext>) => void) | null | undefined;
 };
 
 export type StoreContextResult<
@@ -79,7 +83,7 @@ export type StoreContextResult<
  *
  * @param factory   Called once per Provider mount. Receives `initial` props
  *                  (omit the prop when `TInitial = void`).
- * @param options   Optional name (DevTools) and cleanup override.
+ * @param options   Optional name (DevTools) and `onUnmount` teardown hook.
  *
  * @example
  * ```tsx
@@ -124,12 +128,7 @@ function createStoreContext<
   factory: (initial: TInitial) => Store<TSnapshot, TMethods, TContext>,
   options?: CreateStoreContextOptions<TSnapshot, TMethods, TContext>
 ): StoreContextResult<TSnapshot, TMethods, TContext, TInitial> {
-  const {
-    name = 'StoreContext',
-    cleanup = (store: Store<TSnapshot, TMethods, TContext>) => {
-      store.reset();
-    },
-  } = options ?? {};
+  const { name = 'StoreContext', onUnmount = null } = options ?? {};
 
   type S = Store<TSnapshot, TMethods, TContext>;
 
@@ -149,11 +148,11 @@ function createStoreContext<
 
     // Cleanup on unmount. store is stable so this effect runs exactly once.
     useEffect(() => {
-      if (cleanup === null) {
+      if (onUnmount === null) {
         return;
       }
       return () => {
-        cleanup(store);
+        onUnmount(store);
       };
     }, [store]);
 

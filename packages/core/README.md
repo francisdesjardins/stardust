@@ -426,7 +426,7 @@ By default, only domain methods are dispatchable. Built-in operations (`set`, `u
 
 ### `createStoreContext(factory, options?)`
 
-Binds a Stardust store to a React context. Each `Provider` mount creates its own isolated store instance and resets it on unmount. Imported from `@stardust/react`.
+Binds a Stardust store to a React context. Each `Provider` mount creates its own isolated store instance; the store is garbage-collected on unmount. An optional `onUnmount` hook handles explicit teardown (e.g. cancel timers, close sockets). Imported from `@stardust/react`.
 
 ```ts
 import { createStoreContext } from '@stardust/react';
