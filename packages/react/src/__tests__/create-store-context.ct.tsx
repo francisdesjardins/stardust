@@ -4,6 +4,7 @@ import { PricingContextHarness } from './create-store-context/context-injection.
 import { DomainResetHarness } from './create-store-context/domain-reset.story';
 import { EqualsContextHarness } from './create-store-context/equals.story';
 import { CounterWithInitialHarness } from './create-store-context/initial.story';
+import { SelectorStoreArgContextHarness } from './create-store-context/selector-store-arg.story';
 import { TwoProvidersHarness } from './create-store-context/two-providers.story';
 
 test.describe('createStoreContext', () => {
@@ -75,6 +76,23 @@ test.describe('createStoreContext', () => {
     const component = await mount(<DomainResetHarness />);
     await component.getByRole('button', { name: 'Reset' }).click();
     await expect(component.getByTestId('count')).toHaveText('0');
+  });
+
+  // ── useSnapshot with store arg ──────────────────────────────────────────
+
+  test('useSnapshot selector accesses domain method via store second argument', async ({
+    mount,
+  }) => {
+    const component = await mount(<SelectorStoreArgContextHarness />);
+    // basePrice=100, multiplier=1.2 → total=120
+    await expect(component.getByTestId('total')).toHaveText('120');
+  });
+
+  test('useSnapshot re-runs domain method when state changes', async ({ mount }) => {
+    const component = await mount(<SelectorStoreArgContextHarness />);
+    await component.getByRole('button', { name: 'Set 200' }).click();
+    // basePrice=200, multiplier=1.2 → total=240
+    await expect(component.getByTestId('total')).toHaveText('240');
   });
 
   // ── useSnapshot with equals ─────────────────────────────────────────────

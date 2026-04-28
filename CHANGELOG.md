@@ -30,13 +30,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 #### `@stardust/react`
 
 - `useStore()` — `useSyncExternalStore`-backed hook; tear-free, Concurrent Mode safe, supports optional selector and custom equality
+  - Selector functions now receive the full store as a second argument `(snapshot, store) => ...` — domain methods are accessible without closing over the store variable, particularly useful with `createStoreContext`
 - `useSuspenseStore()` — React Suspense protocol hook; throws `Promise` while pending, throws `Error` on rejection, returns `T` on fulfillment
 - `createStoreContext()` — React Context factory; each `Provider` mount creates an isolated store instance via lazy `useState` initializer
+  - `useSnapshot` selector now also receives the store as a second argument `(snapshot, store) => ...`
 - React Compiler (`babel-plugin-react-compiler` target `'19'`) applied at build time — no manual `useMemo` / `useCallback` / `React.memo` required
 
 #### `@stardust/solid`
 
 - `useStore()` — `createSignal`-backed reactive hook with `onCleanup` teardown
+  - Selector functions now receive the full store as a second argument `(snapshot, store) => ...`, consistent with the React adapter
 - `useSuspenseStore()` — `createResource`-driven Suspense hook; maps async states to SolidJS resource lifecycle
 
 #### `playground`

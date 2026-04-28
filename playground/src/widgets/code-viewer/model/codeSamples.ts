@@ -11,6 +11,7 @@ import derivedStoreSrc from '@/pages/getting-started/examples/derived-store.tsx?
 import asyncStateSrc from '@/pages/getting-started/examples/async-state.tsx?raw';
 import watchSrc from '@/pages/getting-started/examples/watch.tsx?raw';
 import useStoreSrc from '@/pages/react/examples/use-store.tsx?raw';
+import useStoreSelectorSrc from '@/pages/react/examples/use-store-selector.tsx?raw';
 import useSuspenseStoreSrc from '@/pages/react/examples/use-suspense-store.tsx?raw';
 import createStoreContextSrc from '@/pages/react/examples/create-store-context.tsx?raw';
 import solidCounterSrc from '@/pages/solid/examples/solid-counter.solid.tsx?raw';
@@ -26,6 +27,7 @@ export const codeSamples: Record<string, string> = {
 
   // React
   'use-store': useStoreSrc,
+  'use-store-selector': useStoreSelectorSrc,
   'use-suspense-store': useSuspenseStoreSrc,
   'create-store-context': createStoreContextSrc,
 

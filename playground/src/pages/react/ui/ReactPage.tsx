@@ -4,6 +4,7 @@ import { PageLayout } from '@/shared/ui/PageLayout/PageLayout';
 import { CreateStoreContextExample } from '../examples/create-store-context';
 import { UseSuspenseStoreExample } from '../examples/use-suspense-store';
 import { UseStoreExample } from '../examples/use-store';
+import { UseStoreSelectorExample } from '../examples/use-store-selector';
 
 export const ReactPage = () => (
   <PageLayout
@@ -18,6 +19,15 @@ export const ReactPage = () => (
           codeKey="use-store"
         >
           <UseStoreExample />
+        </ExampleCard>
+      </Grid>
+      <Grid size={{ xs: 12, md: 6 }}>
+        <ExampleCard
+          title="useStore — selector with domain methods"
+          description="Selector receives the store as a second argument, giving access to domain methods without closing over the store variable."
+          codeKey="use-store-selector"
+        >
+          <UseStoreSelectorExample />
         </ExampleCard>
       </Grid>
       <Grid size={{ xs: 12, md: 6 }}>

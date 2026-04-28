@@ -9,10 +9,8 @@ type StoreContractWithOptionalBind<TSnapshot> = StoreContract<TSnapshot> & {
   setContext?: (ctx: unknown) => void;
 };
 
-/** @internal */
-type ContextStoreContract<TSnapshot, TContext> = StoreContract<TSnapshot> & {
-  readonly setContext: (ctx: UnwrapContext<TContext>) => void;
-};
+/** Extracts the snapshot type from a StoreContract without requiring TSnapshot as a separate type param. */
+type SnapshotOf<TStore> = TStore extends StoreContract<infer S> ? S : never;
 
 function identity<T>(x: T): T {
   return x;
@@ -25,6 +23,8 @@ function identity<T>(x: T): T {
  *
  * - `select`  — selector function; component re-renders only when the
  *               selected value changes under `Object.is` (or `equals`).
+ *               Receives the current snapshot and the full store (including
+ *               domain methods) so callers don't need to close over the store.
  * - `context` — readonly context injected into the store via `setContext`
  *               before subscription. Accessible inside store methods via
  *               `getContext()`. Changes to context identity do **not**
@@ -33,8 +33,10 @@ function identity<T>(x: T): T {
  *               `Object.is`. Use `shallowEqual` when `select` returns a
  *               new object literal on every call.
  */
-export type UseStoreOptions<TSnapshot, TSlice, TContext> = {
-  readonly select?: ((snapshot: TSnapshot) => TSlice) | undefined;
+export type UseStoreOptions<TSnapshot, TSlice, TContext, TStore = StoreContract<TSnapshot>> = {
+  readonly select?:
+    | ((snapshot: TSnapshot, store: TStore & StoreContract<TSnapshot>) => TSlice)
+    | undefined;
   readonly context?: UnwrapContext<TContext> | undefined;
   readonly equals?: ((a: TSlice, b: TSlice) => boolean) | undefined;
 };
@@ -51,12 +53,15 @@ export type UseStoreOptions<TSnapshot, TSlice, TContext> = {
  * 3. **Options object**: `useStore(store, { select, context, equals })` — combine selector, context injection, and custom equality.
  *
  * - Context is injected before subscription and available in store methods via `getContext()`.
+ * - Selectors receive the current snapshot **and** the full store as arguments — domain methods
+ *   are accessible without closing over the store variable (useful with `createStoreContext`).
  * - Selectors that return new object references on every call should use `equals: shallowEqual` to avoid unnecessary re-renders.
  * - Changing context identity does **not** trigger a re-render; context is treated as stable for the lifetime of the subscription.
  *
  * @template TSnapshot - Store snapshot type.
  * @template TSlice - Selected slice type.
  * @template TContext - Context type (if used).
+ * @template TStore - Full store type including domain methods (inferred from the store argument).
  *
  * @param store - The Stardust store instance.
  * @returns The selected state slice (or full snapshot).
@@ -64,25 +69,27 @@ export type UseStoreOptions<TSnapshot, TSlice, TContext> = {
  * @example <caption>Full snapshot (re-renders on any change)</caption>
  * const snap = useStore(counterStore);
  *
- * @example <caption>Selector shorthand (re-renders only when count changes)</caption>
- * const count = useStore(counterStore, s => s.count);
+ * @example <caption>Selector shorthand — snapshot and domain methods both available</caption>
+ * const total = useStore(pricingStore, (s, store) => store.getTotal());
  *
  * @example <caption>Context injection</caption>
  * const snap = useStore(store, { context: apiClient });
  *
  * @example <caption>Selector + context + custom equality</caption>
  * const slice = useStore(store, {
- *   select: s => ({ x: s.x, y: s.y }),
- *   context: apiClient,
+ *   select: (s, store) => ({ base: s.basePrice, total: store.getTotal() }),
+ *   context: { taxRate: 0.2 },
  *   equals: shallowEqual,
  * });
  */
 // Overload 1 — no options
 export function useStore<TSnapshot>(store: StoreContract<TSnapshot>): TSnapshot;
-// Overload 2 — selector shorthand (no context, no custom equality)
-export function useStore<TSnapshot, TSlice>(
-  store: StoreContract<TSnapshot>,
-  select: (snapshot: TSnapshot) => TSlice
+// Overload 2 — selector shorthand (no context, no custom equality).
+// TStore is inferred from the store argument; snapshot type is derived via SnapshotOf<TStore>
+// so TypeScript doesn't need to infer TSnapshot through a constraint (which it can't do reliably).
+export function useStore<TSlice, TStore extends StoreContract<unknown>>(
+  store: TStore,
+  select: (snapshot: SnapshotOf<TStore>, store: TStore) => TSlice
 ): TSlice;
 // Overload 3 must precede overload 4 — guards context-only calls from matching the full-options overload.
 // Uses plain TContext (not UnwrapContext<TContext>) so TypeScript can infer TContext
@@ -100,14 +107,17 @@ export function useStore<TSnapshot, TContext>(
     readonly equals?: ((a: TSnapshot, b: TSnapshot) => boolean) | undefined;
   }
 ): TSnapshot;
-// Overload 4 — options object (select + context + equals, all optional)
-export function useStore<TSnapshot, TSlice, TContext>(
-  store: ContextStoreContract<TSnapshot, UnwrapContext<TContext>>,
-  options: UseStoreOptions<TSnapshot, TSlice, TContext>
-): TSlice extends undefined ? TSnapshot : TSlice;
+// Overload 4 — options object (select + context + equals, all optional).
+// TStore carries domain methods through to the selector's second argument.
+export function useStore<TSlice, TContext, TStore extends StoreContract<unknown>>(
+  store: TStore & { readonly setContext?: (ctx: TContext) => void },
+  options: UseStoreOptions<SnapshotOf<TStore>, TSlice, TContext, TStore>
+): TSlice extends undefined ? SnapshotOf<TStore> : TSlice;
 export function useStore<TSnapshot, TSlice>(
   store: StoreContractWithOptionalBind<TSnapshot>,
-  arg2?: ((snapshot: TSnapshot) => TSlice) | UseStoreOptions<TSnapshot, TSlice, unknown>
+  arg2?:
+    | ((snapshot: TSnapshot, store: StoreContractWithOptionalBind<TSnapshot>) => TSlice)
+    | UseStoreOptions<TSnapshot, TSlice, unknown>
 ): TSnapshot | TSlice {
   return useStoreCore(store, arg2);
 }
@@ -121,11 +131,14 @@ export function useStore<TSnapshot, TSlice>(
  */
 export function useStoreCore<TSnapshot, TSlice>(
   store: StoreContractWithOptionalBind<TSnapshot>,
-  arg2?: ((snapshot: TSnapshot) => TSlice) | UseStoreOptions<TSnapshot, TSlice, unknown>
+  arg2?:
+    | ((snapshot: TSnapshot, store: StoreContractWithOptionalBind<TSnapshot>) => TSlice)
+    | UseStoreOptions<TSnapshot, TSlice, unknown, StoreContractWithOptionalBind<TSnapshot>>
 ): TSnapshot | TSlice {
   const opts = typeof arg2 === 'function' ? undefined : arg2;
-  const select: ((snapshot: TSnapshot) => TSlice) | undefined =
-    typeof arg2 === 'function' ? arg2 : opts?.select;
+  const select:
+    | ((snapshot: TSnapshot, store: StoreContractWithOptionalBind<TSnapshot>) => TSlice)
+    | undefined = typeof arg2 === 'function' ? arg2 : opts?.select;
   const ctx = opts?.context;
   const equals = opts?.equals;
 
@@ -134,7 +147,9 @@ export function useStoreCore<TSnapshot, TSlice>(
     store.setContext?.(ctx);
   }
 
-  const sel: (snapshot: TSnapshot) => TSnapshot | TSlice = select ?? identity;
+  const sel: (snapshot: TSnapshot) => TSnapshot | TSlice = select
+    ? (snapshot) => select(snapshot, store)
+    : identity;
   const eq = equals ?? Object.is;
 
   // Cache the last selected value so getSnapshot returns the same reference
