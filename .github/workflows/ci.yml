@@ -118,11 +118,15 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~/.cache/ms-playwright
-          key: playwright-${{ hashFiles('package-lock.json') }}
+          key: playwright-chromium-${{ hashFiles('package-lock.json') }}
 
       - name: Install Playwright browsers
         if: steps.pw-cache.outputs.cache-hit != 'true'
         run: npx playwright install --with-deps chromium
+
+      - name: Install Playwright system deps
+        if: steps.pw-cache.outputs.cache-hit == 'true'
+        run: npx playwright install-deps chromium
 
       - run: npx --workspace=packages/core playwright test --project=unit
       - run: npx --workspace=packages/react playwright test --project=unit
@@ -155,13 +159,8 @@ jobs:
           node-version: '24'
           cache: 'npm'
 
-      - uses: actions/cache@v4
-        with:
-          path: |
-            node_modules
-            packages/*/node_modules
-            playground/node_modules
-          key: node-modules-${{ hashFiles('package-lock.json') }}
+      - name: Install dependencies
+        run: npm ci
 
       - run: npx --workspace=packages/react playwright test --project=component
 
