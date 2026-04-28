@@ -1,4 +1,4 @@
-import { createArrayMethods, createStore } from '@stardust/core';
+import { connectDebugLog, createArrayMethods, createStore } from '@stardust/core';
 import { useStore } from '@stardust/react';
 import { Button, Chip, Stack, Typography } from '@mui/material';
 import { ExampleLayout } from '@/entities/example';
@@ -11,6 +11,8 @@ const DEFAULTS: Item = { name: '', qty: 1, picked: false };
 const listStore = createStore({ items: [] as Item[] }, (api) => ({
   list: createArrayMethods(api, 'items', DEFAULTS),
 }));
+
+connectDebugLog(listStore, { name: 'list' });
 
 const PRESETS = ['Milk', 'Eggs', 'Bread', 'Butter'] as const;
 

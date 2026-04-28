@@ -1,4 +1,4 @@
-import { createSingleFlight, createStore } from '@stardust/core';
+import { connectDebugLog, createSingleFlight, createStore } from '@stardust/core';
 import { useStore } from '@stardust/react';
 import { Button, Chip, Stack, Typography } from '@mui/material';
 import { ExampleLayout } from '@/entities/example';
@@ -38,6 +38,8 @@ const configStore = createStore(
     },
   })
 );
+
+connectDebugLog(configStore, { name: 'config' });
 
 const loadThree = () => {
   void configStore.load();

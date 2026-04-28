@@ -1,4 +1,4 @@
-import { createStore, safeAwait } from '@stardust/core';
+import { connectDebugLog, createStore, safeAwait } from '@stardust/core';
 import { useStore } from '@stardust/react';
 import { Button, Chip, Stack, Typography } from '@mui/material';
 import { ExampleLayout } from '@/entities/example';
@@ -41,6 +41,8 @@ const logStore = createStore({ entries: [] as LogEntry[], loading: false }, ({ s
     callCount = 0;
   },
 }));
+
+connectDebugLog(logStore, { name: 'log' });
 
 export function SafeAwaitExample() {
   const { entries, loading } = useStore(logStore);
