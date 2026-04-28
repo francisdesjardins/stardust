@@ -1,4 +1,4 @@
-import { createStore, createStoreDispatch } from '@stardust/core';
+import { connectDebugLog, createStore, createStoreDispatch } from '@stardust/core';
 import { useStore } from '@stardust/react';
 import { Button, Chip, Stack, Typography } from '@mui/material';
 import { useState } from 'react';
@@ -17,6 +17,8 @@ const counterStore = createStore({ count: 0 }, ({ set, get }) => ({
     set({ count: 0 });
   },
 }));
+
+connectDebugLog(counterStore, { name: 'counter' });
 
 // Full dispatch — all domain methods reachable
 const dispatch = createStoreDispatch(counterStore);

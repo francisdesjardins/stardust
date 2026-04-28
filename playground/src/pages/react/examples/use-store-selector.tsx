@@ -1,5 +1,5 @@
 import type { StoreApi } from '@stardust/core';
-import { createStore, shallowEqual } from '@stardust/core';
+import { connectDebugLog, createStore, shallowEqual } from '@stardust/core';
 import { useStore } from '@stardust/react';
 import { Button, Stack, Typography } from '@mui/material';
 import { ExampleLayout } from '@/entities/example';
@@ -31,6 +31,8 @@ const cartStore = createStore(
     },
   })
 );
+
+connectDebugLog(cartStore, { name: 'cart' });
 
 const ITEMS = [
   { name: 'Coffee', price: 4.5 },

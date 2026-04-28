@@ -1,4 +1,4 @@
-import { createMutex, createStore } from '@stardust/core';
+import { connectDebugLog, createMutex, createStore } from '@stardust/core';
 import { useStore } from '@stardust/react';
 import { Button, Chip, LinearProgress, Stack, Typography } from '@mui/material';
 import { ExampleLayout } from '@/entities/example';
@@ -24,6 +24,8 @@ const jobStore = createStore({ jobs: [] as Job[] }, ({ set, get }) => ({
     nextId = 1;
   },
 }));
+
+connectDebugLog(jobStore, { name: 'jobs' });
 
 const queueThree = () => {
   void jobStore.run();

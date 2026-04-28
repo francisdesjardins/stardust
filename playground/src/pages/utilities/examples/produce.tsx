@@ -1,4 +1,4 @@
-import { createStore, produce } from '@stardust/core';
+import { connectDebugLog, createStore, produce } from '@stardust/core';
 import { useStore } from '@stardust/react';
 import { Button, Typography } from '@mui/material';
 import { ExampleLayout } from '@/entities/example';
@@ -37,6 +37,8 @@ const profileStore = createStore({ profile: initial }, ({ set, get }) => ({
     set({ profile: initial });
   },
 }));
+
+connectDebugLog(profileStore, { name: 'profile' });
 
 export function ProduceExample() {
   const { profile } = useStore(profileStore);
