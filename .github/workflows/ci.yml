@@ -17,7 +17,7 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+  PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: 1
 
 jobs:
   # ── Install ──────────────────────────────────────────────────────────────────
@@ -27,16 +27,16 @@ jobs:
     name: Install
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v6
         with:
           node-version: '24'
           cache: 'npm'
 
       - name: Restore node_modules
         id: cache
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: |
             node_modules
@@ -54,14 +54,14 @@ jobs:
     needs: install
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v6
         with:
           node-version: '24'
           cache: 'npm'
 
-      - uses: actions/cache@v4
+      - uses: actions/cache@v5
         with:
           path: |
             node_modules
@@ -78,14 +78,14 @@ jobs:
     needs: install
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v6
         with:
           node-version: '24'
           cache: 'npm'
 
-      - uses: actions/cache@v4
+      - uses: actions/cache@v5
         with:
           path: |
             node_modules
@@ -96,19 +96,21 @@ jobs:
       - run: npm run type-check
 
   # ── Unit Tests ───────────────────────────────────────────────────────────────
+  # Unit tests are pure Node — no browser is launched. PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD
+  # is set globally so npm ci never fetches browser binaries here.
   test-unit:
     name: Unit Tests
     needs: install
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v6
         with:
           node-version: '24'
           cache: 'npm'
 
-      - uses: actions/cache@v4
+      - uses: actions/cache@v5
         with:
           path: |
             node_modules
@@ -116,28 +118,13 @@ jobs:
             playground/node_modules
           key: node-modules-${{ hashFiles('package-lock.json') }}
 
-      - name: Restore Playwright browsers
-        id: pw-cache
-        uses: actions/cache@v4
-        with:
-          path: ~/.cache/ms-playwright
-          key: playwright-chromium-${{ hashFiles('package-lock.json') }}
-
-      - name: Install Playwright browsers
-        if: steps.pw-cache.outputs.cache-hit != 'true'
-        run: npx playwright install --with-deps chromium
-
-      - name: Install Playwright system deps
-        if: steps.pw-cache.outputs.cache-hit == 'true'
-        run: npx playwright install-deps chromium
-
       - run: npx --workspace=packages/core playwright test --project=unit
       - run: npx --workspace=packages/react playwright test --project=unit
       - run: npx --workspace=packages/solid playwright test --project=unit
 
       - name: Upload unit test reports
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: unit-test-report
           path: packages/core/coverage/
@@ -145,6 +132,8 @@ jobs:
           retention-days: 7
 
   # ── Component Tests ──────────────────────────────────────────────────────────
+  # Runs inside the official Playwright Docker image — browsers are pre-installed,
+  # no download needed. PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD has no effect here.
   test-component:
     name: Component Tests (React)
     needs: install
@@ -153,9 +142,9 @@ jobs:
       image: mcr.microsoft.com/playwright:v1.59.1-noble
       options: --user 1001
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v6
         with:
           node-version: '24'
           cache: 'npm'
@@ -167,7 +156,7 @@ jobs:
 
       - name: Upload component test report
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: component-test-report
           path: packages/react/playwright-report/
