@@ -1,33 +1,56 @@
-# Stardust
+counter.getSnapshot(); // { count: 1 }
+counter.reset(); // built-in — restores { count: 0 }
 
-Reactive POJO store for managing state outside React. Built on `useSyncExternalStore` — tear-free, Concurrent Mode safe, zero dependencies beyond React.
+<div align="center">
+
+# Stardust — Core
+
+**Zero-dependency POJO state management.**
+
+Framework-agnostic store primitives for React, SolidJS, and beyond.
+
+</div>
+
+---
+
+## Why use this package?
+
+- Simple, serializable state (POJO snapshots)
+- No runtime dependencies
+- Structural sharing and path-based updates
+- Async state, batching, and derived stores
+- Designed for integration with React and SolidJS adapters
+
+---
+
+## Installation
+
+```bash
+npm install @stardust/core
+```
 
 ## Quick Start
 
 ```ts
-import { createStore, useStore } from '@stardust/core';
+import { createStore } from '@stardust/core';
 
 const counter = createStore({ count: 0 }, ({ update }) => ({
   increment() {
-    update((draft) => {
-      draft.count += 1;
+    update((d) => {
+      d.count++;
     });
   },
 }));
 
-// Outside React
+// Outside any framework
 counter.increment();
 counter.getSnapshot(); // { count: 1 }
-counter.reset(); // built-in — restores { count: 0 }
-
-// Inside React — re-renders only when `count` changes
-function Counter() {
-  const count = useStore(counter, (s) => s.count);
-  return <button onClick={counter.increment}>{count}</button>;
-}
+counter.reset(); // restores { count: 0 }
 ```
 
-## API
+## API Reference
+
+> Full API documentation is below. This section will be auto-generated from JSDoc in a future release.
 
 ### `createStore(initialSnapshot, builder, options?)`
 

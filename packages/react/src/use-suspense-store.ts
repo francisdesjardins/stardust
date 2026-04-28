@@ -41,35 +41,37 @@ type SuspenseStoreContract<TSnapshot> = StoreContract<TSnapshot> & {
 // ── useSuspenseStore ──────────────────────────────────────────────────────────
 
 /**
- * Subscribe to an `AsyncState<T>` field in a store using the React Suspense
- * protocol.
+ * React Suspense hook for async Stardust store fields.
  *
- * | `AsyncState` status | Behaviour                                             |
- * | ------------------- | ----------------------------------------------------- |
- * | `fulfilled`         | Returns `T` directly                                  |
- * | `rejected`          | Throws the stored `Error` (caught by `<ErrorBoundary>`) |
- * | `idle` / `pending`  | Throws a Promise (caught by `<Suspense>`)              |
+ * Subscribes to an `AsyncState<T>` field in a Stardust store and returns the resolved value, throwing a Promise or Error as required by the React Suspense protocol.
  *
- * The thrown Promise resolves on the next store emission, causing React to
- * retry the render. A store subscription (`useSyncExternalStore`) keeps the
- * component in sync so it re-renders as soon as the async state settles.
+ * - `fulfilled`: returns the value
+ * - `rejected`: throws the error (caught by `<ErrorBoundary>`)
+ * - `idle`/`pending`: throws a Promise (caught by `<Suspense>`, triggers fallback)
  *
- * Wrap the consuming component in `<Suspense fallback={…}>` for the loading
- * UI and pair with an `<ErrorBoundary>` to handle rejected states.
+ * Context can be injected via the third argument for stores that require it.
  *
- * @example
+ * @template TSnapshot - Store snapshot type.
+ * @template T - Async value type.
+ * @template TContext - Context type (if used).
+ *
+ * @param store - The Stardust store instance.
+ * @param select - Selector for the `AsyncState<T>` field.
+ * @returns The resolved value, or throws as required by Suspense.
+ *
+ * @example <caption>Basic usage with Suspense and ErrorBoundary</caption>
  * function UserProfile() {
- *   const user = useSuspenseStore(userStore, (s) => s.user);
+ *   const user = useSuspenseStore(userStore, s => s.user);
  *   return <div>{user.name}</div>;
  * }
  *
- * // With context injection:
+ * @example <caption>With context injection</caption>
  * function UserProfile() {
- *   const user = useSuspenseStore(userStore, (s) => s.user, { context: apiClient });
+ *   const user = useSuspenseStore(userStore, s => s.user, { context: apiClient });
  *   return <div>{user.name}</div>;
  * }
  *
- * // Mount site:
+ * @example <caption>Mount site</caption>
  * <ErrorBoundary fallback={<p>Error</p>}>
  *   <Suspense fallback={<p>Loading…</p>}>
  *     <UserProfile />

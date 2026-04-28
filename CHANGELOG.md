@@ -9,20 +9,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-#### `playground`
-
-- `/utilities` route — 8 interactive examples covering every previously undemo'd `@stardust/core` export: `createArrayMethods` (grocery list using all five methods incl. `setByPath`), `createStoreDispatch` (sequence loop showing string-keyed dispatch + restricted `safeDispatch`), `produce`, path utilities (`parsePath` segment visualisation, `getAtPath` live readout, `copyOnWritePath` structural sharing), `safeAwait`, `createMutex` (done/running/queued badge with gate-state caption), `createSingleFlight` (all caller chips resolve simultaneously), `connectDebugLog` (custom `onLog` driving a live diff panel). Each card includes a "View Code" button.
-- `StarfieldBanner` — animated starfield with shooting stars, rendered on the Getting Started page.
-- Sidebar: **Utilities** nav entry positioned between Getting Started and React.
-
-### Fixed
-
-#### `@stardust/react`
-
-- `createStoreContext()` — `cleanup` option renamed to `onUnmount`; default changed from `store.reset()` to `null`. The previous default called `store.reset()` on the public store object, which resolves to any user-defined domain method named `reset` (via `Object.assign` in `createStore`) rather than the built-in baseline restore. In React StrictMode's double-mount cycle the old default fired between mount cycles, silently clobbering the store's initial value. The store is now garbage-collected on true unmount with no automatic teardown; pass `onUnmount` explicitly to handle non-GC resources (timers, sockets).
-
-### Added
-
 #### `@stardust/core`
 
 - `createStore()` — POJO store factory with snapshot-based state, `get`, `set`, `update`, `dispatch`, and `subscribe`
@@ -35,6 +21,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `batch()` — defers listener notifications until the outermost batch completes
 - `setByPath()` / `getByPath()` — structural-sharing path utilities; clone only the mutation spine
 - `shallowEqual()` — shallow equality helper exported for consumer use
+- `safeAwait()`, `createMutex()`, `createSingleFlight()` — async concurrency utilities
 - Async state machine — `AsyncIdle | AsyncPending | AsyncFulfilled<T> | AsyncRejected` discriminated union with `runAsync()` driver and stable `asyncIdle` / `asyncPending` singletons
 - `connectDebugLog()` — DEV-only flat-diff debug logger controlled by `localStorage` key `stardust:log`
 - Full TypeScript types exported: `Store`, `StoreApi`, `StoreContract`, `StoreSelector`, `AsyncState`, `DerivedStore`, `ArrayMethods`, and more
@@ -52,10 +39,41 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `useStore()` — `createSignal`-backed reactive hook with `onCleanup` teardown
 - `useSuspenseStore()` — `createResource`-driven Suspense hook; maps async states to SolidJS resource lifecycle
 
+#### `playground`
+
+- `/utilities` route — 8 interactive examples covering every previously undemo'd `@stardust/core` export: `createArrayMethods` (grocery list using all five methods incl. `setByPath`), `createStoreDispatch` (sequence loop showing string-keyed dispatch + restricted `safeDispatch`), `produce`, path utilities (`parsePath` segment visualisation, `getAtPath` live readout, `copyOnWritePath` structural sharing), `safeAwait`, `createMutex` (done/running/queued badge with gate-state caption), `createSingleFlight` (all caller chips resolve simultaneously), `connectDebugLog` (custom `onLog` driving a live diff panel). Each card includes a "View Code" button.
+- `StarfieldBanner` — animated starfield with shooting stars, rendered on the Getting Started page.
+- Sidebar: **Utilities** nav entry positioned between Getting Started and React.
+
 #### Infrastructure
 
 - npm workspaces monorepo: `packages/core`, `packages/react`, `packages/solid`, `playground`
+- TypeDoc support — `npm run docs:api` generates unified HTML API reference at `docs/api/` for all three public packages; per-package `typedoc.json` files declare entry points and suppress warnings for intentionally internal types
 - Playwright test suite: unit tests (`*.test.ts`, Node) and component tests (`*.ct.tsx`, Playwright CT / Chromium)
 - GitHub Actions CI workflow: lint, format check, type check, unit tests, React component tests (Playwright Docker image)
 - Vite build pipeline: ESM + UMD outputs per package, `vite-plugin-dts` for declaration maps
 - Benchmarks: Node CLI benchmark suite with stable-run mode and markdown result output
+
+### Changed
+
+#### `@stardust/core`
+
+- JSDoc normalized across `createStore`, `createDerivedStore`, `createStoreDispatch`, and `createArrayMethods`: consistent `@template`, `@param`, and `@returns` tags; multi-example blocks use `<caption>` labels; cross-package `{@link}` replaced with inline code where the target is outside `@stardust/core`
+
+#### `@stardust/react`
+
+- JSDoc normalized across `useStore`, `useSuspenseStore`, and `createStoreContext`: consistent `@template`, `@param`, and `@returns` tags; `@param` names aligned with overload parameter names to eliminate TypeDoc warnings
+
+#### `@stardust/solid`
+
+- JSDoc normalized across `useStore` and `useSuspenseStore`: consistent `@template`, `@param`, and `@returns` tags
+
+#### Root
+
+- `package.json` scripts reordered: `dev` → build group → playground group → quality (`type-check`, lint, format) → `test`, `bench` → `docs:api` → `ncu`; redundant `bootstrap` script removed (covered by `npm install` at root in a workspaces monorepo)
+
+### Fixed
+
+#### `@stardust/react`
+
+- `createStoreContext()` — `cleanup` option renamed to `onUnmount`; default changed from `store.reset()` to `null`. The previous default called `store.reset()` on the public store object, which resolves to any user-defined domain method named `reset` (via `Object.assign` in `createStore`) rather than the built-in baseline restore. In React StrictMode's double-mount cycle the old default fired between mount cycles, silently clobbering the store's initial value. The store is now garbage-collected on true unmount with no automatic teardown; pass `onUnmount` explicitly to handle non-GC resources (timers, sockets).

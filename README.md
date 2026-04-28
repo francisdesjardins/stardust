@@ -2,9 +2,9 @@
 
 # ✦ Stardust
 
-**Zero deps. Infinite stars. Finite bugs.™**
+**Zero-dependency POJO state management.**
 
-Reactive POJO state management — framework-agnostic core with React and SolidJS adapters.
+Framework-agnostic core with React and SolidJS adapters.
 
 [![TypeScript](https://img.shields.io/badge/TypeScript-strict-3178c6?style=flat-square&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
 [![React](https://img.shields.io/badge/React-19-61dafb?style=flat-square&logo=react&logoColor=black)](https://react.dev/)
@@ -15,24 +15,20 @@ Reactive POJO state management — framework-agnostic core with React and SolidJ
 
 ---
 
-> **Note** — Stardust is a personal learning project, built for exploration and craft. It is not trying to replace or outshine any production-grade state library. The design draws directly from a handful of excellent projects:
->
-> | Inspiration                                                                            | What was borrowed                                                                    |
-> | -------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------ |
-> | [Zustand](https://github.com/pmndrs/zustand)                                           | `set(next)` whole-state swap pattern                                                 |
-> | [Immer](https://github.com/immerjs/immer)                                              | `update(recipe)` draft mutation + standalone `produce()`                             |
-> | [react-hook-form](https://github.com/react-hook-form/react-hook-form)                  | `setByPath` / `getByPath` path accessor pattern and field-array CRUD                 |
-> | [Redux](https://github.com/reduxjs/redux)                                              | `dispatch` routing, `batch()` grouped writes                                         |
-> | [Reselect](https://github.com/reduxjs/reselect)                                        | `createDerivedStore` — lazy computed projections across stores                       |
-> | [React `useSyncExternalStore`](https://react.dev/reference/react/useSyncExternalStore) | Subscribe / snapshot contract for tear-free Concurrent Mode hooks                    |
-> | [React Suspense](https://react.dev/reference/react/Suspense)                           | `useSuspenseStore` — throw-a-Promise async protocol                                  |
-> | [SolidJS](https://github.com/solidjs/solid)                                            | `createSignal` + `onCleanup` for `useStore`; `createResource` for `useSuspenseStore` |
->
-> Consider it a love letter to reactive state, written in TypeScript.
+## Why Stardust?
+
+- Simple, serializable state (POJO snapshots)
+- No runtime dependencies
+- Designed for React 19+ and SolidJS 1.8+
+- Structural sharing, async state, batching, and more
 
 ---
 
-## ✧ What It Is
+> **Note** — Stardust is a personal learning project, built for exploration and craft. It is not trying to replace or outshine any production-grade state library. The design draws directly from a handful of excellent projects (see below for inspirations).
+
+---
+
+## What It Is
 
 Stardust is a reactive store built around one guarantee: **the snapshot is always a plain, serialisable object**. No proxies. No class instances. No hidden wiring. Just a POJO that survives `structuredClone` — explicit by design, predictable by contract.
 

@@ -205,18 +205,61 @@ export type StoreApi<TSnapshot, TContext = never> = {
  * `getContext()`. Called automatically by `useStore({ context })` inside React,
  * but can also be called directly outside React before invoking store methods.
  */
+/**
+ * Stardust store instance: snapshot contract, core methods, and domain API.
+ *
+ * Combines the minimal subscription contract (`subscribe`, `getSnapshot`) with
+ * mutation methods (`set`, `update`, `setByPath`, etc.), context binding, and
+ * all domain-specific methods returned from your `methods` builder.
+ *
+ * - Use `setContext(ctx)` to inject a context object (e.g. API client) for use in store methods.
+ * - All core methods are documented in {@link StoreApi}.
+ * - Domain methods are spread onto the store object and can be called directly.
+ *
+ * @template TSnapshot - The shape of the store's snapshot (POJO state).
+ * @template TMethods - The domain methods returned from your builder.
+ * @template TContext - Optional context type (see {@link MaybeContext}).
+ *
+ * @example <caption>Counter store with domain methods</caption>
+ * const counter = createStore({ count: 0 }, ({ update }) => ({
+ *   increment() { update(d => { d.count += 1; }); },
+ *   decrement() { update(d => { d.count -= 1; }); },
+ * }));
+ *
+ * counter.increment();
+ * counter.decrement();
+ *
+ * @example <caption>Injecting context (API client)</caption>
+ * type Ctx = { api: ApiClient };
+ * const store = createStore<State, Methods, Ctx>(initial, (api) => ({
+ *   async load() {
+ *     const data = await api.getContext().api.fetch();
+ *     api.set({ ...api.get(), data });
+ *   }
+ * }));
+ * store.setContext({ api: myApiClient });
+ */
 export type Store<TSnapshot, TMethods, TContext = never> = {
+  /** Subscribe to snapshot changes. Returns an unsubscribe function. */
   readonly subscribe: (listener: () => void) => () => void;
+  /** Get the current snapshot (POJO state). */
   readonly getSnapshot: () => TSnapshot;
+  /** Replace the snapshot and notify listeners. Accepts a new value or updater function. */
   readonly set: (next: TSnapshot | ((prev: TSnapshot) => TSnapshot)) => void;
+  /** Draft-based partial update: clones, mutates, and emits if changed. */
   readonly update: (recipe: (draft: TSnapshot) => void) => void;
+  /** Get a value at a typed path (dot/bracket notation). */
   readonly getByPath: <P extends PathsOf<TSnapshot>>(path: P) => ValueAtPath<TSnapshot, P>;
+  /** Set a value at a typed path (structural sharing, shallow copies along the path). */
   readonly setByPath: <P extends PathsOf<TSnapshot>>(
     path: P,
     value: ValueAtPath<TSnapshot, P>
   ) => void;
+  /** Batch multiple mutations into a single notification. */
   readonly batch: (fn: () => void) => void;
+  /** Reset the snapshot to the initial or a new baseline. */
   readonly reset: (next?: TSnapshot | ((initial: TSnapshot) => TSnapshot)) => void;
+  /** Inject a context object for use in store methods. */
   readonly setContext: (ctx: UnwrapContext<TContext>) => void;
 } & TMethods;
 
@@ -258,7 +301,7 @@ export type Store<TSnapshot, TMethods, TContext = never> = {
  *
  * ## Usage with React
  *
- * Use {@link useStore} to subscribe from React with optional slice selectors:
+ * Use `useStore` from `@stardust/react` to subscribe from React with optional slice selectors:
  *
  * ```ts
  * const count = useStore(counter, (s) => s.count);

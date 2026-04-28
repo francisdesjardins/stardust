@@ -1,0 +1,16 @@
+{
+  "entryPoints": ["src/index.ts"],
+  "tsconfig": "tsconfig.json",
+  "intentionallyNotExported": [
+    "ResolveBuiltin",
+    "ResolveDomain",
+    "SafeParams",
+    "SafeReturn",
+    "StoreSubscription",
+    "GetContextResult",
+    "SnapshotsOf",
+    "Task",
+    "DebugLogCompatibleStore",
+    "Subscribable"
+  ]
+}

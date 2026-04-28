@@ -1,0 +1,16 @@
+{
+  "$schema": "https://typedoc.app/schema.json",
+  "entryPointStrategy": "packages",
+  "entryPoints": ["packages/core", "packages/react", "packages/solid"],
+  "out": "docs/api",
+  "name": "Stardust",
+  "includeVersion": true,
+  "readme": "README.md",
+  "excludePrivate": true,
+  "excludeInternal": true,
+  "excludeExternals": true,
+  "searchInComments": true,
+  "navigationLinks": {
+    "GitHub": "https://github.com/francisdesjardins/stardust"
+  }
+}

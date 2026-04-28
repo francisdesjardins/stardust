@@ -5,20 +5,17 @@ import { copyOnWritePath, parsePath } from './path-utils';
 // ── Types ─────────────────────────────────────────────────────────────────────
 
 /**
- * Typed accessor for an array field inside a `createStore` snapshot.
+ * Standard set of mutation helpers for an array field in a Stardust store.
  *
- * Returned by {@link createArrayMethods} and intended to be spread into
- * (or nested inside) the store's domain methods.
+ * Returned by {@link createArrayMethods} and intended to be spread into your store's domain methods.
  *
- * Two setter patterns — pick whichever reads better at the call site:
- * - `set(i, partial)`               — merge several fields at once
- * - `setByPath(i, 'nested.key', v)` — surgical typed-path update
+ * - All operations use structural sharing: only the array and the changed item are shallow-copied; all other branches retain reference identity.
+ * - Out-of-bounds indices are safe no-ops.
+ * - Use `set` for partial updates, or `setByPath` for deep/surgical changes.
  *
- * All operations use **structural sharing** internally — only the array
- * and the targeted item are shallow-copied; the rest of the snapshot
- * keeps identity with the previous version.
+ * @template TItem - The array item type (must be a POJO).
  *
- * @example
+ * @example <caption>Basic usage</caption>
  * const store = createStore(INITIAL, (api) => ({
  *   phones: createArrayMethods(api, 'phones', { number: '', label: 'mobile' }),
  * }));
@@ -30,70 +27,93 @@ import { copyOnWritePath, parsePath } from './path-utils';
  * store.phones.move(0, 2);
  */
 export type ArrayMethods<TItem extends object> = {
-  /** Append an item. Defaults are deep-cloned; `overrides` shallow-merges on top. */
+  /**
+   * Add a new item to the end of the array. The `defaults` template is deep-cloned for each new item; `overrides` are shallow-merged on top.
+   * @param overrides - Optional partial fields to override the defaults.
+   */
   readonly add: (overrides?: Partial<TItem>) => void;
-  /** Remove the item at `index`. Out-of-bounds is a safe no-op. */
+  /**
+   * Remove the item at the given index. Does nothing if out of bounds.
+   * @param index - The array index to remove.
+   */
   readonly remove: (index: number) => void;
-  /** Patch one or more properties on the item at `index`. Out-of-bounds is a safe no-op. */
+  /**
+   * Patch one or more properties on the item at the given index. Does nothing if out of bounds.
+   * @param index - The array index to update.
+   * @param partial - Partial object to merge into the item.
+   */
   readonly set: (index: number, partial: Partial<TItem>) => void;
-  /** Set a single deeply-nested property via a typed path. Out-of-bounds is a safe no-op. */
+  /**
+   * Set a single deeply-nested property on the item at the given index, using a typed path string. Does nothing if out of bounds.
+   * @param index - The array index to update.
+   * @param path - Dot/bracket path string (e.g. 'address.city').
+   * @param value - The value to set at the path.
+   */
   readonly setByPath: <P extends PathsOf<TItem>>(
     index: number,
     path: P,
     value: ValueAtPath<TItem, P>
   ) => void;
-  /** Move an item from one index to another. Out-of-bounds is a safe no-op. */
+  /**
+   * Move an item from one index to another. Does nothing if out of bounds or if `from === to`.
+   * @param from - Source index.
+   * @param to - Destination index.
+   */
   readonly move: (from: number, to: number) => void;
 };
 
 /**
- * Read/write primitives passed to the optional `methods` builder of
- * {@link createArrayMethods}. Use these to implement domain-specific
- * lookups or mutations without accessing the outer store API directly.
+ * Minimal array access API for custom methods in {@link createArrayMethods}.
+ *
+ * Use these helpers to implement domain-specific lookups or mutations without accessing the outer store API directly.
+ *
+ * @template TItem - The array item type.
  */
 export type ArrayMethodsApi<TItem extends object> = {
-  /** Read current array items. */
+  /**
+   * Get the current array value from the store snapshot.
+   * @returns The array of items.
+   */
   readonly getArray: () => TItem[];
-  /** Write a new array, using structural sharing on the parent snapshot. */
+  /**
+   * Replace the array value in the store snapshot, using structural sharing.
+   * @param next - The new array value.
+   */
   readonly setArray: (next: TItem[]) => void;
 };
 
 // ── Factory ──────────────────────────────────────────────────────────────────
 
 /**
- * Creates a typed set of methods for an array field inside a store.
+ * Creates a namespaced set of mutation helpers for an array field in a Stardust store.
  *
- * Call this inside the `methods` builder of {@link createStore} where
- * `StoreApi` is available, then expose the result as a namespaced
- * property on the store.
+ * Use this inside your store's domain methods builder to add ergonomic, type-safe array operations.
  *
- * Unlike `update()`, array methods use **structural sharing**
- * via `setByPath` — the full snapshot is never `structuredClone`d. Only
- * the path to the array and the array itself are shallow-copied.
+ * - All mutations use structural sharing: only the array and changed item are shallow-copied.
+ * - The `defaults` template is deep-cloned for each new item, so no references are shared.
+ * - You can extend the returned object with custom methods (e.g. finders, batch updaters) by passing a builder function.
  *
- * The `defaults` value is `structuredClone`d on every `add()` call so
- * items never share references with each other or with the template.
+ * @template TSnapshot - The store snapshot type.
+ * @template TItem - The array item type (must be a POJO).
+ * @template TContext - Optional context type for the store.
+ * @template TMethods - Additional custom methods to merge in.
  *
- * @param api       - The `StoreApi` received by the store's methods builder.
- * @param arrayPath - A typed path string pointing to the array field in the
- *                    snapshot (e.g. `'phones'`, `'user.addresses'`).
- * @param defaults  - Template item cloned for each `add()`. Must be a POJO
- *                    (same constraint as store snapshots).
- * @param methods   - Optional builder for domain-specific methods. Receives
- *                    `{ getArray, setArray }` and the base `ArrayMethods`. Return
- *                    value is merged onto the returned methods object.
+ * @param api - The StoreApi received by your store's methods builder.
+ * @param arrayPath - Typed path string to the array field (e.g. 'phones', 'user.addresses').
+ * @param defaults - Template item to clone for each new entry (must be POJO).
+ * @param methods - Optional builder for custom methods. Receives { getArray, setArray } and the base ArrayMethods.
+ * @returns An object with standard array mutation helpers, plus any custom methods.
  *
- * @example
+ * @example <caption>Basic usage</caption>
  * const store = createStore({ items: [] as Todo[] }, (api) => ({
  *   items: createArrayMethods(api, 'items', { text: '', done: false }),
  * }));
- *
  * store.items.add({ text: 'Buy milk' });
  * store.items.set(0, { done: true });
  * store.items.setByPath(0, 'text', 'Buy oat milk');
  * store.items.remove(0);
  *
- * @example — with custom methods
+ * @example <caption>With custom methods</caption>
  * const store = createStore({ services: [] as Service[] }, (api) => ({
  *   services: createArrayMethods(api, 'services', DEFAULT_SERVICE, ({ getArray, setArray }) => ({
  *     findById(id: string) { return getArray().find(s => s.id === id); },
