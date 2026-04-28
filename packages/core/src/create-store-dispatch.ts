@@ -159,13 +159,26 @@ const NON_DOMAIN_KEYS = new Set([
 // ── Factory ──────────────────────────────────────────────────────────────────
 
 /**
- * Creates a dispatch function for a store — domain methods only.
+ * Creates a dispatch function for a Stardust store (domain methods only by default).
  *
- * Only the store's domain methods (from the `methods` builder) are dispatchable.
- * Built-in operations (`set`, `update`, `getByPath`, `setByPath`, `batch`) are
- * never reachable unless explicitly opted in via the `options` overload.
+ * - Returns a function that calls store domain methods by name, forwarding arguments and return values.
+ * - By default, only domain methods (from the `methods` builder) are dispatchable.
+ * - Built-in operations (`set`, `update`, `getByPath`, `setByPath`, `batch`, `reset`) are not reachable unless explicitly opted in via the `options` overload.
  *
- * @see {@link createStoreDispatch} overload with `options` to opt in builtins or restrict domain methods.
+ * @template TSnapshot The store snapshot type.
+ * @template TMethods The domain methods type.
+ * @template TContext The context type (if any).
+ *
+ * @param store - The Stardust store instance.
+ *
+ * @returns A dispatch function for domain methods only.
+ *
+ * @see createStoreDispatch (overload with options) to opt in builtins or restrict domain methods.
+ *
+ * @example <caption>Domain-only dispatch</caption>
+ * const dispatch = createStoreDispatch(store);
+ * dispatch('increment'); // ✅ domain method
+ * dispatch('set', next); // ❌ type error (not in domain)
  */
 export function createStoreDispatch<TSnapshot, TMethods extends object, TContext = never>(
   store: Store<TSnapshot, TMethods, TContext>

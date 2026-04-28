@@ -1,42 +1,63 @@
-# Stardust × SolidJS — experimental
+<div align="center">
 
-> **Experimental.** API may change.
+# Stardust × SolidJS
+
+**Zero-dependency POJO state management for SolidJS.**
 
 Bridges Stardust stores into SolidJS reactive primitives. Requires `solid-js` installed in your project.
 
-## Usage
+</div>
 
-```ts
+---
+
+> **Experimental.** API may change.
+
+---
+
+## Why use this package?
+
+- Simple, serializable state (POJO snapshots)
+- No runtime dependencies beyond SolidJS
+- Idiomatic SolidJS reactivity (`createSignal`, `onCleanup`)
+- Supports selectors, async state, and Suspense integration
+
+## Installation
+
+```bash
+npm install @stardust/solid
+```
+
+## Basic Usage
+
+```tsx
 import { createStore } from '@stardust/core';
 import { useStore } from '@stardust/solid';
 
-const counterStore = createStore({ count: 0 }, ({ update }) => ({
+const counter = createStore({ count: 0 }, ({ update }) => ({
   increment() {
-    update((d) => { d.count++; });
+    update((d) => {
+      d.count++;
+    });
   },
 }));
 
-// Inside a SolidJS component:
 function Counter() {
-  // Full snapshot — re-runs on every store update
-  const snap = useStore(counterStore);
-  return <button onClick={counterStore.increment}>{snap().count}</button>;
-}
-
-// Selector — re-runs only when `count` changes
-function CountDisplay() {
-  const count = useStore(counterStore, (s) => s.count);
-  return <span>{count()}</span>;
-}
-
-// Selector + custom equality
-import { shallowEqual } from '@stardust/core';
-
-function Position() {
-  const pos = useStore(store, (s) => ({ x: s.x, y: s.y }), shallowEqual);
-  return <div>{pos().x}, {pos().y}</div>;
+  const count = useStore(counter, (s) => s.count);
+  return <button onClick={counter.increment}>{count()}</button>;
 }
 ```
+
+## API Reference
+
+> API Reference will be auto-generated from JSDoc in a future release.
+
+## License
+
+MIT — see [LICENSE](../../LICENSE)
+
+## Contributing
+
+Contributions welcome! Please see the monorepo README for guidelines.
 
 ## API
 

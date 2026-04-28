@@ -33,11 +33,10 @@ export default defineConfig({
       },
       // Cast required: project uses Vite 8; experimental-ct-core bundles Vite 6 — Plugin types are structurally incompatible.
       plugins: [
-        react({
-          babel: {
-            plugins: [['babel-plugin-react-compiler', { target: '19' }]],
-          },
+        babelPlugin({
+          plugins: [['babel-plugin-react-compiler', { target: '19' }]],
         }),
+        react(),
       ],
     },
   },

@@ -33,3 +33,6 @@ blob-report/
 
 # Benchmarks
 benchmarks/results/
+
+# Generated API docs
+docs/api/

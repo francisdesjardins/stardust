@@ -10,26 +10,36 @@ import type { StoreContract } from '@stardust/core';
 import { useStore } from './use-store';
 
 /**
- * Subscribe to an `AsyncState<T>` field in a store using the SolidJS Suspense
- * protocol.
+ * SolidJS Suspense adapter for Stardust async stores.
  *
- * | `AsyncState` status | Behaviour                                              |
- * | ------------------- | ------------------------------------------------------ |
- * | `fulfilled`         | Returns `T` via the resource accessor                  |
- * | `rejected`          | Throws the stored `Error` (caught by `<ErrorBoundary>`) |
- * | `idle` / `pending`  | Suspends (caught by `<Suspense>`)                       |
+ * Subscribes to an `AsyncState<T>` field in a Stardust store and returns a SolidJS resource accessor.
+ * Integrates with SolidJS `<Suspense>` and `<ErrorBoundary>` for seamless async data handling.
  *
- * Returns a SolidJS resource accessor `() => T`. Wrap the consuming component
- * in `<Suspense fallback={…}>` and `<ErrorBoundary>`.
+ * - Returns a resource accessor `() => T` that throws a Promise while loading, or an Error if rejected.
+ * - Use inside a component wrapped in `<Suspense>` and `<ErrorBoundary>` for proper async flow.
+ * - Handles all `AsyncState` statuses:
+ *   - `fulfilled`: returns the value
+ *   - `rejected`: throws the error (caught by `<ErrorBoundary>`)
+ *   - `idle`/`pending`: throws a Promise (caught by `<Suspense>`, triggers fallback)
  *
- * @example
+ * @remarks
+ * Requires `solid-js` installed in your project. Not included in the main library build or barrel exports.
+ *
+ * @template TSnapshot The store snapshot type.
+ * @template T The resolved async value type.
+ *
+ * @param store - The Stardust store instance.
+ * @param select - Selector function to pick the `AsyncState<T>` field from the snapshot.
+ *
+ * @returns A SolidJS resource accessor function for the resolved value.
+ *
+ * @example <caption>Basic usage with Suspense and ErrorBoundary</caption>
  * function UserProfile() {
- *   const user = useSuspenseStore(userStore, (s) => s.user);
+ *   const user = useSuspenseStore(userStore, s => s.user);
  *   return <div>{user().name}</div>;
  * }
  *
- * // Mount site:
- * <ErrorBoundary fallback={(e) => <p>{e.message}</p>}>
+ * <ErrorBoundary fallback={e => <p>{e.message}</p>}>
  *   <Suspense fallback={<p>Loading…</p>}>
  *     <UserProfile />
  *   </Suspense>

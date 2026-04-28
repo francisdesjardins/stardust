@@ -1,3 +1,4 @@
+import babelPlugin from '@rolldown/plugin-babel';
 import react from '@vitejs/plugin-react';
 import { resolve } from 'path';
 import { type Plugin, defineConfig } from 'vite';
@@ -14,11 +15,10 @@ function stripJSDoc(): Plugin {
 
 export default defineConfig({
   plugins: [
-    react({
-      babel: {
-        plugins: [['babel-plugin-react-compiler', { target: '19' }]],
-      },
+    babelPlugin({
+      plugins: [['babel-plugin-react-compiler', { target: '19' }]],
     }),
+    react(),
     dts({
       include: ['src/**/*'],
       exclude: ['src/**/__tests__/**'],

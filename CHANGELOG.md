@@ -9,6 +9,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+#### `@stardust/core`, `@stardust/react`, `@stardust/solid`
+
+- TypeDoc support — `npm run docs:api` generates unified HTML API reference at `docs/api/` for all three public packages. Per-package `typedoc.json` files declare entry points and suppress warnings for intentionally internal types.
+
+### Changed
+
+#### `@stardust/core`
+
+- JSDoc normalized across `createStore`, `createDerivedStore`, `createStoreDispatch`, and `createArrayMethods`: consistent `@template`, `@param`, and `@returns` tags; multi-example blocks use `<caption>` labels; cross-package `{@link}` replaced with inline code where the target is outside `@stardust/core`.
+
+#### `@stardust/react`
+
+- JSDoc normalized across `useStore`, `useSuspenseStore`, and `createStoreContext`: consistent `@template`, `@param`, and `@returns` tags; `@param` names aligned with overload parameter names to eliminate TypeDoc warnings.
+
+#### `@stardust/solid`
+
+- JSDoc normalized across `useStore` and `useSuspenseStore`: consistent `@template`, `@param`, and `@returns` tags.
+
+#### Root
+
+- `package.json` scripts reordered: `dev` → build group → playground group → quality (`type-check`, lint, format) → `test`, `bench` → `docs:api` → `ncu`. Redundant `bootstrap` script removed (covered by `npm install` at root in a workspaces monorepo).
+
+### Added
+
 #### `playground`
 
 - `/utilities` route — 8 interactive examples covering every previously undemo'd `@stardust/core` export: `createArrayMethods` (grocery list using all five methods incl. `setByPath`), `createStoreDispatch` (sequence loop showing string-keyed dispatch + restricted `safeDispatch`), `produce`, path utilities (`parsePath` segment visualisation, `getAtPath` live readout, `copyOnWritePath` structural sharing), `safeAwait`, `createMutex` (done/running/queued badge with gate-state caption), `createSingleFlight` (all caller chips resolve simultaneously), `connectDebugLog` (custom `onLog` driving a live diff panel). Each card includes a "View Code" button.

@@ -15,9 +15,14 @@ type SnapshotsOf<T extends readonly StoreContract<unknown>[]> = {
 };
 
 /**
- * A read-only store — the `subscribe`/`getSnapshot` contract required by
- * `useSyncExternalStore` (and `useStore`). Derived stores have no `set`,
- * `setContext`, or domain methods.
+ * Read-only Stardust store for derived/computed state.
+ *
+ * Exposes only the `subscribe` and `getSnapshot` methods (no mutation or context methods).
+ * Returned by `createDerivedStore` for computed projections across one or more source stores.
+ *
+ * @template TResult The shape of the derived snapshot.
+ *
+ * @see createDerivedStore
  */
 export type DerivedStore<TResult> = StoreContract<TResult>;
 
@@ -36,45 +41,35 @@ export type DerivedStoreOptions<TResult> = {
 // ── Factory ───────────────────────────────────────────────────────────────────
 
 /**
- * Creates a read-only derived store that recomputes automatically whenever
- * any source store changes.
+ * Creates a read-only derived store that recomputes automatically whenever any source store changes.
  *
- * The derived snapshot is computed eagerly on creation and recomputed on
- * every source notification. Subscribers are only notified when the new
- * result differs from the previous one according to the `equals` function
- * (default: `Object.is`). Use `shallowEqual` for derives that return new
- * object literals each time.
+ * - Computes its value from one or more source stores using a pure derive function.
+ * - Notifies subscribers only when the derived value actually changes (using `Object.is` or a custom equality function).
+ * - Subscribes to source stores only while it has active listeners (zero overhead when unused).
  *
- * **Lazy subscriptions** — the derived store only subscribes to its sources
- * when its own first listener subscribes, and unsubscribes from all sources
- * when the last listener unsubscribes. This means zero overhead when the
- * derived store is not actively consumed by React.
+ * @template TSources Tuple of source stores (must be at least one).
+ * @template TResult The shape of the derived snapshot.
  *
- * **Derive purity** — the `derive` callback must be a pure function of its
- * snapshot arguments. Never call store methods or `getContext()` inside a
- * derive: those dependencies are invisible to `createDerivedStore` and will
- * not trigger recomputation when they change. Context-dependent work belongs
- * in store methods that write computed results back into the snapshot; the
- * derive then reads those snapshot fields.
+ * @param sources - Array/tuple of source stores to derive from.
+ * @param derive - Pure function that computes the derived value from source snapshots.
+ * @param [options] - Optional: custom equality function for the derived value.
  *
- * @example
- * const countStore = createStore({ count: 0 }, ...);
- * const labelStore = createStore({ label: 'hi' }, ...);
+ * @returns A read-only derived store (see {@link DerivedStore}).
  *
- * // Object result — use shallowEqual to prevent spurious re-renders
+ * @example <caption>Object result (use shallowEqual)</caption>
  * const summary = createDerivedStore(
  *   [countStore, labelStore],
  *   (c, l) => ({ doubled: c.count * 2, upper: l.label.toUpperCase() }),
  *   { equals: shallowEqual },
  * );
  *
- * // Primitive result — default Object.is works well
+ * @example <caption>Primitive result (default Object.is)</caption>
  * const isPositive = createDerivedStore(
  *   [countStore],
  *   (c) => c.count > 0,
  * );
  *
- * // Works directly with useStore
+ * @example <caption>Works with useStore</caption>
  * const snap = useStore(summary);
  */
 export function createDerivedStore<

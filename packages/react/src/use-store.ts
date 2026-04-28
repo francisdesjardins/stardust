@@ -42,44 +42,37 @@ export type UseStoreOptions<TSnapshot, TSlice, TContext> = {
 // ── Overloads ─────────────────────────────────────────────────────────────────
 
 /**
- * Subscribe to a {@link createStore} store from React.
+ * React hook to subscribe to a Stardust store and select state slices with full type safety.
  *
- * **Overload 1 — no options:** returns the full snapshot; re-renders on
- * every store update.
+ * Supports three ergonomic forms:
  *
- * **Overload 2 — selector shorthand:** pass a selector as the second
- * argument for the common case of selecting a primitive field. The component
- * re-renders only when `Object.is(prev, next)` is `false`.
+ * 1. **Full snapshot**: `useStore(store)` — re-renders on any store update.
+ * 2. **Selector shorthand**: `useStore(store, select)` — re-renders only when the selected value changes (by `Object.is` or custom `equals`).
+ * 3. **Options object**: `useStore(store, { select, context, equals })` — combine selector, context injection, and custom equality.
  *
- * **Overload 3 — options object:** use `{ select, context, equals }` to
- * combine a selector, context injection, and custom equality in one call.
+ * - Context is injected before subscription and available in store methods via `getContext()`.
+ * - Selectors that return new object references on every call should use `equals: shallowEqual` to avoid unnecessary re-renders.
+ * - Changing context identity does **not** trigger a re-render; context is treated as stable for the lifetime of the subscription.
  *
- * **Selector ergonomics:**
- * - Primitive selectors (`s => s.count`) work out of the box with the
- *   selector shorthand or `select` option.
- * - Selectors that return **new object references** (`s => ({ a: s.a })`)
- *   will re-render on every update with the default `Object.is` equality.
- *   Pass `equals: shallowEqual` in the options form to suppress that.
+ * @template TSnapshot - Store snapshot type.
+ * @template TSlice - Selected slice type.
+ * @template TContext - Context type (if used).
  *
- * **Context** is treated as stable — changing its identity does not trigger
- * a re-render. Context-dependent derives must be pure on snapshot data only.
+ * @param store - The Stardust store instance.
+ * @returns The selected state slice (or full snapshot).
  *
- * @example
- * // Full snapshot — re-renders on any change
+ * @example <caption>Full snapshot (re-renders on any change)</caption>
  * const snap = useStore(counterStore);
  *
- * @example
- * // Selector shorthand — re-renders only when `count` changes
- * const count = useStore(counterStore, (s) => s.count);
+ * @example <caption>Selector shorthand (re-renders only when count changes)</caption>
+ * const count = useStore(counterStore, s => s.count);
  *
- * @example
- * // Context injection
+ * @example <caption>Context injection</caption>
  * const snap = useStore(store, { context: apiClient });
  *
- * @example
- * // Selector + context + custom equality
+ * @example <caption>Selector + context + custom equality</caption>
  * const slice = useStore(store, {
- *   select: (s) => ({ x: s.x, y: s.y }),
+ *   select: s => ({ x: s.x, y: s.y }),
  *   context: apiClient,
  *   equals: shallowEqual,
  * });
