@@ -1,4 +1,5 @@
 import type { StoreApi } from '@stardust/core';
+import { shallowEqual } from '@stardust/core';
 import { createStore } from '@stardust/core';
 import { useStore } from '@stardust/react';
 
@@ -26,12 +27,18 @@ const selectorContextStore = makePricingStore();
  * inside a store method called from an event handler.
  */
 export function ContextHarness() {
-  const snap = useStore(contextStore, { context: { taxRate: 1 } });
+  // getTotal() is called inside the selector so it runs within useSyncExternalStore's
+  // snapshot cycle — the React Compiler cannot memoize it away.
+  const { base, total } = useStore(contextStore, {
+    select: (snapshot) => ({ base: snapshot.basePrice, total: contextStore.getTotal() }),
+    context: { taxRate: 1 },
+    equals: shallowEqual,
+  });
 
   return (
     <div>
-      <span data-testid="base">{snap.basePrice}</span>
-      <span data-testid="total">{contextStore.getTotal()}</span>
+      <span data-testid="base">{base}</span>
+      <span data-testid="total">{total}</span>
       <button
         onClick={() => {
           contextStore.setByPath('basePrice', 200);
@@ -47,15 +54,20 @@ export function ContextHarness() {
  * Selector + context — verifies both work together.
  */
 export function ContextWithSelectorHarness() {
-  const base = useStore(selectorContextStore, {
-    select: (s) => s.basePrice,
+  // Same pattern: getTotal() inside the selector to stay within useSyncExternalStore.
+  const { base, total } = useStore(selectorContextStore, {
+    select: (snapshot) => ({
+      base: snapshot.basePrice,
+      total: selectorContextStore.getTotal(),
+    }),
     context: { taxRate: 3 },
+    equals: shallowEqual,
   });
 
   return (
     <div>
       <span data-testid="base">{base}</span>
-      <span data-testid="total">{selectorContextStore.getTotal()}</span>
+      <span data-testid="total">{total}</span>
       <button
         onClick={() => {
           selectorContextStore.setByPath('basePrice', 50);
