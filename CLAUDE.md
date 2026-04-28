@@ -87,6 +87,7 @@ All mutations short-circuit notification when `equals(prev, next)` returns `true
 
 - The selected value is cached in a `useRef`. The `subscribe` wrapper checks equality before calling the listener; `getSnapshot` returns the cached reference when data is unchanged.
 - Context is injected via `setContext()` before the `useSyncExternalStore` subscribe call, so store methods receive it synchronously from the first render.
+- Selector functions receive `(snapshot, store)` — the full store (domain methods included) is the second argument. `SnapshotOf<TStore>` extracts the snapshot type so TypeScript can infer it without a separate `TSnapshot` type param in the overloads.
 
 `createStoreContext()` wraps a factory in React Context. Each `Provider` mount creates a fresh store instance (via `useState` lazy initializer); the store is garbage-collected on unmount. An optional `onUnmount` hook handles explicit teardown of non-GC resources (timers, sockets). Default is `null` — do not pass `store.reset()` here as it resolves to any user-defined domain method of that name, not the built-in baseline restore.
 
@@ -96,7 +97,7 @@ All mutations short-circuit notification when `equals(prev, next)` returns `true
 
 Minimal bridge — no memoization cache needed because SolidJS handles it natively:
 
-- `useStore()` creates a `createSignal` with the selected value and custom `equals` as signal options. Store updates call `setSnapshot(() => sel(...))`. `onCleanup` manages teardown.
+- `useStore()` creates a `createSignal` with the selected value and custom `equals` as signal options. Store updates call `setSnapshot(() => sel(...))`. `onCleanup` manages teardown. Selector functions receive `(snapshot, store)` — same contract as the React adapter.
 - `useSuspenseStore()` drives a `createResource` whose source is the `useStore` signal. Fulfilled → `Promise.resolve(data)`; rejected → `Promise.reject(error)`; idle/pending → a never-resolving `Promise`.
 
 ### Async state (`packages/core/src/async-state.ts`)

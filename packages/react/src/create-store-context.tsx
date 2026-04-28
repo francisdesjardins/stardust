@@ -55,12 +55,18 @@ export type StoreContextResult<
   /**
    * Subscribes to the store snapshot.
    *
+   * The selector receives both the snapshot and the full store as arguments,
+   * giving access to domain methods without a separate `useStoreContext` call.
+   *
    * ```ts
    * // Full snapshot
    * const snap = useSnapshot();
    *
    * // Selected slice — re-renders only when the result changes
    * const count = useSnapshot((s) => s.count);
+   *
+   * // Domain method via store second argument
+   * const total = useSnapshot((_s, store) => store.getTotal());
    *
    * // Custom equality — for selectors returning new object refs
    * const pos = useSnapshot((s) => ({ x: s.x, y: s.y }), shallowEqual);
@@ -69,7 +75,7 @@ export type StoreContextResult<
   readonly useSnapshot: {
     (): TSnapshot;
     <TSlice>(
-      selector: (s: TSnapshot) => TSlice,
+      selector: (snapshot: TSnapshot, store: Store<TSnapshot, TMethods, TContext>) => TSlice,
       equals?: (a: TSlice, b: TSlice) => boolean
     ): TSlice;
   };
@@ -102,8 +108,9 @@ export type StoreContextResult<
  *
  * // Consume — inside any descendant
  * function Counter() {
- *   const store = CounterCtx.useStoreContext();           // stable store ref
- *   const count = CounterCtx.useSnapshot((s) => s.count);    // reactive slice
+ *   const store = CounterCtx.useStoreContext();                      // stable store ref
+ *   const count = CounterCtx.useSnapshot((s) => s.count);           // reactive slice
+ *   const total = CounterCtx.useSnapshot((s, store) => store.getTotal()); // domain method
  *   return <button onClick={store.increment}>{count}</button>;
  * }
  * ```
@@ -175,22 +182,24 @@ function createStoreContext<
 
   function useSnapshot(): TSnapshot;
   function useSnapshot<TSlice>(
-    selector: (s: TSnapshot) => TSlice,
+    selector: (snapshot: TSnapshot, store: S) => TSlice,
     equals?: (a: TSlice, b: TSlice) => boolean
   ): TSlice;
   function useSnapshot<TSlice>(
-    selector?: (s: TSnapshot) => TSlice,
+    selector?: (snapshot: TSnapshot, store: S) => TSlice,
     equals?: (a: TSlice, b: TSlice) => boolean
   ): TSnapshot | TSlice {
     const store = useStoreContext();
     // Use useStoreCore (non-overloaded) so Store<TSnapshot, TMethods, TContext>
     // satisfies StoreContractWithOptionalBind structurally — no cast needed.
     // Context is already injected synchronously in Provider; no need to re-pass it.
-    const opts: UseStoreOptions<TSnapshot, TSlice, never> = { select: selector, equals };
-    // Widen to StoreContract (valid structural upcast — Store IS a StoreContract) so the
-    // setContext parameter type doesn't block assignment to StoreContractWithOptionalBind.
-    // Context is already injected by Provider; useStoreCore won't call setContext here.
-    return useStoreCore(store as StoreContract<TSnapshot>, opts);
+    const opts: UseStoreOptions<TSnapshot, TSlice, never, S> = { select: selector, equals };
+    // Cast opts to drop TStore — useStoreCore calls select(snapshot, store) with the
+    // actual S instance at runtime, which satisfies the selector's S parameter.
+    return useStoreCore(
+      store as StoreContract<TSnapshot>,
+      opts as UseStoreOptions<TSnapshot, TSlice, never>
+    );
   }
 
   return { Provider, useStoreContext, useSnapshot };

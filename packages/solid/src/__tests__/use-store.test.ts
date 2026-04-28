@@ -99,6 +99,23 @@ test('unsubscribes from store on cleanup', () => {
   expect(unsub).toBe(true);
 });
 
+test('selector receives store as second argument — domain method accessible', () => {
+  const store = makeMockStore({ count: 0 });
+  const storeWithMethod = {
+    ...store,
+    doubled(): number {
+      return store.getSnapshot().count * 2;
+    },
+  };
+  createRoot((dispose) => {
+    const doubled = useStore(storeWithMethod, (_s, s) => s.doubled());
+    expect(doubled()).toBe(0);
+    storeWithMethod.emit({ count: 5 });
+    expect(doubled()).toBe(10);
+    dispose();
+  });
+});
+
 test('multiple signals from the same store update independently', () => {
   const store = makeMockStore({ x: 1, y: 10 });
   createRoot((dispose) => {

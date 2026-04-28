@@ -30,7 +30,7 @@ export function ContextHarness() {
   // getTotal() is called inside the selector so it runs within useSyncExternalStore's
   // snapshot cycle — the React Compiler cannot memoize it away.
   const { base, total } = useStore(contextStore, {
-    select: (snapshot) => ({ base: snapshot.basePrice, total: contextStore.getTotal() }),
+    select: (snapshot, store) => ({ base: snapshot.basePrice, total: store.getTotal() }),
     context: { taxRate: 1 },
     equals: shallowEqual,
   });
@@ -56,9 +56,9 @@ export function ContextHarness() {
 export function ContextWithSelectorHarness() {
   // Same pattern: getTotal() inside the selector to stay within useSyncExternalStore.
   const { base, total } = useStore(selectorContextStore, {
-    select: (snapshot) => ({
+    select: (snapshot, store) => ({
       base: snapshot.basePrice,
-      total: selectorContextStore.getTotal(),
+      total: store.getTotal(),
     }),
     context: { taxRate: 3 },
     equals: shallowEqual,

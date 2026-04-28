@@ -6,6 +6,7 @@ import {
   ProduceHarness,
   SelectorHarness,
 } from './use-store.story';
+import { SelectorStoreArgHarness } from './use-store/selector-store-arg.story';
 
 test.describe('useStore — equals option', () => {
   test('store update to unrelated field is visible via full snapshot but slice values are unchanged', async ({
@@ -66,6 +67,21 @@ test.describe('useStore', () => {
       await expect(component.getByTestId('count')).toHaveText('1');
       await component.getByRole('button', { name: 'Increment' }).click();
       await expect(component.getByTestId('count')).toHaveText('2');
+    });
+  });
+
+  test.describe('selector store arg', () => {
+    test('domain method result is accessible via selector second argument', async ({ mount }) => {
+      const component = await mount(<SelectorStoreArgHarness />);
+      // basePrice=100, multiplier=1.2 → total=120
+      await expect(component.getByTestId('total')).toHaveText('120');
+    });
+
+    test('selector re-runs domain method when state changes', async ({ mount }) => {
+      const component = await mount(<SelectorStoreArgHarness />);
+      await component.getByRole('button', { name: 'Set 200' }).click();
+      // basePrice=200, multiplier=1.2 → total=240
+      await expect(component.getByTestId('total')).toHaveText('240');
     });
   });
 
