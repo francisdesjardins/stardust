@@ -16,6 +16,9 @@ concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
 jobs:
   # ── Install ──────────────────────────────────────────────────────────────────
   # Runs npm ci once and saves node_modules to cache. Downstream jobs restore
