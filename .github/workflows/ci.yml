@@ -140,10 +140,8 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: unit-test-report
-          path: |
-            packages/core/playwright-report/
-            packages/react/playwright-report/
-            packages/solid/playwright-report/
+          path: packages/core/coverage/
+          if-no-files-found: ignore
           retention-days: 7
 
   # ── Component Tests ──────────────────────────────────────────────────────────
@@ -173,4 +171,5 @@ jobs:
         with:
           name: component-test-report
           path: packages/react/playwright-report/
+          if-no-files-found: ignore
           retention-days: 7
