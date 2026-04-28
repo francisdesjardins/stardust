@@ -30,7 +30,9 @@ type StoreSubscription<TSnapshot> = {
 };
 
 /**
- * Options for `createStoreSubscription`.
+ * Options shared by `createStoreSubscription` and `createStore`.
+ * `context` is only meaningful for `createStore` — it is ignored by
+ * `createStoreSubscription`.
  *
  * @param equals - Equality function used to decide whether `emit()` should
  *   skip notification. When `equals(current, next)` returns `true`, the
@@ -41,10 +43,15 @@ type StoreSubscription<TSnapshot> = {
  *   Override when your snapshot contains values that `structuredClone` cannot
  *   handle (e.g. class instances, functions) or when you prefer a faster
  *   alternative such as `klona` or `lodash/cloneDeep`.
+ * @param context - Initial context value seeded into the store at creation
+ *   time. Equivalent to calling `store.setContext(ctx)` immediately after
+ *   construction, but avoids a separate call when the context is already
+ *   known. Can still be overwritten later via `setContext()`.
  */
-export type StoreSubscriptionOptions<TSnapshot> = {
+export type StoreSubscriptionOptions<TSnapshot, TContext = never> = {
   readonly equals?: ((a: TSnapshot, b: TSnapshot) => boolean) | undefined;
   readonly deepClone?: ((value: TSnapshot) => TSnapshot) | undefined;
+  readonly context?: UnwrapContext<TContext>;
 };
 
 /**
@@ -321,18 +328,21 @@ export type Store<TSnapshot, TMethods, TContext = never> = {
 export function createStore<TSnapshot, TMethods extends Record<string, unknown>, TContext = never>(
   initialSnapshot: TSnapshot,
   methods: (api: StoreApi<TSnapshot, TContext>) => TMethods,
-  options?: StoreSubscriptionOptions<TSnapshot>
+  options?: StoreSubscriptionOptions<TSnapshot, TContext>
 ): Store<TSnapshot, TMethods, TContext> {
   const clone: (value: TSnapshot) => TSnapshot = options?.deepClone ?? structuredClone;
   let resetSnapshot = clone(initialSnapshot);
-  const sub = createStoreSubscription(initialSnapshot, options);
+  const sub = createStoreSubscription(
+    initialSnapshot,
+    options && { equals: options.equals, deepClone: options.deepClone }
+  );
   const equals = options?.equals ?? Object.is;
 
   // ── Context slot ─────────────────────────────────────────────────────────
   // Mutable cell written by useStore({ context }) before any method is called.
   // Methods are always invoked from event handlers (post-commit), never during
   // render, so the slot is always populated by the time getContext() runs.
-  const contextCell = { value: undefined as TContext | undefined };
+  const contextCell = { value: options?.context as TContext | undefined };
 
   function getContext(): GetContextResult<TContext> {
     // The conditional type GetContextResult<TContext> resolves to either

@@ -870,3 +870,52 @@ test.describe('createStore — deepClone option', () => {
     expect(store.getSnapshot()).toEqual({ count: 10 });
   });
 });
+
+test.describe('createStore — context option', () => {
+  test('getContext() returns the value passed at creation', () => {
+    type Ctx = { multiplier: number };
+    const store = createStore<{ price: number }, { total: () => number }, Ctx>(
+      { price: 10 },
+      ({ get, getContext }) => ({
+        total() {
+          return get().price * getContext().multiplier;
+        },
+      }),
+      { context: { multiplier: 5 } }
+    );
+
+    expect(store.total()).toBe(50);
+  });
+
+  test('setContext() overwrites the initial context', () => {
+    type Ctx = { multiplier: number };
+    const store = createStore<{ price: number }, { total: () => number }, Ctx>(
+      { price: 100 },
+      ({ get, getContext }) => ({
+        total() {
+          return get().price * getContext().multiplier;
+        },
+      }),
+      { context: { multiplier: 2 } }
+    );
+
+    store.setContext({ multiplier: 3 });
+    expect(store.total()).toBe(300);
+  });
+
+  test('getContext() returns undefined when no context option is provided', () => {
+    type Ctx = { taxRate: number };
+    let captured: Ctx | undefined;
+    const store = createStore<{ price: number }, { capture: () => void }, Ctx>(
+      { price: 100 },
+      ({ getContext }) => ({
+        capture() {
+          captured = getContext();
+        },
+      })
+    );
+
+    store.capture();
+    expect(captured).toBeUndefined();
+  });
+});

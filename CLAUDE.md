@@ -132,7 +132,7 @@ SolidJS examples are **islands** mounted by React via `useEffect`:
 - **Commits**: [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/)
 - **Changelog**: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), one `## YYYY-MM-DD` block per date
 - **Files**: kebab-case. **Exports**: PascalCase types/components, camelCase functions/hooks
-- **Optional props**: `| undefined` suffix (`onClose?: ((r: Result) => void) | undefined`)
+- **Optional props**: Add `| undefined` only when a caller may hold a `T | undefined` variable and needs to pass it explicitly — e.g. `onClose?: ((r: Result) => void) | undefined`. Omit `| undefined` when the field is simply omittable and callers always have a concrete value or nothing.
 - **Type safety**: No `as` casts — use `Extract<Source, Target>` for narrowing, `satisfies` to prevent widening. `ts-reset` active.
 
 ## Key Constraints
