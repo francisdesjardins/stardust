@@ -16,85 +16,135 @@ concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
 
+env:
+  PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: 1
+
 jobs:
-  # ── Lint & Format ────────────────────────────────────────────────────────────
-  lint:
-    name: Lint & Format
+  # ── Install ──────────────────────────────────────────────────────────────────
+  # Runs npm ci once and saves node_modules to cache. Downstream jobs restore
+  # from the same key and skip installation entirely on a cache hit.
+  install:
+    name: Install
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
-      - name: Setup Node
-        uses: actions/setup-node@v4
+      - uses: actions/setup-node@v6
         with:
           node-version: '24'
           cache: 'npm'
 
+      - name: Restore node_modules
+        id: cache
+        uses: actions/cache@v5
+        with:
+          path: |
+            node_modules
+            packages/*/node_modules
+            playground/node_modules
+          key: node-modules-${{ hashFiles('package-lock.json') }}
+
       - name: Install dependencies
+        if: steps.cache.outputs.cache-hit != 'true'
         run: npm ci
 
-      - name: Lint
-        run: npm run lint
+  # ── Lint & Format ────────────────────────────────────────────────────────────
+  lint:
+    name: Lint & Format
+    needs: install
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
 
-      - name: Format check
-        run: npm run format:check
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+          cache: 'npm'
+
+      - uses: actions/cache@v5
+        with:
+          path: |
+            node_modules
+            packages/*/node_modules
+            playground/node_modules
+          key: node-modules-${{ hashFiles('package-lock.json') }}
+
+      - run: npm run lint
+      - run: npm run format:check
 
   # ── Type Check ───────────────────────────────────────────────────────────────
   type-check:
     name: Type Check
+    needs: install
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
-      - name: Setup Node
-        uses: actions/setup-node@v4
+      - uses: actions/setup-node@v6
         with:
           node-version: '24'
           cache: 'npm'
 
-      - name: Install dependencies
-        run: npm ci
+      - uses: actions/cache@v5
+        with:
+          path: |
+            node_modules
+            packages/*/node_modules
+            playground/node_modules
+          key: node-modules-${{ hashFiles('package-lock.json') }}
 
-      - name: Type check
-        run: npm run type-check
+      - run: npm run type-check
 
   # ── Unit Tests ───────────────────────────────────────────────────────────────
+  # Unit tests are pure Node — no browser is launched. PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD
+  # is set globally so npm ci never fetches browser binaries here.
   test-unit:
     name: Unit Tests
+    needs: install
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
-      - name: Setup Node
-        uses: actions/setup-node@v4
+      - uses: actions/setup-node@v6
         with:
           node-version: '24'
           cache: 'npm'
 
-      - name: Install dependencies
-        run: npm ci
+      - uses: actions/cache@v5
+        with:
+          path: |
+            node_modules
+            packages/*/node_modules
+            playground/node_modules
+          key: node-modules-${{ hashFiles('package-lock.json') }}
 
-      - name: Run core unit tests
-        run: npx --workspace=packages/core playwright test --project=unit
+      - run: npx --workspace=packages/core playwright test --project=unit
+      - run: npx --workspace=packages/react playwright test --project=unit
+      - run: npx --workspace=packages/solid playwright test --project=unit
 
-      - name: Run react unit tests
-        run: npx --workspace=packages/react playwright test --project=unit
-
-      - name: Run solid unit tests
-        run: npx --workspace=packages/solid playwright test --project=unit
+      - name: Upload unit test reports
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: unit-test-report
+          path: packages/core/coverage/
+          if-no-files-found: ignore
+          retention-days: 7
 
   # ── Component Tests ──────────────────────────────────────────────────────────
+  # Runs inside the official Playwright Docker image — browsers are pre-installed,
+  # no download needed. PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD has no effect here.
   test-component:
     name: Component Tests (React)
+    needs: install
     runs-on: ubuntu-latest
     container:
       image: mcr.microsoft.com/playwright:v1.59.1-noble
       options: --user 1001
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
-      - name: Setup Node
-        uses: actions/setup-node@v4
+      - uses: actions/setup-node@v6
         with:
           node-version: '24'
           cache: 'npm'
@@ -102,13 +152,13 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Run react component tests
-        run: npx --workspace=packages/react playwright test --project=component
+      - run: npx --workspace=packages/react playwright test --project=component
 
-      - name: Upload test report
+      - name: Upload component test report
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
-          name: playwright-report
+          name: component-test-report
           path: packages/react/playwright-report/
+          if-no-files-found: ignore
           retention-days: 7
