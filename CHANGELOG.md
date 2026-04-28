@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+#### `playground`
+
+- `/utilities` route — 8 interactive examples covering every previously undemo'd `@stardust/core` export: `createArrayMethods` (grocery list using all five methods incl. `setByPath`), `createStoreDispatch` (sequence loop showing string-keyed dispatch + restricted `safeDispatch`), `produce`, path utilities (`parsePath` segment visualisation, `getAtPath` live readout, `copyOnWritePath` structural sharing), `safeAwait`, `createMutex` (done/running/queued badge with gate-state caption), `createSingleFlight` (all caller chips resolve simultaneously), `connectDebugLog` (custom `onLog` driving a live diff panel). Each card includes a "View Code" button.
+- `StarfieldBanner` — animated starfield with shooting stars, rendered on the Getting Started page.
+- Sidebar: **Utilities** nav entry positioned between Getting Started and React.
+
 ### Fixed
 
 #### `@stardust/react`

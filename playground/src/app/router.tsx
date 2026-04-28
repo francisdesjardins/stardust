@@ -37,7 +37,19 @@ const solidRoute = createRoute({
   component: lazyRouteComponent(() => import('@/pages/solid'), 'SolidPage'),
 });
 
-const routeTree = rootRoute.addChildren([indexRoute, gettingStartedRoute, reactRoute, solidRoute]);
+const utilitiesRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/utilities',
+  component: lazyRouteComponent(() => import('@/pages/utilities'), 'UtilitiesPage'),
+});
+
+const routeTree = rootRoute.addChildren([
+  indexRoute,
+  gettingStartedRoute,
+  reactRoute,
+  solidRoute,
+  utilitiesRoute,
+]);
 
 const history = import.meta.env['VITE_HASH_ROUTER'] === 'true' ? createHashHistory() : undefined;
 
