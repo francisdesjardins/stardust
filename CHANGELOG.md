@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 #### `@stardust/core`
 
+- `createStore()` options — `context` field lets you seed the store's context at creation time instead of calling `store.setContext()` separately; `setContext()` still overwrites it at any point later
 - `createStore()` — POJO store factory with snapshot-based state, `get`, `set`, `update`, `dispatch`, and `subscribe`
 - `createStoreSubscription()` — low-level subscription primitive shared by stores and derived stores
 - `createDerivedStore()` — lazily-subscribed derived store that recomputes on source mutations with structural sharing

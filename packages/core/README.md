@@ -60,20 +60,21 @@ Creates a store with a POJO snapshot and domain methods.
 createStore<TState, TMethods, TContext = never>(
   initialSnapshot: TState,
   builder: (api: StoreApi<TState, TContext>) => TMethods,
-  options?: StoreSubscriptionOptions<TState>,
+  options?: StoreSubscriptionOptions<TState, TContext>,
 ): Store<TState, TMethods>
 ```
 
-| Option      | Type                                | Default           | Description                                                                                                                                                 |
-| ----------- | ----------------------------------- | ----------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `equals`    | `(a: TState, b: TState) => boolean` | `Object.is`       | Equality function used by `set()` and `update()`. Skips notification when the new snapshot equals the current one.                                          |
-| `deepClone` | `(value: TState) => TState`         | `structuredClone` | Deep-copy function used by `update()` and `reset()`. Override to support non-POJO snapshots or use a faster alternative (`klona`, `lodash/cloneDeep`, etc). |
+| Option      | Type                                | Default           | Description                                                                                                                                                                  |
+| ----------- | ----------------------------------- | ----------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `equals`    | `(a: TState, b: TState) => boolean` | `Object.is`       | Equality function used by `set()` and `update()`. Skips notification when the new snapshot equals the current one.                                                           |
+| `deepClone` | `(value: TState) => TState`         | `structuredClone` | Deep-copy function used by `update()` and `reset()`. Override to support non-POJO snapshots or use a faster alternative (`klona`, `lodash/cloneDeep`, etc).                  |
+| `context`   | `UnwrapContext<TContext>`           | `undefined`       | Seeds the store's context at creation time. Equivalent to calling `store.setContext(ctx)` immediately after construction. Can still be overwritten later via `setContext()`. |
 
 The three generics are all optional — TypeScript infers them from the arguments:
 
 - **`TState`** — plain serialisable snapshot. Must survive `structuredClone()` (the default `deepClone`). Supply a custom `deepClone` option if your snapshot contains values that `structuredClone` cannot handle.
 - **`TMethods`** — domain methods returned by the builder. Merged onto the store object alongside the snapshot.
-- **`TContext`** — collaborators injected at the React boundary via `useStore({ context })`. Store methods retrieve them via `getContext()` — no module-level imports, no singletons.
+- **`TContext`** — collaborators injected via `useStore({ context })` or `options.context` at creation time. Store methods retrieve them via `getContext()` — no module-level imports, no singletons.
 
 ```ts
 type ApiClient = { fetchUser(id: string): Promise<User> };
