@@ -19,6 +19,7 @@ const configStore = createStore(
   {
     config: null as { theme: string; version: string } | null,
     calls: 0,
+    resolved: 0,
     hits: 0,
   },
   ({ set, get }) => ({
@@ -26,12 +27,13 @@ const configStore = createStore(
       set({ ...get(), calls: get().calls + 1 });
       return loadFlight(() =>
         fetchConfig().then((config) => {
-          set({ ...get(), config, hits: networkHits });
+          // All callers that joined this flight receive the result simultaneously
+          set({ ...get(), config, hits: networkHits, resolved: get().calls });
         })
       );
     },
     reset() {
-      set({ config: null, calls: 0, hits: 0 });
+      set({ config: null, calls: 0, resolved: 0, hits: 0 });
       networkHits = 0;
     },
   })
@@ -44,7 +46,7 @@ const loadThree = () => {
 };
 
 export function SingleFlightExample() {
-  const { config, calls, hits } = useStore(configStore);
+  const { config, calls, resolved, hits } = useStore(configStore);
 
   return (
     <ExampleLayout result={config ? `${config.theme} / ${config.version}` : 'not loaded'}>
@@ -80,8 +82,8 @@ export function SingleFlightExample() {
             key={i}
             label={`call ${String(i + 1)}`}
             size="small"
-            color={i < hits ? 'primary' : 'default'}
-            variant={i < hits ? 'filled' : 'outlined'}
+            color={i < resolved ? 'success' : 'default'}
+            variant={i < resolved ? 'filled' : 'outlined'}
           />
         ))}
       </Stack>

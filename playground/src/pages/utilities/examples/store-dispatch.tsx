@@ -4,6 +4,8 @@ import { Button, Chip, Stack, Typography } from '@mui/material';
 import { useState } from 'react';
 import { ExampleLayout } from '@/entities/example';
 
+type Action = 'increment' | 'decrement' | 'reset';
+
 const counterStore = createStore({ count: 0 }, ({ set, get }) => ({
   increment() {
     set({ count: get().count + 1 });
@@ -16,59 +18,97 @@ const counterStore = createStore({ count: 0 }, ({ set, get }) => ({
   },
 }));
 
-// All domain methods are dispatchable by default
+// Full dispatch — all domain methods reachable
 const dispatch = createStoreDispatch(counterStore);
 
-// Restricted dispatch — only increment/decrement reachable
-const safeDispatch = createStoreDispatch(counterStore, { domain: ['increment', 'decrement'] });
+// Restricted dispatch — reset excluded at the type level
+const safeDispatch = createStoreDispatch(counterStore, {
+  domain: ['increment', 'decrement'],
+});
 
-type Action = 'increment' | 'decrement' | 'reset';
+// The key use case: action names are data — loop over them
+const SEQUENCES: { label: string; actions: Action[] }[] = [
+  { label: '+3', actions: ['increment', 'increment', 'increment'] },
+  { label: '−2', actions: ['decrement', 'decrement'] },
+  { label: 'bounce', actions: ['increment', 'increment', 'decrement'] },
+  { label: 'reset', actions: ['reset'] },
+];
 
 export function StoreDispatchExample() {
   const { count } = useStore(counterStore);
-  const [history, setHistory] = useState<Action[]>([]);
+  const [log, setLog] = useState<Action[]>([]);
 
-  const fire = (action: Action) => {
-    dispatch(action);
-    setHistory((h) => [action, ...h].slice(0, 6));
+  const run = (actions: Action[]) => {
+    for (const action of actions) {
+      dispatch(action);
+    }
+    setLog((prev) => [...actions, ...prev].slice(0, 8));
+  };
+
+  const safeRun = (action: 'increment' | 'decrement') => {
+    safeDispatch(action);
+    setLog((prev) => [action, ...prev].slice(0, 8));
   };
 
   return (
     <ExampleLayout result={`count: ${String(count)}`}>
       <Stack direction="column" sx={{ gap: 1, width: '100%' }}>
         <Stack direction="row" sx={{ gap: 1, flexWrap: 'wrap' }}>
-          {(['increment', 'decrement', 'reset'] as const).map((action) => (
+          {SEQUENCES.map(({ label, actions }) => (
             <Button
-              key={action}
+              key={label}
               variant="outlined"
               size="small"
               onClick={() => {
-                fire(action);
+                run(actions);
               }}
             >
-              dispatch("{action}")
+              {label}
             </Button>
           ))}
         </Stack>
-        <Stack direction="row" sx={{ gap: 1, flexWrap: 'wrap' }}>
+
+        {/* Live log — chips appear as actions are dispatched */}
+        <Stack direction="row" sx={{ gap: 0.5, flexWrap: 'wrap', minHeight: 24 }}>
+          {log.map((a, i) => (
+            <Chip
+              key={i}
+              label={a}
+              size="small"
+              variant="outlined"
+              color={a === 'reset' ? 'error' : a === 'increment' ? 'success' : 'default'}
+            />
+          ))}
+          {log.length === 0 && (
+            <Typography variant="caption" color="text.disabled">
+              dispatched actions appear here
+            </Typography>
+          )}
+        </Stack>
+
+        {/* safeDispatch — reset excluded at the type level */}
+        <Stack direction="row" sx={{ gap: 1, alignItems: 'center', flexWrap: 'wrap' }}>
           <Button
             variant="outlined"
             size="small"
             onClick={() => {
-              safeDispatch('increment');
-              setHistory((h) => (['increment', ...h] as Action[]).slice(0, 6));
+              safeRun('increment');
             }}
           >
             safeDispatch("increment")
           </Button>
-          <Typography variant="caption" color="text.secondary" sx={{ alignSelf: 'center' }}>
-            (reset not allowed — type error at compile time)
+          <Button
+            variant="outlined"
+            size="small"
+            onClick={() => {
+              safeRun('decrement');
+            }}
+          >
+            safeDispatch("decrement")
+          </Button>
+          <Typography variant="caption" color="text.secondary">
+            "reset" excluded — type error if you try
           </Typography>
-        </Stack>
-        <Stack direction="row" sx={{ gap: 0.5, flexWrap: 'wrap' }}>
-          {history.map((a, i) => (
-            <Chip key={i} label={a} size="small" variant="outlined" />
-          ))}
         </Stack>
       </Stack>
     </ExampleLayout>
