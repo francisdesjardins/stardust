@@ -99,6 +99,7 @@ export function useStore<TSnapshot, TContext>(
   store: {
     readonly subscribe: (listener: () => void) => () => void;
     readonly getSnapshot: () => TSnapshot;
+    readonly listenerCount: number;
     readonly setContext: (ctx: TContext) => void;
   },
   options: {

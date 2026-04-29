@@ -125,6 +125,10 @@ export function createDerivedStore<
   }
 
   return {
+    get listenerCount(): number {
+      return listenerCount;
+    },
+
     subscribe(listener: () => void): () => void {
       if (listenerCount === 0) {
         // Silently catch up on changes that occurred while the derived
