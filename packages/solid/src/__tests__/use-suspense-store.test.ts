@@ -32,6 +32,9 @@ function makeMockAsyncStore<T>(initial: AsyncState<T>): AsyncStore<T> {
       listeners.add(listener);
       return () => listeners.delete(listener);
     },
+    get listenerCount() {
+      return listeners.size;
+    },
     emit: (next: AsyncState<T>) => {
       snapshot = { data: next };
       for (const l of listeners) {

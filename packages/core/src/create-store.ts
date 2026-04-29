@@ -4,8 +4,9 @@ import { copyOnWritePath, getAtPath, parsePath } from './path-utils';
 // ── Subscription plumbing ─────────────────────────────────────────────────────
 
 /**
- * Minimal read-only contract for a store — the `subscribe`/`getSnapshot` pair
- * required by `useSyncExternalStore`.
+ * Minimal read-only contract for a store — `subscribe`, `getSnapshot`, and
+ * `listenerCount` — the minimum surface required by `useSyncExternalStore`
+ * plus observer awareness.
  *
  * Used as a structural bound wherever the full `Store<TSnapshot, TMethods>`
  * is not needed (e.g. `createDerivedStore` sources, `useStore` overloads,
@@ -14,6 +15,8 @@ import { copyOnWritePath, getAtPath, parsePath } from './path-utils';
 export type StoreContract<TSnapshot> = {
   readonly subscribe: (listener: () => void) => () => void;
   readonly getSnapshot: () => TSnapshot;
+  /** Number of active listeners. `0` means no component, hook, or watcher is currently subscribed. */
+  readonly listenerCount: number;
 };
 
 export type StoreSelector<TSnapshot, TSlice> = (snapshot: TSnapshot) => TSlice;
@@ -21,6 +24,8 @@ export type StoreSelector<TSnapshot, TSlice> = (snapshot: TSnapshot) => TSlice;
 type StoreSubscription<TSnapshot> = {
   readonly subscribe: (listener: () => void) => () => void;
   readonly getSnapshot: () => TSnapshot;
+  /** Live count of active listeners (`listeners.size`). */
+  readonly listenerCount: number;
   /** Replace the snapshot **and** notify all listeners. */
   readonly emit: (nextSnapshot: TSnapshot) => void;
   /** Replace the snapshot reference without notifying listeners. */
@@ -57,9 +62,10 @@ export type StoreSubscriptionOptions<TSnapshot, TContext = never> = {
 /**
  * Creates the subscription plumbing required by `useSyncExternalStore`.
  *
- * Returns `{ subscribe, getSnapshot, emit, setSnapshot, notify }`:
+ * Returns `{ subscribe, getSnapshot, listenerCount, emit, setSnapshot, notify }`:
  * - `subscribe` — adds a listener and returns an unsubscribe function
  * - `getSnapshot` — returns the current snapshot (immutable reference)
+ * - `listenerCount` — live count of active listeners; O(1) read of `listeners.size`
  * - `emit` — replaces the snapshot and notifies all listeners. Skips
  *   notification when the next snapshot is equal to the current one
  *   according to the `equals` function (default: `Object.is`).
@@ -100,6 +106,10 @@ export function createStoreSubscription<TSnapshot>(
 
     getSnapshot(): TSnapshot {
       return snapshot;
+    },
+
+    get listenerCount(): number {
+      return listeners.size;
     },
 
     emit(nextSnapshot: TSnapshot): void {
@@ -205,19 +215,12 @@ export type StoreApi<TSnapshot, TContext = never> = {
 };
 
 /**
- * Return type of `createStore`: the low-level `subscribe`/`getSnapshot`
- * contract (for `useSyncExternalStore`) merged with domain methods.
- *
- * `setContext(ctx)` binds a readonly context that store methods can read via
- * `getContext()`. Called automatically by `useStore({ context })` inside React,
- * but can also be called directly outside React before invoking store methods.
- */
-/**
  * Stardust store instance: snapshot contract, core methods, and domain API.
  *
- * Combines the minimal subscription contract (`subscribe`, `getSnapshot`) with
- * mutation methods (`set`, `update`, `setByPath`, etc.), context binding, and
- * all domain-specific methods returned from your `methods` builder.
+ * Combines the minimal subscription contract (`subscribe`, `getSnapshot`,
+ * `listenerCount`) with mutation methods (`set`, `update`, `setByPath`, etc.),
+ * context binding, and all domain-specific methods returned from your `methods`
+ * builder.
  *
  * - Use `setContext(ctx)` to inject a context object (e.g. API client) for use in store methods.
  * - All core methods are documented in {@link StoreApi}.
@@ -251,6 +254,8 @@ export type Store<TSnapshot, TMethods, TContext = never> = {
   readonly subscribe: (listener: () => void) => () => void;
   /** Get the current snapshot (POJO state). */
   readonly getSnapshot: () => TSnapshot;
+  /** Number of active listeners. `0` means no component, hook, or watcher is currently subscribed. */
+  readonly listenerCount: number;
   /** Replace the snapshot and notify listeners. Accepts a new value or updater function. */
   readonly set: (next: TSnapshot | ((prev: TSnapshot) => TSnapshot)) => void;
   /** Draft-based partial update: clones, mutates, and emits if changed. */
@@ -442,6 +447,9 @@ export function createStore<TSnapshot, TMethods extends Record<string, unknown>,
   const store = {
     subscribe: sub.subscribe,
     getSnapshot: sub.getSnapshot,
+    get listenerCount(): number {
+      return sub.listenerCount;
+    },
     set,
     update,
     getByPath,

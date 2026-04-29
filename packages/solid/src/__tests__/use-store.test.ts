@@ -13,6 +13,9 @@ function makeMockStore<T>(initial: T): StoreContract<T> & { emit: (next: T) => v
       listeners.add(listener);
       return () => listeners.delete(listener);
     },
+    get listenerCount() {
+      return listeners.size;
+    },
     emit: (next: T) => {
       snapshot = next;
       for (const l of listeners) {

@@ -197,6 +197,7 @@ Use `MaybeContext<T>` when context may arrive asynchronously — `getContext()` 
 | ------------------------ | ----------------------------------------------------------------------------------- |
 | `subscribe(listener)`    | Adds a listener, returns unsubscribe. Compatible with `useSyncExternalStore`        |
 | `getSnapshot()`          | Returns the current snapshot                                                        |
+| `listenerCount`          | Number of active subscribers. `0` means no component or watcher is subscribed       |
 | `set(next)`              | Same as `StoreApi.set`                                                              |
 | `update(recipe)`         | Same as `StoreApi.update`                                                           |
 | `getByPath(path)`        | Same as `StoreApi.getByPath`                                                        |

@@ -919,3 +919,77 @@ test.describe('createStore — context option', () => {
     expect(captured).toBeUndefined();
   });
 });
+
+test.describe('createStoreSubscription — listenerCount', () => {
+  test('listenerCount is 0 with no subscribers', () => {
+    const sub = createStoreSubscription(0);
+    expect(sub.listenerCount).toBe(0);
+  });
+
+  test('listenerCount is 1 after one subscribe call', () => {
+    const sub = createStoreSubscription(0);
+    sub.subscribe(() => {});
+    expect(sub.listenerCount).toBe(1);
+  });
+
+  test('listenerCount increments with multiple concurrent subscribers', () => {
+    const sub = createStoreSubscription(0);
+    sub.subscribe(() => {});
+    sub.subscribe(() => {});
+    expect(sub.listenerCount).toBe(2);
+  });
+
+  test('listenerCount returns to 0 after all unsubscribes', () => {
+    const sub = createStoreSubscription(0);
+    const unsub1 = sub.subscribe(() => {});
+    const unsub2 = sub.subscribe(() => {});
+    unsub1();
+    unsub2();
+    expect(sub.listenerCount).toBe(0);
+  });
+
+  test('listenerCount decrements correctly when only one of two subscribers unsubscribes', () => {
+    const sub = createStoreSubscription(0);
+    const unsub1 = sub.subscribe(() => {});
+    sub.subscribe(() => {});
+    unsub1();
+    expect(sub.listenerCount).toBe(1);
+  });
+});
+
+test.describe('createStore — listenerCount', () => {
+  test('listenerCount is 0 with no subscribers', () => {
+    const store = createStore({ count: 0 }, () => ({}));
+    expect(store.listenerCount).toBe(0);
+  });
+
+  test('listenerCount is 1 after one subscribe call', () => {
+    const store = createStore({ count: 0 }, () => ({}));
+    store.subscribe(() => {});
+    expect(store.listenerCount).toBe(1);
+  });
+
+  test('listenerCount increments with multiple concurrent subscribers', () => {
+    const store = createStore({ count: 0 }, () => ({}));
+    store.subscribe(() => {});
+    store.subscribe(() => {});
+    expect(store.listenerCount).toBe(2);
+  });
+
+  test('listenerCount returns to 0 after all unsubscribes', () => {
+    const store = createStore({ count: 0 }, () => ({}));
+    const unsub1 = store.subscribe(() => {});
+    const unsub2 = store.subscribe(() => {});
+    unsub1();
+    unsub2();
+    expect(store.listenerCount).toBe(0);
+  });
+
+  test('listenerCount decrements correctly when only one of two subscribers unsubscribes', () => {
+    const store = createStore({ count: 0 }, () => ({}));
+    const unsub1 = store.subscribe(() => {});
+    store.subscribe(() => {});
+    unsub1();
+    expect(store.listenerCount).toBe(1);
+  });
+});

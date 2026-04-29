@@ -314,4 +314,60 @@ test.describe('createDerivedStore', () => {
       expect(typeof derived.getSnapshot).toBe('function');
     });
   });
+
+  test.describe('listenerCount', () => {
+    test('listenerCount is 0 before any subscriber', () => {
+      const counter = makeCounter(0);
+      const derived = createDerivedStore([counter], (c) => c.count);
+      expect(derived.listenerCount).toBe(0);
+    });
+
+    test('listenerCount is 1 while one subscriber is active', () => {
+      const counter = makeCounter(0);
+      const derived = createDerivedStore([counter], (c) => c.count);
+      derived.subscribe(() => {});
+      expect(derived.listenerCount).toBe(1);
+    });
+
+    test('listenerCount returns to 0 after unsubscribe', () => {
+      const counter = makeCounter(0);
+      const derived = createDerivedStore([counter], (c) => c.count);
+      const unsub = derived.subscribe(() => {});
+      unsub();
+      expect(derived.listenerCount).toBe(0);
+    });
+
+    test('listenerCount > 0 correlates with lazy source subscription being active', () => {
+      let sourceListenerCount = 0;
+      const source = createStore({ value: 1 }, () => ({}));
+      // Wrap source in a proxy that counts active subscriptions without mutating readonly props
+      const trackedSource = {
+        getSnapshot: () => source.getSnapshot(),
+        get listenerCount() {
+          return source.listenerCount;
+        },
+        subscribe: (listener: () => void) => {
+          sourceListenerCount++;
+          const unsub = source.subscribe(listener);
+          return () => {
+            sourceListenerCount--;
+            unsub();
+          };
+        },
+      };
+
+      const derived = createDerivedStore([trackedSource], (s) => s.value);
+
+      expect(derived.listenerCount).toBe(0);
+      expect(sourceListenerCount).toBe(0);
+
+      const unsub = derived.subscribe(() => {});
+      expect(derived.listenerCount).toBe(1);
+      expect(sourceListenerCount).toBe(1);
+
+      unsub();
+      expect(derived.listenerCount).toBe(0);
+      expect(sourceListenerCount).toBe(0);
+    });
+  });
 });

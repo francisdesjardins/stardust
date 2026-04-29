@@ -151,6 +151,7 @@ const BUILTIN_KEYS = [
 const NON_DOMAIN_KEYS = new Set([
   'subscribe',
   'getSnapshot',
+  'listenerCount',
   'setContext',
   'reset',
   ...BUILTIN_KEYS,
