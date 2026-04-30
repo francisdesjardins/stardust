@@ -22,7 +22,7 @@ export type {
 } from './create-store';
 
 export { createArrayMethods } from './create-array-methods';
-export type { ArrayMethods, ArrayMethodsApi } from './create-array-methods';
+export type { ArrayMethods, ArrayMethodsFactory } from './create-array-methods';
 
 export { createDerivedStore } from './create-derived-store';
 export type { DerivedStore, DerivedStoreOptions } from './create-derived-store';

@@ -26,8 +26,7 @@ npm run type-check       # TypeScript check across all workspaces
 npm run lint:fix         # Lint and auto-fix
 npm run format           # Format code
 npm test                 # All tests (core unit + react CT)
-npm run bench            # Store benchmarks (1 round, quick dev check)
-npm run bench:stable     # Fresh baseline (clears history, 10 × 5-round runs)
+npm run bench            # Store benchmarks
 npm run ncu              # Check for dependency updates (dry run)
 npm run ncu:update       # Update all workspace package.json files to latest
 ```
@@ -75,6 +74,7 @@ Key relationships:
 - **`watch(store, selector?, cb)`** — pure observer with no React dependency. Fires only on change (never immediately). Overloaded for full snapshot or selector.
 - **`createDerivedStore(sources, derive)`** — recomputes on source mutation with **lazy subscription** (sources only subscribed while the derived store has active listeners). Calls `setSnapshot` silently on first subscribe to avoid React tear-detection loops.
 - **`setByPath()`** — uses structural sharing: shallow-copies only the mutation path spine; unchanged subtrees keep reference identity.
+- **`createArrayMethods(defaults)`** — two-stage factory (`createArrayMethods<TItem>(defaults).mount(api, path)`). Returns `ArrayMethods<TItem>`: `add`, `remove`, `set`, `setByPath`, `move`, `upsert`. All writes use structural sharing via `setSnapshot + copyOnWritePath`. `upsert(needle, predicate)` replaces the first matching item or appends — predicate must be a `function` expression (not arrow) so `this` refers to the needle.
 - **`batch(fn)`** — increments a depth counter; listeners are deferred until depth returns to zero.
 
 All mutations short-circuit notification when `equals(prev, next)` returns `true` (default `Object.is`).

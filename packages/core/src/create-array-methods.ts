@@ -7,24 +7,13 @@ import { copyOnWritePath, parsePath } from './path-utils';
 /**
  * Standard set of mutation helpers for an array field in a Stardust store.
  *
- * Returned by {@link createArrayMethods} and intended to be spread into your store's domain methods.
+ * Returned by {@link ArrayMethodsFactory.mount} and intended to be spread into your store's domain methods.
  *
  * - All operations use structural sharing: only the array and the changed item are shallow-copied; all other branches retain reference identity.
  * - Out-of-bounds indices are safe no-ops.
  * - Use `set` for partial updates, or `setByPath` for deep/surgical changes.
  *
  * @template TItem - The array item type (must be a POJO).
- *
- * @example <caption>Basic usage</caption>
- * const store = createStore(INITIAL, (api) => ({
- *   phones: createArrayMethods(api, 'phones', { number: '', label: 'mobile' }),
- * }));
- *
- * store.phones.add();
- * store.phones.set(0, { number: '5141234567' });
- * store.phones.setByPath(0, 'label', 'work');
- * store.phones.remove(1);
- * store.phones.move(0, 2);
  */
 export type ArrayMethods<TItem extends object> = {
   /**
@@ -60,148 +49,185 @@ export type ArrayMethods<TItem extends object> = {
    * @param to - Destination index.
    */
   readonly move: (from: number, to: number) => void;
+  /**
+   * Replace an existing item if the predicate matches, or append it if no match is found.
+   * When `needle` is an array, each item is upserted in order in a single store write.
+   *
+   * @param needle - Item or array of items to upsert.
+   * @param predicate - Matching function. Inside the callback, `this` is the needle being tested.
+   *   **Must be a `function` expression — not an arrow function.** Arrow functions capture `this`
+   *   lexically and will not receive the needle as `this`.
+   *
+   * @example
+   * store.items.upsert(serverItem, function (item) {
+   *   return this.id === item.id;
+   * });
+   */
+  readonly upsert: (
+    needle: TItem | TItem[],
+    predicate: (this: TItem, value: TItem, index: number, arr: TItem[]) => boolean
+  ) => void;
 };
 
 /**
- * Minimal array access API for custom methods in {@link createArrayMethods}.
- *
- * Use these helpers to implement domain-specific lookups or mutations without accessing the outer store API directly.
+ * Returned by {@link createArrayMethods}. Call `.mount(api, path)` inside your domain builder to bind
+ * the helpers to a specific store and array path.
  *
  * @template TItem - The array item type.
  */
-export type ArrayMethodsApi<TItem extends object> = {
+/** Filters `PathsOf<TSnapshot>` to only paths whose value extends `TItem[]`. */
+type ArrayPathsOf<TSnapshot, TItem extends object> = {
+  [P in PathsOf<TSnapshot>]: ValueAtPath<TSnapshot, P> extends TItem[] ? P : never;
+}[PathsOf<TSnapshot>];
+
+/**
+ * Returned by {@link createArrayMethods}. Call `.mount(api, path)` inside your domain builder to bind
+ * the helpers to a specific store and array path.
+ *
+ * @template TItem - The array item type.
+ */
+export type ArrayMethodsFactory<TItem extends object> = {
   /**
-   * Get the current array value from the store snapshot.
-   * @returns The array of items.
+   * Bind the array helpers to a specific store and array path.
+   *
+   * Writes use structural sharing (`setSnapshot` + `copyOnWritePath`) — no `structuredClone` on the full snapshot.
+   *
+   * @param api - The StoreApi received by your store's domain builder.
+   * @param path - Path to an array field of `TItem[]` within the snapshot (non-array paths are excluded).
    */
-  readonly getArray: () => TItem[];
-  /**
-   * Replace the array value in the store snapshot, using structural sharing.
-   * @param next - The new array value.
-   */
-  readonly setArray: (next: TItem[]) => void;
+  mount<TSnapshot, TContext = never>(
+    api: StoreApi<TSnapshot, TContext>,
+    path: ArrayPathsOf<TSnapshot, TItem>
+  ): ArrayMethods<TItem>;
 };
 
 // ── Factory ──────────────────────────────────────────────────────────────────
 
 /**
- * Creates a namespaced set of mutation helpers for an array field in a Stardust store.
+ * Creates a reusable factory for typed array mutation helpers.
  *
- * Use this inside your store's domain methods builder to add ergonomic, type-safe array operations.
+ * **Two-stage usage:**
+ * 1. Call `createArrayMethods<TItem>(defaults)` once — outside the store builder — to define the item shape and defaults.
+ * 2. Call `.mount(api, path)` inside your domain builder to bind the helpers to a store + path.
+ *
+ * Provide `TItem` explicitly to prevent TypeScript from narrowing literal types (e.g. `asyncIdle` → `AsyncIdle`), avoiding the need for `as` casts.
  *
  * - All mutations use structural sharing: only the array and changed item are shallow-copied.
- * - The `defaults` template is deep-cloned for each new item, so no references are shared.
- * - You can extend the returned object with custom methods (e.g. finders, batch updaters) by passing a builder function.
+ * - The `defaults` template is deep-cloned for each new item, so no references are shared between items.
+ * - The same factory can be mounted in multiple stores or at different paths.
  *
- * @template TSnapshot - The store snapshot type.
  * @template TItem - The array item type (must be a POJO).
- * @template TContext - Optional context type for the store.
- * @template TMethods - Additional custom methods to merge in.
  *
- * @param api - The StoreApi received by your store's methods builder.
- * @param arrayPath - Typed path string to the array field (e.g. 'phones', 'user.addresses').
- * @param defaults - Template item to clone for each new entry (must be POJO).
- * @param methods - Optional builder for custom methods. Receives { getArray, setArray } and the base ArrayMethods.
- * @returns An object with standard array mutation helpers, plus any custom methods.
+ * @param defaults - Template item to clone for each new entry.
+ * @returns A factory with a `.mount(api, path)` method.
  *
  * @example <caption>Basic usage</caption>
- * const store = createStore({ items: [] as Todo[] }, (api) => ({
- *   items: createArrayMethods(api, 'items', { text: '', done: false }),
- * }));
- * store.items.add({ text: 'Buy milk' });
- * store.items.set(0, { done: true });
- * store.items.setByPath(0, 'text', 'Buy oat milk');
- * store.items.remove(0);
+ * type Phone = { number: string; label: string };
+ * const phoneOps = createArrayMethods<Phone>({ number: '', label: 'mobile' });
  *
- * @example <caption>With custom methods</caption>
- * const store = createStore({ services: [] as Service[] }, (api) => ({
- *   services: createArrayMethods(api, 'services', DEFAULT_SERVICE, ({ getArray, setArray }) => ({
- *     findById(id: string) { return getArray().find(s => s.id === id); },
- *     advanceById(id: string) {
- *       const index = getArray().findIndex(s => s.id === id);
- *       if (index !== -1) { setArray(getArray().map((s, i) => i === index ? { ...s, done: true } : s)); }
- *     },
- *   })),
+ * const store = createStore({ phones: [] as Phone[] }, (api) => ({
+ *   phones: phoneOps.mount(api, 'phones'),
  * }));
+ *
+ * store.phones.add({ number: '5141234567' });
+ * store.phones.set(0, { label: 'work' });
+ * store.phones.setByPath(0, 'number', '5149876543');
+ * store.phones.remove(1);
+ * store.phones.move(0, 2);
+ *
+ * @example <caption>Reuse across stores</caption>
+ * const phoneOps = createArrayMethods<Phone>({ number: '', label: 'mobile' });
+ *
+ * const contactStore = createStore({ phones: [] as Phone[] }, (api) => ({
+ *   phones: phoneOps.mount(api, 'phones'),
+ * }));
+ *
+ * const emergencyStore = createStore({ contacts: [] as Phone[] }, (api) => ({
+ *   contacts: phoneOps.mount(api, 'contacts'),
+ * }));
+ *
+ * @example <caption>With asyncIdle — no `as` cast needed</caption>
+ * type Task = { title: string; status: AsyncState<Result> };
+ * const taskOps = createArrayMethods<Task>({ title: '', status: asyncIdle });
  */
-export function createArrayMethods<
-  TSnapshot,
-  TItem extends object,
-  TContext = never,
-  TMethods extends Record<string, unknown> = Record<never, never>,
->(
-  api: StoreApi<TSnapshot, TContext>,
-  arrayPath: PathsOf<TSnapshot>,
-  defaults: TItem,
-  methods?: (arrayApi: ArrayMethodsApi<TItem>) => TMethods
-): ArrayMethods<TItem> & TMethods {
-  // Pre-parse once, reuse the cached segments
-  const arraySegments = parsePath(arrayPath);
+export function createArrayMethods<TItem extends object>(
+  defaults: TItem
+): ArrayMethodsFactory<TItem> {
+  return {
+    mount<TSnapshot, TContext = never>(
+      api: StoreApi<TSnapshot, TContext>,
+      arrayPath: ArrayPathsOf<TSnapshot, TItem>
+    ): ArrayMethods<TItem> {
+      const arraySegments = parsePath(arrayPath);
 
-  /** Read the current array value from the snapshot. */
-  function getArray(): TItem[] {
-    return api.getByPath(arrayPath) as TItem[];
-  }
-
-  /** Write a new array value back using structural sharing. */
-  function setArray(next: TItem[]): void {
-    api.set(copyOnWritePath(api.get(), arraySegments, next));
-  }
-
-  const field: ArrayMethods<TItem> = {
-    add(overrides?: Partial<TItem>): void {
-      const item = structuredClone(defaults);
-      if (overrides) {
-        Object.assign(item as object, overrides);
+      function getArray(): TItem[] {
+        return api.getByPath(arrayPath) as TItem[];
       }
-      setArray([...getArray(), item]);
-    },
 
-    remove(index: number): void {
-      const arr = getArray();
-      if (index >= 0 && index < arr.length) {
-        setArray(arr.toSpliced(index, 1));
+      function setArray(next: TItem[]): void {
+        api.set(copyOnWritePath(api.get(), arraySegments, next));
       }
-    },
 
-    set(index: number, partial: Partial<TItem>): void {
-      const arr = getArray();
-      const item = arr[index];
-      if (item) {
-        setArray(arr.with(index, { ...item, ...partial }));
-      }
-    },
+      return {
+        add(overrides?: Partial<TItem>): void {
+          const item = structuredClone(defaults);
+          if (overrides) {
+            Object.assign(item as object, overrides);
+          }
+          setArray([...getArray(), item]);
+        },
 
-    setByPath(index, path, value) {
-      const arr = getArray();
-      const item = arr[index];
-      if (item) {
-        const segments = parsePath(path);
-        const updatedItem = copyOnWritePath(item, segments, value);
-        setArray(arr.with(index, updatedItem));
-      }
-    },
+        remove(index: number): void {
+          const arr = getArray();
+          if (index >= 0 && index < arr.length) {
+            setArray(arr.toSpliced(index, 1));
+          }
+        },
 
-    move(from: number, to: number): void {
-      if (from === to) {
-        return;
-      }
-      const arr = getArray();
-      if (from >= 0 && from < arr.length && to >= 0 && to < arr.length) {
-        const item = arr[from];
-        if (item) {
-          // Single mutable copy + two in-place splices — one fewer intermediate
-          // array than arr.toSpliced(from, 1).toSpliced(to, 0, item).
-          const next = [...arr];
-          next.splice(from, 1);
-          next.splice(to, 0, item);
-          setArray(next);
-        }
-      }
+        set(index: number, partial: Partial<TItem>): void {
+          const arr = getArray();
+          const item = arr[index];
+          if (item) {
+            setArray(arr.with(index, { ...item, ...partial }));
+          }
+        },
+
+        setByPath(index, path, value) {
+          const arr = getArray();
+          const item = arr[index];
+          if (item) {
+            const segments = parsePath(path);
+            const updatedItem = copyOnWritePath(item, segments, value);
+            setArray(arr.with(index, updatedItem));
+          }
+        },
+
+        move(from: number, to: number): void {
+          if (from === to) {
+            return;
+          }
+          const arr = getArray();
+          if (from >= 0 && from < arr.length && to >= 0 && to < arr.length) {
+            const item = arr[from];
+            if (item) {
+              const next = [...arr];
+              next.splice(from, 1);
+              next.splice(to, 0, item);
+              setArray(next);
+            }
+          }
+        },
+
+        upsert(needle, predicate) {
+          const needles = Array.isArray(needle) ? needle : [needle];
+          let arr = getArray();
+          for (const n of needles) {
+            const index = arr.findIndex(predicate, n);
+            arr = index > -1 ? arr.with(index, n) : [...arr, n];
+          }
+          setArray(arr);
+        },
+      };
     },
   };
-
-  const arrayApi: ArrayMethodsApi<TItem> = { getArray, setArray };
-  const domainMethods = methods !== undefined ? methods(arrayApi) : ({} as TMethods);
-  return { ...field, ...domainMethods };
 }

@@ -402,13 +402,19 @@ The derive callback receives plain **snapshots** from each source — not store 
 
 ---
 
-### `createArrayMethods(api, path, defaults, methods?)`
+### `createArrayMethods(defaults)`
 
-Typed accessor for an array field inside a store. Call inside the `methods` builder where `StoreApi` is available.
+Two-stage factory for typed, immutable array helpers. Define the item shape once, then bind to any store and path via `.mount(api, path)`.
+
+Provide `TItem` explicitly to prevent TypeScript from narrowing literal defaults (e.g. `asyncIdle` → `AsyncIdle`), so no `as` casts are needed.
 
 ```ts
+// Stage 1 — define once, reusable across stores
+const phoneOps = createArrayMethods<Phone>({ number: '', label: 'mobile' });
+
+// Stage 2 — bind inside the domain builder (optimized writes: structural sharing, no structuredClone)
 const store = createStore({ phones: [] as Phone[] }, (api) => ({
-  phones: createArrayMethods(api, 'phones', { number: '', label: 'mobile' }),
+  phones: phoneOps.mount(api, 'phones'),
 }));
 
 store.phones.add({ number: '514...' }); // append with overrides
@@ -416,7 +422,18 @@ store.phones.set(0, { label: 'work' }); // partial merge
 store.phones.setByPath(0, 'number', '…'); // typed path setter
 store.phones.remove(1); // delete by index
 store.phones.move(0, 2); // reorder
+
+// upsert: replace matching item or append — predicate `this` is the needle
+store.phones.upsert(incoming, function (item) {
+  return item.number === this.number;
+});
+// batch upsert: one store write for all needles
+store.phones.upsert([a, b, c], function (item) {
+  return item.number === this.number;
+});
 ```
+
+> **Arrow functions won't work with `upsert`.** Arrow functions capture `this` lexically and ignore `thisArg` binding — `this` will not be the needle. Always use a `function` expression.
 
 ---
 
@@ -652,19 +669,19 @@ store.setByPath('items[0].name', 'foo'); // type-checked value
 
 Ten interaction patterns — each borrowing the best idea from a different library or ecosystem.
 
-| Pattern              | API                                         | Inspired by      | Cost                                 | When to reach for it                                                            |
-| -------------------- | ------------------------------------------- | ---------------- | ------------------------------------ | ------------------------------------------------------------------------------- |
-| Whole-state swap     | `set(next)`                                 | Zustand          | O(1) — no copy                       | Atomic replacements, computed resets, simple atoms                              |
-| Path-based write     | `setByPath(path, value)`                    | react-hook-form  | O(depth) — structural sharing        | Surgical single-field updates in nested state                                   |
-| Draft mutation       | `update(recipe)`                            | Immer            | O(n) — full `structuredClone`        | Complex multi-field changes where mutation syntax is clearer                    |
-| Array CRUD           | `createArrayMethods(api, path, defaults)`   | RHF field arrays | O(array length) — structural sharing | Dynamic lists: add, remove, reorder, partial merge, path-set                    |
-| Computed / derived   | `createDerivedStore(sources, derive)`       | Redux selectors  | Lazy — zero cost when unused         | Cross-store projections, memoised computed values                               |
-| Grouped writes       | `batch(fn)`                                 | Redux batch      | Single notification                  | Multi-field atomicity, avoid intermediate render flickers                       |
-| Standalone transform | `produce(state, recipe)`                    | Immer standalone | O(n) — full `structuredClone`        | One-off transformations outside a store, pure utilities                         |
-| Dispatch             | `createStoreDispatch(store)`                | Redux dispatch   | Near-zero — single property lookup   | Controlled store-to-store context, decoupled callers                            |
-| React context        | `createStoreContext(factory, options?)`     | React Context    | Per-mount `useState` initializer     | Isolated per-subtree store instances with typed `initial` + `context` props     |
-| Suspense integration | `useSuspenseStore(store, select, options?)` | React Suspense   | Near-zero — WeakMap cache            | `AsyncState<T>` slices in Suspense trees; eliminates `status` guard boilerplate |
-| Debug logging        | `connectDebugLog(store, options?)`          | Custom logger    | Near-zero — wrap in `if (DEV)`       | Console mutation observer, action names, flat path diff, timing                 |
+| Pattern              | API                                             | Inspired by      | Cost                                 | When to reach for it                                                            |
+| -------------------- | ----------------------------------------------- | ---------------- | ------------------------------------ | ------------------------------------------------------------------------------- |
+| Whole-state swap     | `set(next)`                                     | Zustand          | O(1) — no copy                       | Atomic replacements, computed resets, simple atoms                              |
+| Path-based write     | `setByPath(path, value)`                        | react-hook-form  | O(depth) — structural sharing        | Surgical single-field updates in nested state                                   |
+| Draft mutation       | `update(recipe)`                                | Immer            | O(n) — full `structuredClone`        | Complex multi-field changes where mutation syntax is clearer                    |
+| Array CRUD           | `createArrayMethods(defaults).mount(api, path)` | RHF field arrays | O(array length) — structural sharing | Dynamic lists: add, remove, reorder, partial merge, path-set                    |
+| Computed / derived   | `createDerivedStore(sources, derive)`           | Redux selectors  | Lazy — zero cost when unused         | Cross-store projections, memoised computed values                               |
+| Grouped writes       | `batch(fn)`                                     | Redux batch      | Single notification                  | Multi-field atomicity, avoid intermediate render flickers                       |
+| Standalone transform | `produce(state, recipe)`                        | Immer standalone | O(n) — full `structuredClone`        | One-off transformations outside a store, pure utilities                         |
+| Dispatch             | `createStoreDispatch(store)`                    | Redux dispatch   | Near-zero — single property lookup   | Controlled store-to-store context, decoupled callers                            |
+| React context        | `createStoreContext(factory, options?)`         | React Context    | Per-mount `useState` initializer     | Isolated per-subtree store instances with typed `initial` + `context` props     |
+| Suspense integration | `useSuspenseStore(store, select, options?)`     | React Suspense   | Near-zero — WeakMap cache            | `AsyncState<T>` slices in Suspense trees; eliminates `status` guard boilerplate |
+| Debug logging        | `connectDebugLog(store, options?)`              | Custom logger    | Near-zero — wrap in `if (DEV)`       | Console mutation observer, action names, flat path diff, timing                 |
 
 ---
 
@@ -677,7 +694,7 @@ Ten interaction patterns — each borrowing the best idea from a different libra
 - **Selector equality** — `useStore` with a selector re-renders only when `Object.is(prev, next)` is `false`.
 - **Derived store laziness** — `createDerivedStore` subscribes to sources only while it has active listeners.
 
-Run `npm run bench` for a single-round benchmark or `npm run bench:stable` for 10 × 5-round runs with median/CV/min/max.
+Run `npm run bench` to execute all benchmarks.
 
 ---
 
@@ -703,7 +720,7 @@ Snapshots must be `structuredClone`-compatible:
 | `shallow-equal.ts`             | `shallowEqual`                                                                                                                                           | Shallow equality for `equals` option                   |
 | `watch.ts`                     | `watch`, `WatchOptions`                                                                                                                                  | Non-React store observer                               |
 | `create-derived-store.ts`      | `createDerivedStore`, `DerivedStore`, `DerivedStoreOptions`                                                                                              | Read-only computed store                               |
-| `create-array-methods.ts`      | `createArrayMethods`, `ArrayMethods`, `ArrayMethodsApi`                                                                                                  | Typed array accessor with methods builder              |
+| `create-array-methods.ts`      | `createArrayMethods`, `ArrayMethods`, `ArrayMethodsFactory`                                                                                              | Two-stage typed array helper factory                   |
 | `create-store-dispatch.ts`     | `createStoreDispatch`, `StoreDispatch`, `BuiltinDispatchable`, `DispatchableActions`, `DispatchOptions`                                                  | Dispatch wrapper for controlled store access           |
 | `async-state.ts`               | `AsyncState`, `AsyncIdle`, `AsyncPending`, `AsyncFulfilled`, `AsyncRejected`, `asyncIdle`, `asyncPending`, `asyncFulfilled`, `asyncRejected`, `runAsync` | Standard async state shape                             |
 | `connect-debug-log.ts`         | `connectDebugLog`, `ConnectDebugLogOptions`                                                                                                              | Console logger via `stardust:store` namespace          |
