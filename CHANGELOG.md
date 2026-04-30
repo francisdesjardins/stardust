@@ -7,10 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+#### `@stardust/core`
+
+- `createArrayMethods` — redesigned as a two-stage factory: `createArrayMethods<TItem>(defaults)` returns an `ArrayMethodsFactory` with a `.mount(api, path)` method that binds helpers to a specific store and path; providing `TItem` explicitly prevents TypeScript from narrowing literal defaults (e.g. `asyncIdle`), eliminating the need for `as` casts
+
+### Removed
+
+#### `@stardust/core`
+
+- `createArrayMethods` — removed `methods` builder (4th param) and `ArrayMethodsApi` type; extend the domain API directly using normal domain methods instead
+- `ArrayMethodsApi` export removed; replaced by `ArrayMethodsFactory`
+
 ### Added
 
 #### `@stardust/core`
 
+- `createArrayMethods` — `upsert(needle, predicate)` method on `ArrayMethods<TItem>`; replaces the first item for which `predicate` returns `true` (with `this` bound to the needle), or appends if no match; accepts a single item or an array of items — batch upserts produce one store notification; predicate must be a `function` expression, not an arrow function
 - `store.listenerCount` — read-only getter on `Store` and `DerivedStore` that returns the number of active subscribers; O(1) read backed by `listeners.size`; useful for skipping expensive work when no one is watching (e.g. `if (store.listenerCount > 0) { … }`)
 - `createStore()` options — `context` field lets you seed the store's context at creation time instead of calling `store.setContext()` separately; `setContext()` still overwrites it at any point later
 - `createStore()` — POJO store factory with snapshot-based state, `get`, `set`, `update`, `dispatch`, and `subscribe`

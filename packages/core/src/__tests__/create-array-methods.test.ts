@@ -3,9 +3,11 @@ import { createArrayMethods, createStore } from '..';
 
 type Phone = { number: string; label: string };
 
+const phoneOps = createArrayMethods<Phone>({ number: '', label: 'mobile' });
+
 function makeStore(initial: Phone[] = []) {
   return createStore({ phones: initial }, (api) => ({
-    phones: createArrayMethods(api, 'phones', { number: '', label: 'mobile' }),
+    phones: phoneOps.mount(api, 'phones'),
   }));
 }
 
@@ -25,8 +27,10 @@ test.describe('createArrayMethods', () => {
   });
 
   test('add() deep-clones defaults so items are independent', () => {
-    const nested = createStore({ items: [] as Array<{ meta: { tag: string } }> }, (api) => ({
-      items: createArrayMethods(api, 'items', { meta: { tag: 'default' } }),
+    type NestedItem = { meta: { tag: string } };
+    const nestedOps = createArrayMethods<NestedItem>({ meta: { tag: 'default' } });
+    const nested = createStore({ items: [] as NestedItem[] }, (api) => ({
+      items: nestedOps.mount(api, 'items'),
     }));
     nested.items.add();
     nested.items.add();
@@ -229,13 +233,90 @@ test.describe('createArrayMethods', () => {
 
   test('setByPath() updates a nested property', () => {
     type Item = { meta: { tag: string; count: number } };
+    const itemOps = createArrayMethods<Item>({ meta: { tag: '', count: 0 } });
     const nested = createStore({ items: [] as Item[] }, (api) => ({
-      items: createArrayMethods(api, 'items', { meta: { tag: '', count: 0 } }),
+      items: itemOps.mount(api, 'items'),
     }));
     nested.items.add({ meta: { tag: 'hello', count: 1 } });
     nested.items.setByPath(0, 'meta.tag', 'updated');
     const snap = nested.getSnapshot();
     expect(snap.items[0]?.meta.tag).toBe('updated');
     expect(snap.items[0]?.meta.count).toBe(1);
+  });
+
+  // ── upsert ──────────────────────────────────────────────────────────────
+
+  test('upsert() replaces a matching item', () => {
+    const store = makeStore([
+      { number: '111', label: 'home' },
+      { number: '222', label: 'work' },
+    ]);
+    store.phones.upsert({ number: '999', label: 'work' }, function (item) {
+      return item.label === this.label;
+    });
+    expect(store.getSnapshot().phones).toEqual([
+      { number: '111', label: 'home' },
+      { number: '999', label: 'work' },
+    ]);
+  });
+
+  test('upsert() appends when no match', () => {
+    const store = makeStore([{ number: '111', label: 'home' }]);
+    store.phones.upsert({ number: '222', label: 'work' }, function (item) {
+      return item.label === this.label;
+    });
+    expect(store.getSnapshot().phones).toEqual([
+      { number: '111', label: 'home' },
+      { number: '222', label: 'work' },
+    ]);
+  });
+
+  test('upsert() handles an array of needles in one write', () => {
+    const store = makeStore([
+      { number: '111', label: 'home' },
+      { number: '222', label: 'work' },
+    ]);
+    let notifications = 0;
+    store.subscribe(() => {
+      notifications++;
+    });
+    store.phones.upsert(
+      [
+        { number: '999', label: 'home' },
+        { number: '333', label: 'mobile' },
+      ],
+      function (item) {
+        return item.label === this.label;
+      }
+    );
+    expect(store.getSnapshot().phones).toEqual([
+      { number: '999', label: 'home' },
+      { number: '222', label: 'work' },
+      { number: '333', label: 'mobile' },
+    ]);
+    expect(notifications).toBe(1);
+  });
+
+  test('upsert() preserves identity of unchanged items', () => {
+    const store = makeStore([
+      { number: '111', label: 'home' },
+      { number: '222', label: 'work' },
+    ]);
+    const before = store.getSnapshot();
+    store.phones.upsert({ number: '999', label: 'work' }, function (item) {
+      return item.label === this.label;
+    });
+    const after = store.getSnapshot();
+    expect(after.phones[0]).toBe(before.phones[0]);
+    expect(after.phones[1]).not.toBe(before.phones[1]);
+  });
+
+  test('upsert() does not mutate the previous snapshot', () => {
+    const store = makeStore([{ number: '111', label: 'home' }]);
+    const before = store.getSnapshot();
+    store.phones.upsert({ number: '999', label: 'home' }, function (item) {
+      return item.label === this.label;
+    });
+    expect(before.phones[0]?.number).toBe('111');
   });
 });

@@ -31,7 +31,7 @@ export const UtilitiesPage = () => (
       <Grid size={{ xs: 12, md: 6 }}>
         <ExampleCard
           title="createArrayMethods"
-          description="Typed add / remove / set / move operations for an array field. Uses structural sharing — only the array spine is copied."
+          description="Typed add / remove / set / move / upsert operations for an array field. Uses structural sharing — only the array spine is copied."
           codeKey="array-methods"
         >
           <ArrayMethodsExample />
