@@ -67,19 +67,22 @@ counter.reset(); // { count: 0 }
 Benchmarks run with [mitata](https://github.com/evanwashere/mitata) on Node v24.14.1 · AMD Ryzen 7 5800X · 32 GB RAM.
 Run `npm run bench` to reproduce locally.
 
-| Operation                       |  ops/s |    ns/op |
-| ------------------------------- | -----: | -------: |
-| `store.getSnapshot()`           | 8,192M |   < 1 ns |
-| `store.set()` object swap       | 108.7M |     9 ns |
-| `store.getByPath('a.b.c')`      |  19.9M |    50 ns |
-| `store.setByPath('a.b.c', v)`   |  12.4M |    81 ns |
-| `createDerivedStore` recompute  |  11.5M |    87 ns |
-| `store.update()` draft mutation |   560K | 1,786 ns |
-| `batch()` 10× writes, 1 notify  |   576K | 1,738 ns |
-| `produce()` flat clone + mutate |   560K | 1,786 ns |
+| Operation                        |  ops/s |    ns/op |
+| -------------------------------- | -----: | -------: |
+| `store.get()` flat snapshot      | 216.8M |     5 ns |
+| `store.set()` object swap        |  18.9M |    53 ns |
+| `store.getByPath('a.b.c')`       |  18.2M |    55 ns |
+| `store.setByPath('a.b.c', v)`    |   9.0M |   111 ns |
+| `createDerivedStore` recompute   |   9.2M |   108 ns |
+| `arrayMethods.upsert()` hit      |   8.4M |   118 ns |
+| `store.update()` draft mutation  |   846K | 1,182 ns |
+| `produce()` flat clone + mutate  |   910K | 1,098 ns |
+| `batch()` 10× writes, 1 listener |   494K | 2,021 ns |
+| fan-out: 1,000 listeners         |   184K | 5,409 ns |
 
 > `update()` and `produce()` are `structuredClone`-bound by design — the cost is the clone, not the store.
-> Numbers are machine-specific. _Last updated: 2026-04-27_
+> `dispatch()` overhead vs direct calls is zero — same ns/op at every tier.
+> Numbers are machine-specific. _Last updated: 2026-04-30_
 
 ---
 
