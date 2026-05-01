@@ -152,7 +152,7 @@ export function connectDebugLog<TSnapshot>(
   // ── Init log ──────────────────────────────────────────────────────────────
   const initSnapshot = store.getSnapshot();
   if (onLog) {
-    onLog('init', computeDiff(undefined, initSnapshot), 0, 0);
+    onLog('init', computeDiff(undefined, initSnapshot), 0, 0, store.listenerCount);
   } else {
     if (logger) {
       logger.group('init #0000', () => computeDiff(undefined, initSnapshot));
