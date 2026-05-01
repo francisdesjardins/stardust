@@ -7,6 +7,8 @@ import { useCodePane } from '@/widgets/code-viewer/model/useCodePane';
 import { CodeModal } from '@/widgets/code-viewer/ui/CodeModal';
 import { Sidebar } from '@/widgets/sidebar/ui/Sidebar';
 import { TopBar } from '@/widgets/top-bar/ui/TopBar';
+import { PeekingStar } from '@/shared/ui/PeekingStar/PeekingStar';
+import { StarfieldBanner } from '@/shared/ui/StarfieldBanner/StarfieldBanner';
 
 const MainContent = () => {
   const { setCodeModalOpen } = useCodePane();
@@ -47,6 +49,9 @@ const MainContent = () => {
           width: '100%',
         }}
       >
+        <Box sx={{ width: '100%', maxWidth: 900, mx: 'auto', mb: 4 }}>
+          <StarfieldBanner />
+        </Box>
         <Outlet />
       </Box>
       <CodeModal
@@ -87,6 +92,7 @@ const ResponsiveShell = () => {
 export const RootLayout = () => (
   <ThemeProvider>
     <CodePaneProvider>
+      <PeekingStar />
       <ResponsiveShell />
     </CodePaneProvider>
   </ThemeProvider>
