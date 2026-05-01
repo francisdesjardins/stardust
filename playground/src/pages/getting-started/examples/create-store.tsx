@@ -3,17 +3,21 @@ import { useStore } from '@stardust/react';
 import { Button, Typography } from '@mui/material';
 import { ExampleLayout } from '@/entities/example';
 
-const counterStore = createStore({ count: 0 }, ({ set, get }) => ({
-  increment() {
-    set({ count: get().count + 1 });
-  },
-  decrement() {
-    set({ count: get().count - 1 });
-  },
-  reset() {
-    set({ count: 0 });
-  },
-}));
+const counterStore = createStore({ count: 0 }, ({ set, get }) => {
+  const self = {
+    increment() {
+      set({ count: get().count + 1 });
+    },
+    decrement() {
+      set({ count: get().count - 1 });
+    },
+    reset() {
+      set({ count: 0 });
+    },
+  };
+
+  return self;
+});
 
 connectDebugLog(counterStore, { name: 'counter' });
 

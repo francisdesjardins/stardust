@@ -10,7 +10,6 @@
     ".": {
       "types": "./dist/esm/index.d.ts",
       "import": "./dist/esm/index.js",
-      "browser": "./dist/umd/stardust-core.umd.js",
       "default": "./dist/esm/index.js"
     },
     "./async-state": {
@@ -37,8 +36,7 @@
       "types": "./dist/esm/shallow-equal.d.ts",
       "import": "./dist/esm/shallow-equal.js",
       "default": "./dist/esm/shallow-equal.js"
-    },
-    "./umd": "./dist/umd/stardust-core.umd.js"
+    }
   },
   "typesVersions": {
     "*": {
@@ -66,10 +64,9 @@
     "node": ">=24"
   },
   "scripts": {
-    "build": "npm run build:clean && npm run build:esm && npm run build:umd",
+    "build": "npm run build:clean && npm run build:esm",
     "build:clean": "rimraf dist",
     "build:esm": "tsc --noEmit && vite build --config vite.config.esm.ts",
-    "build:umd": "vite build --config vite.config.umd.ts",
     "type-check": "tsc --noEmit",
     "test": "playwright test -c playwright.config.ts",
     "test:ui": "playwright test -c playwright.config.ts --ui",
@@ -83,6 +80,6 @@
     "fast-check": "4.7.0",
     "rimraf": "^6.1.3",
     "vite": "^8.0.10",
-    "vite-plugin-dts": "5.0.0-beta.6"
+    "vite-plugin-dts": "5.0.0"
   }
 }
