@@ -56,6 +56,18 @@ group('createArrayMethods', () => {
     yield () => store.phones.set(0, { label: 'work' });
   });
 
+  bench('arrayMethods.update()', function* () {
+    const store = createStore(structuredClone(ARRAY_INITIAL), (api) => ({
+      phones: phoneOps.mount(api, 'phones'),
+      reset() {
+        api.set(structuredClone(ARRAY_INITIAL));
+      },
+    }));
+    yield () => {
+      store.phones.update((item) => item.label === 'work', { label: 'work' });
+    };
+  });
+
   bench('arrayMethods.setByPath()', function* () {
     const store = createStore(structuredClone(ARRAY_INITIAL), (api) => ({
       phones: phoneOps.mount(api, 'phones'),
