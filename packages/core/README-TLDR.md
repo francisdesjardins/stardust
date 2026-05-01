@@ -58,7 +58,7 @@ const slice = useStore(counter, {
 
 ## Advanced (but optional)
 
-- **Arrays**: [`createArrayMethods`](README.md#createarraymethodsapi-path-defaults-methods) → `.add()`, `.remove()`, `.set()`, etc.
+- **Arrays**: [`createArrayMethods`](README.md#createarraymethodsapi-path-defaults-methods) → `.add()`, `.remove()`, `.set()`, `.update()`, etc.
 - **Derived state**: [`createDerivedStore`](README.md#createderivedstoresources-derive-options) → computed store that updates when sources change
 - **Watch outside React**: [`watch`](README.md#watchstore-selector-callback-options) → `(next, prev)` callback, unsubscribe returned, zero React dep
 - **Context injection**: Pass a context object to store methods; no singletons

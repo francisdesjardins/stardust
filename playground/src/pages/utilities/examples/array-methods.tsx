@@ -82,14 +82,16 @@ export function ArrayMethodsExample() {
         <Stack direction="column" sx={{ gap: 0.5 }}>
           {items.map((item, i) => (
             <Stack key={i} direction="row" sx={{ gap: 0.5, alignItems: 'center' }}>
-              {/* set() — patch multiple fields at once */}
+              {/* update() — patch the first matching item by predicate */}
               <Chip
                 label={item.name}
                 size="small"
                 variant={item.picked ? 'filled' : 'outlined'}
                 color={item.picked ? 'success' : 'default'}
                 onClick={() => {
-                  listStore.list.set(i, { picked: !item.picked });
+                  listStore.list.update((entry) => entry.name === item.name, {
+                    picked: !item.picked,
+                  });
                 }}
                 sx={{ cursor: 'pointer', minWidth: 56 }}
               />

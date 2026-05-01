@@ -243,7 +243,55 @@ test.describe('createArrayMethods', () => {
     expect(snap.items[0]?.meta.tag).toBe('updated');
     expect(snap.items[0]?.meta.count).toBe(1);
   });
+  test('update() patches the first matching item', () => {
+    const store = makeStore([
+      { number: '111', label: 'home' },
+      { number: '222', label: 'work' },
+    ]);
+    store.phones.update((phone) => phone.label === 'work', { number: '999' });
+    expect(store.getSnapshot().phones).toEqual([
+      { number: '111', label: 'home' },
+      { number: '999', label: 'work' },
+    ]);
+  });
 
+  test('update() preserves unchanged items identity', () => {
+    const store = makeStore([
+      { number: '111', label: 'home' },
+      { number: '222', label: 'work' },
+    ]);
+    const before = store.getSnapshot();
+    store.phones.update((phone) => phone.label === 'work', { number: '999' });
+    const after = store.getSnapshot();
+    expect(after.phones[0]).toBe(before.phones[0]);
+    expect(after.phones[1]).not.toBe(before.phones[1]);
+  });
+
+  test('update() accepts a lazy updater callback', () => {
+    const store = makeStore([
+      { number: '111', label: 'home' },
+      { number: '222', label: 'work' },
+    ]);
+    store.phones.update(
+      (phone) => phone.label === 'work',
+      (phone) => ({ number: phone.number + '0' })
+    );
+    expect(store.getSnapshot().phones[1]).toEqual({ number: '2220', label: 'work' });
+  });
+
+  test('update() is a no-op when no match is found', () => {
+    const store = makeStore([{ number: '111', label: 'home' }]);
+    const before = store.getSnapshot();
+    let calls = 0;
+    store.subscribe(() => {
+      calls++;
+    });
+
+    store.phones.update((phone) => phone.label === 'work', { number: '999' });
+
+    expect(store.getSnapshot()).toBe(before);
+    expect(calls).toBe(0);
+  });
   // ── upsert ──────────────────────────────────────────────────────────────
 
   test('upsert() replaces a matching item', () => {

@@ -44,6 +44,16 @@ export type ArrayMethods<TItem extends object> = {
     value: ValueAtPath<TItem, P>
   ) => void;
   /**
+   * Update the first item matching the predicate. Does nothing if no match is found.
+   * @param predicate - Function to find the item to update.
+   * @param partial - Partial fields to merge into the item.
+   * @param updater - Lazy updater callback that returns partial fields to merge.
+   */
+  readonly update: (
+    predicate: (value: TItem, index: number, arr: TItem[]) => boolean,
+    partialOrUpdater: Partial<TItem> | ((item: TItem) => Partial<TItem>)
+  ) => void;
+  /**
    * Move an item from one index to another. Does nothing if out of bounds or if `from === to`.
    * @param from - Source index.
    * @param to - Destination index.
@@ -132,6 +142,7 @@ export type ArrayMethodsFactory<TItem extends object> = {
  * store.phones.add({ number: '5141234567' });
  * store.phones.set(0, { label: 'work' });
  * store.phones.setByPath(0, 'number', '5149876543');
+ * store.phones.update((phone) => phone.number === '5141234567', { label: 'mobile' });
  * store.phones.remove(1);
  * store.phones.move(0, 2);
  *
@@ -200,6 +211,27 @@ export function createArrayMethods<TItem extends object>(
             const updatedItem = copyOnWritePath(item, segments, value);
             setArray(arr.with(index, updatedItem));
           }
+        },
+
+        update(
+          predicate: (value: TItem, index: number, arr: TItem[]) => boolean,
+          partialOrUpdater: Partial<TItem> | ((item: TItem) => Partial<TItem>)
+        ): void {
+          const arr = getArray();
+          const index = arr.findIndex(predicate);
+          if (index === -1) {
+            return;
+          }
+          const item = arr[index];
+          if (item === undefined) {
+            return;
+          }
+
+          const partial =
+            typeof partialOrUpdater === 'function' ? partialOrUpdater(item) : partialOrUpdater;
+
+          const updatedItem = { ...item, ...partial };
+          setArray(arr.with(index, updatedItem));
         },
 
         move(from: number, to: number): void {

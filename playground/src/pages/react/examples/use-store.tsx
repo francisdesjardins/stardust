@@ -2,22 +2,36 @@ import { connectDebugLog, createStore } from '@stardust/core';
 import { useStore } from '@stardust/react';
 import { Button, Chip, Stack, Typography } from '@mui/material';
 import { ExampleLayout } from '@/entities/example';
+import { createArrayMethods } from '@stardust/core';
 
 type Todo = { id: number; text: string; done: boolean };
 
-const todoStore = createStore({ todos: [] as Todo[], nextId: 1 }, ({ set, get }) => ({
-  add(text: string) {
-    const { todos, nextId } = get();
-    set({ todos: [...todos, { id: nextId, text, done: false }], nextId: nextId + 1 });
-  },
-  toggle(id: number) {
-    const s = get();
-    set({ ...s, todos: s.todos.map((t) => (t.id === id ? { ...t, done: !t.done } : t)) });
-  },
-  clear() {
-    set({ todos: [], nextId: 1 });
-  },
-}));
+const initialSnapshot = { todos: [] as Todo[], nextId: 1 };
+
+const todosOps = createArrayMethods<Todo>({ id: 0, text: '', done: false });
+const todoStore = createStore(initialSnapshot, (api) => {
+  const { batch, get, setByPath } = api;
+
+  const todos = todosOps.mount(api, 'todos');
+
+  return {
+    todos: {
+      add(text: string) {
+        batch(() => {
+          const snapshot = get();
+          todos.add({ text, done: false, id: snapshot.nextId });
+          setByPath('nextId', snapshot.nextId + 1);
+        });
+      },
+      toggle(id: number) {
+        todos.update(
+          (t) => t.id === id,
+          (s) => ({ done: !s.done })
+        );
+      },
+    },
+  };
+});
 
 connectDebugLog(todoStore, { name: 'todo' });
 
@@ -36,7 +50,7 @@ export function UseStoreExample() {
             variant="outlined"
             size="small"
             onClick={() => {
-              todoStore.add(p);
+              todoStore.todos.add(p);
             }}
           >
             + {p}
@@ -48,7 +62,7 @@ export function UseStoreExample() {
           color="error"
           disabled={todos.length === 0}
           onClick={() => {
-            todoStore.clear();
+            todoStore.reset();
           }}
         >
           Clear
@@ -63,7 +77,7 @@ export function UseStoreExample() {
             variant={t.done ? 'filled' : 'outlined'}
             color={t.done ? 'primary' : 'default'}
             onClick={() => {
-              todoStore.toggle(t.id);
+              todoStore.todos.toggle(t.id);
             }}
           />
         ))}

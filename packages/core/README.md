@@ -419,6 +419,7 @@ const store = createStore({ phones: [] as Phone[] }, (api) => ({
 
 store.phones.add({ number: '514...' }); // append with overrides
 store.phones.set(0, { label: 'work' }); // partial merge
+store.phones.update((item) => item.number === '514...', { label: 'work' }); // patch the first matching item
 store.phones.setByPath(0, 'number', '…'); // typed path setter
 store.phones.remove(1); // delete by index
 store.phones.move(0, 2); // reorder
