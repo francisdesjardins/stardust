@@ -8,6 +8,7 @@ import type { PathsOf, ValueAtPath } from './path-utils';
 type DebugLogCompatibleStore<TSnapshot> = {
   readonly subscribe: (listener: () => void) => () => void;
   readonly getSnapshot: () => TSnapshot;
+  readonly listenerCount: number;
   readonly set: (next: TSnapshot | ((prev: TSnapshot) => TSnapshot)) => void;
   readonly update: (recipe: (draft: TSnapshot) => void) => void;
   readonly setByPath: <P extends PathsOf<TSnapshot>>(
@@ -31,17 +32,26 @@ type DebugLogCompatibleStore<TSnapshot> = {
  *   ```
  * @param onLog - Custom log handler. Receives the action name, a flat diff of
  *   changed paths (`{ "address.city": { from: "A", to: "B" } }`), the elapsed
- *   time in milliseconds for the operation, and a monotonically increasing
- *   `actionId` (0 = init, 1+ = mutations). All subscription fires from the same
- *   async action share the same `actionId`, making it easy to correlate log
- *   entries. When provided, the built-in `createLogger` is bypassed entirely —
- *   useful for standalone use outside the dialog library or for custom log
- *   formatting.
+ *   time in milliseconds for the operation, the current live listener count at
+ *   notify time, and a monotonically increasing `actionId` (0 = init, 1+ =
+ *   mutations). The live listener count passed to `onLog` reflects the actual
+ *   subscription set at notify time; the built-in logger subtracts its own
+ *   internal debug subscription from the printed `listeners:N` value for
+ *   clearer external visibility. All subscription fires from the same async
+ *   action share the same `actionId`, making it easy to correlate log entries.
+ *   When provided, the built-in `createLogger` is bypassed entirely — useful
+ *   for standalone use outside the dialog library or for custom log formatting.
  */
 export type ConnectDebugLogOptions = {
   readonly name?: string | undefined;
   readonly onLog?:
-    | ((action: string, diff: DiffResult, durationMs: number, actionId: number) => void)
+    | ((
+        action: string,
+        diff: DiffResult,
+        durationMs: number,
+        actionId: number,
+        listenerCount: number
+      ) => void)
     | undefined;
 };
 
@@ -314,6 +324,7 @@ export function connectDebugLog<TSnapshot>(
     const prev = prevSnapshot;
     const next = store.getSnapshot();
     const durationMs = startTime !== undefined ? performance.now() - startTime : 0;
+    const listenerCount = store.listenerCount;
     if (trackingDepth === 0) {
       // Sync op or standalone built-in — clear tracking immediately.
       clearTracking();
@@ -324,12 +335,16 @@ export function connectDebugLog<TSnapshot>(
       startTime = performance.now();
     }
     if (onLog) {
-      onLog(action, computeDiff(prev, next), durationMs, actionId ?? 0);
+      onLog(action, computeDiff(prev, next), durationMs, actionId ?? 0, listenerCount);
     } else {
       if (logger) {
+        // The logger itself is subscribed to the store, so subtract it from the
+        // printed listener count to show external listeners only.
+        const visibleListenerCount = Math.max(0, listenerCount - 1);
         const idTag = actionId !== undefined ? ` #${String(actionId).padStart(4, '0')}` : '';
-        logger.group(`${action}${idTag} (${durationMs.toFixed(2)}ms)`, () =>
-          computeDiff(prev, next)
+        logger.group(
+          `${action}${idTag} (${durationMs.toFixed(2)}ms, listeners:${String(visibleListenerCount)})`,
+          () => computeDiff(prev, next)
         );
       }
     }

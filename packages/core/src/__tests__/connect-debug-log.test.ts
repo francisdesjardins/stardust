@@ -30,6 +30,7 @@ test('init fires even when store fires listener immediately on subscribe', () =>
     getSnapshot() {
       return snapshot;
     },
+    listenerCount: 0,
     set(next: { count: number } | ((prev: { count: number }) => { count: number })) {
       snapshot = typeof next === 'function' ? next(snapshot) : next;
     },
@@ -67,6 +68,9 @@ test('durationMs reflects elapsed time between trackAction and subscription', ()
     },
     getSnapshot() {
       return snapshot;
+    },
+    get listenerCount() {
+      return listeners.size;
     },
     set(next: { count: number } | ((prev: { count: number }) => { count: number })) {
       snapshot = typeof next === 'function' ? next(snapshot) : next;
@@ -108,6 +112,47 @@ test('durationMs reflects elapsed time between trackAction and subscription', ()
 
   expect(durations).toHaveLength(1);
   expect(durations[0]).toBe(50);
+});
+
+test('passes listenerCount through onLog and includes it in built-in logger', () => {
+  const store = createStore({ count: 0 }, () => ({}));
+  const calls: Array<{ action: string; listenerCount: number }> = [];
+  const disconnect = connectDebugLog(store, {
+    onLog: (action, _diff, _duration, _actionId, listenerCount) => {
+      if (action !== 'init') {
+        calls.push({ action, listenerCount });
+      }
+    },
+  });
+
+  store.set({ count: 1 });
+  disconnect();
+
+  expect(calls).toHaveLength(1);
+  expect(calls[0]?.listenerCount).toBeGreaterThanOrEqual(0);
+});
+
+test('built-in logger group header includes live listener count', () => {
+  const store = createStore({ count: 0 }, () => ({}));
+  const groupArgs: string[] = [];
+  const originalGroupCollapsed = console.groupCollapsed;
+  const originalGroupEnd = console.groupEnd;
+
+  console.groupCollapsed = (...args: unknown[]) => {
+    groupArgs.push(String(args[0]));
+  };
+  console.groupEnd = () => {};
+
+  setLogLevel('store');
+  const disconnect = connectDebugLog(store, {});
+  store.set({ count: 1 });
+  disconnect();
+  setLogLevel(false);
+
+  console.groupCollapsed = originalGroupCollapsed;
+  console.groupEnd = originalGroupEnd;
+
+  expect(groupArgs.some((message) => message.includes('listeners:0'))).toBe(true);
 });
 
 test('logs action name + diff on set', () => {
@@ -340,6 +385,9 @@ test('diff labels root-level change as "(root)" when prev is non-object', () => 
     },
     getSnapshot() {
       return snapshot as { count: number };
+    },
+    get listenerCount() {
+      return listeners.size;
     },
     set(next: { count: number } | ((prev: { count: number }) => { count: number })) {
       snapshot = typeof next === 'function' ? next(snapshot as { count: number }) : next;

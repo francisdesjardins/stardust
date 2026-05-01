@@ -511,7 +511,7 @@ connectDebugLog<TSnapshot>(
 | Option  | Type       | Default             | Description                                                                                     |
 | ------- | ---------- | ------------------- | ----------------------------------------------------------------------------------------------- |
 | `name`  | `string`   | _(bare `store`)_    | Forms the logger namespace `store:name`. Omit for bare `store` namespace.                       |
-| `onLog` | `function` | _(built-in logger)_ | Custom log handler `(action, diff, durationMs) => void`. Bypasses the built-in logger entirely. |
+| `onLog` | `function` | _(built-in logger)_ | Custom log handler `(action, diff, durationMs, actionId, listenerCount) => void`. Bypasses the built-in logger entirely; the built-in logger prints `listeners:N` after subtracting its own internal subscription. |
 
 `connectDebugLog` has no built-in environment guard. Wrap the call yourself to control when it's active:
 

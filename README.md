@@ -292,6 +292,8 @@ if (import.meta.env.DEV) {
 }
 ```
 
+The built-in logger prints `listeners:N` excluding its own internal debug subscription, while the optional `onLog` callback receives the raw live listener count at notify time.
+
 ---
 
 ## ✦ Monorepo Structure
