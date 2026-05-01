@@ -24,12 +24,15 @@ function SolidIsland() {
       return;
     }
 
-    // SolidCounter is called as a plain function (not JSX) to avoid the React
-    // JSX transform being applied to SolidJS JSX. The return type cast is
-    // necessary because React and SolidJS both declare JSX.Element locally.
-    const node = SolidCounter({ store: sharedStore, label: 'SolidJS island' }) as unknown;
+    // Create the Solid tree inside the render root so Solid signals and
+    // cleanups are tracked correctly.
     return render(
-      () => node as Parameters<typeof render>[0] extends () => infer R ? R : never,
+      () =>
+        SolidCounter({ store: sharedStore, label: 'SolidJS island' }) as unknown as Parameters<
+          typeof render
+        >[0] extends () => infer R
+          ? R
+          : never,
       ref.current
     );
   }, []);
