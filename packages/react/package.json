@@ -10,10 +10,8 @@
     ".": {
       "types": "./dist/esm/index.d.ts",
       "import": "./dist/esm/index.js",
-      "browser": "./dist/umd/stardust-react.umd.js",
       "default": "./dist/esm/index.js"
-    },
-    "./umd": "./dist/umd/stardust-react.umd.js"
+    }
   },
   "files": [
     "dist"
@@ -27,10 +25,9 @@
     "react-dom": "^19.0.0"
   },
   "scripts": {
-    "build": "npm run build:clean && npm run build:esm && npm run build:umd",
+    "build": "npm run build:clean && npm run build:esm",
     "build:clean": "rimraf dist",
     "build:esm": "tsc --noEmit && vite build --config vite.config.esm.ts",
-    "build:umd": "vite build --config vite.config.umd.ts",
     "type-check": "tsc --noEmit",
     "test": "playwright test -c playwright.config.ts",
     "test:ui": "playwright test -c playwright.config.ts --ui",
@@ -52,6 +49,6 @@
     "react-dom": "^19.2.5",
     "rimraf": "^6.1.3",
     "vite": "^8.0.10",
-    "vite-plugin-dts": "5.0.0-beta.6"
+    "vite-plugin-dts": "5.0.0"
   }
 }

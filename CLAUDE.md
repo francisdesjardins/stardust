@@ -68,6 +68,25 @@ Powered by [mitata](https://github.com/evanwashere/mitata). Results written to `
 
 `createStore()` produces a snapshot object + domain methods. The low-level plumbing (`subscribe` / `getSnapshot` / `emit` / `notify`) lives in `createStoreSubscription()`, which both `createStore` and `createDerivedStore` build on.
 
+**Sibling method dispatch**: to call one domain method from another, assign all methods to a local `const m` in the builder closure and return it. TypeScript infers the full type; the forward reference is safe because methods are only ever invoked after construction:
+
+```ts
+createStore(init, ({ update }) => {
+  const self = {
+    increment() {
+      update((d) => {
+        d.count += 1;
+      });
+    },
+    incrementTwice() {
+      self.increment();
+      self.increment();
+    },
+  };
+  return self;
+});
+```
+
 Key relationships:
 
 - **`produce(state, recipe)`** — standalone utility that clones via `structuredClone` and applies a mutable recipe. `store.update(recipe)` calls it internally; callers can also invoke it directly for one-off transforms.
@@ -121,7 +140,7 @@ SolidJS examples are **islands** mounted by React via `useEffect`:
 - `@/*` → `playground/src/*`
 - `@stardust/core|react|solid` → `packages/{core,react,solid}/src/index.ts`
 
-**Build**: per-package Vite configs for ESM (`vite.config.esm.ts`) and UMD (`vite.config.umd.ts`). Build order must be `core → react → solid`.
+**Build**: per-package Vite config for ESM (`vite.config.esm.ts`). Build order must be `core → react → solid`.
 
 ### Debug logging
 
