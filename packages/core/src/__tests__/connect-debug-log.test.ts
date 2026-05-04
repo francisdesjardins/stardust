@@ -560,3 +560,51 @@ test('wraps 3-level nested domain objects with full prefix path', () => {
 
   expect(calls[0]?.action).toBe('a.b.inc');
 });
+
+test('domain method shadowing a built-in name logs the method name, not the inner built-in', () => {
+  // `reset` is in BUILTIN_KEYS; a domain method with the same name must still
+  // be tracked as a domain action — not overwritten by the inner `set` call.
+  const store = createStore({ count: 10 }, ({ set }) => ({
+    reset() {
+      set({ count: 0 });
+    },
+  }));
+
+  const calls: Array<{ action: string }> = [];
+  const disconnect = connectDebugLog(store, {
+    onLog: (action) => {
+      if (action !== 'init') {
+        calls.push({ action });
+      }
+    },
+  });
+
+  store.reset();
+  disconnect();
+
+  expect(calls).toHaveLength(1);
+  expect(calls[0]?.action).toBe('reset');
+});
+
+test('standalone built-in call logs its own name when not inside a domain method', () => {
+  const store = createStore({ count: 0 }, () => ({}));
+
+  const calls: Array<{ action: string }> = [];
+  const disconnect = connectDebugLog(store, {
+    onLog: (action) => {
+      if (action !== 'init') {
+        calls.push({ action });
+      }
+    },
+  });
+
+  store.set({ count: 1 });
+  store.update((d) => {
+    d.count += 1;
+  });
+  disconnect();
+
+  expect(calls).toHaveLength(2);
+  expect(calls[0]?.action).toBe('set');
+  expect(calls[1]?.action).toBe('update');
+});

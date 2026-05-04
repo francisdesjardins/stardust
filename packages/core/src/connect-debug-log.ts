@@ -170,10 +170,15 @@ export function connectDebugLog<TSnapshot>(
   let batchActions: string[] = [];
   let inBatch = false;
   let startTime: number | undefined;
-  // Counts active domain-method frames (including pending async continuations).
-  // When > 0, built-in wrappers skip trackAction so they don't overwrite the
-  // domain method name already in flight.
+  // trackingDepth: total active frames (domain + built-in wrappers combined).
+  // When > 0, inner wrappers skip trackAction so they don't overwrite the
+  // outermost action name already in flight.
   let trackingDepth = 0;
+  // domainDepth: frames from wrapDomainMethod only (excludes standalone built-in
+  // calls). The subscription callback uses this to decide whether to clear
+  // tracking state after logging: 0 means a standalone built-in call (clear
+  // immediately), > 0 means inside a domain method (keep for incremental diffs).
+  let domainDepth = 0;
   let actionCounter = 0;
 
   function trackAction(actionName: string): void {
@@ -205,11 +210,13 @@ export function connectDebugLog<TSnapshot>(
           trackAction(actionName);
         }
         trackingDepth++;
+        domainDepth++;
         let result: unknown;
         try {
           result = Reflect.apply(target, thisArg, args);
         } catch (error) {
           trackingDepth--;
+          domainDepth--;
           if (trackingDepth === 0) {
             clearTracking();
           }
@@ -218,12 +225,14 @@ export function connectDebugLog<TSnapshot>(
         if (result instanceof Promise) {
           return result.finally(() => {
             trackingDepth--;
+            domainDepth--;
             if (trackingDepth === 0) {
               clearTracking();
             }
           });
         }
         trackingDepth--;
+        domainDepth--;
         if (trackingDepth === 0) {
           clearTracking();
         }
@@ -244,7 +253,16 @@ export function connectDebugLog<TSnapshot>(
         if (trackingDepth === 0) {
           trackAction(actionName(args));
         }
-        return Reflect.apply(target, thisArg, args) as ReturnType<T>;
+        // Depth tracking prevents inner built-in calls (e.g. a domain `reset`
+        // calling `api.set`) from overwriting the current action name. Clearing
+        // is intentionally left to the subscription callback (domainDepth === 0
+        // path) so that stores with deferred notification still log correctly.
+        trackingDepth++;
+        try {
+          return Reflect.apply(target, thisArg, args) as ReturnType<T>;
+        } finally {
+          trackingDepth--;
+        }
       },
     });
   }
@@ -308,9 +326,23 @@ export function connectDebugLog<TSnapshot>(
 
   const originals: OriginalEntry[] = [];
 
+  // Identity set of store function references to skip at the top level. Built by
+  // reading the *current* values — mutation built-ins are already the wrapBuiltIn
+  // proxies, non-mutation built-ins (subscribe, getSnapshot, …) are their originals.
+  // Using identity rather than the name-based BUILTIN_KEYS means a domain method
+  // that shadows a built-in name (e.g. `reset`) is NOT skipped — it has a different
+  // function reference and will be wrapped as a domain method with wrapDomainMethod.
+  const builtinFnIdentities = new Set<unknown>();
+  for (const key of BUILTIN_KEYS) {
+    const val = mutableStore[key];
+    if (val !== undefined) {
+      builtinFnIdentities.add(val);
+    }
+  }
+
   function wrapMethods(obj: Record<string, unknown>, prefix: string): void {
     for (const key of Object.keys(obj)) {
-      if (prefix === '' && BUILTIN_KEYS.has(key)) {
+      if (prefix === '' && builtinFnIdentities.has(obj[key])) {
         continue;
       }
       const value = obj[key];
@@ -346,8 +378,9 @@ export function connectDebugLog<TSnapshot>(
       actionId = ++actionCounter;
       currentActionId = actionId;
     }
-    if (trackingDepth === 0) {
-      // Sync op or standalone built-in — clear tracking immediately.
+    if (domainDepth === 0) {
+      // Standalone built-in call (or deferred notification after it returned) —
+      // clear tracking now that the notification has been processed.
       clearTracking();
     } else {
       // Still inside an async domain method — keep the action name, advance
