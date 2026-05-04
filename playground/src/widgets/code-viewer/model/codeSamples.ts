@@ -6,6 +6,10 @@ import safeAwaitSrc from '@/pages/utilities/examples/safe-await.tsx?raw';
 import mutexSrc from '@/pages/utilities/examples/mutex.tsx?raw';
 import singleFlightSrc from '@/pages/utilities/examples/single-flight.tsx?raw';
 import debugLogSrc from '@/pages/utilities/examples/debug-log.tsx?raw';
+import cacheManualSrc from '@/pages/utilities/examples/cache-manual.tsx?raw';
+import cacheLoadingSrc from '@/pages/utilities/examples/cache-loading.tsx?raw';
+import cacheTtlSrc from '@/pages/utilities/examples/cache-ttl.tsx?raw';
+import cacheNestedSrc from '@/pages/utilities/examples/cache-nested.tsx?raw';
 import createStoreSrc from '@/pages/getting-started/examples/create-store.tsx?raw';
 import derivedStoreSrc from '@/pages/getting-started/examples/derived-store.tsx?raw';
 import asyncStateSrc from '@/pages/getting-started/examples/async-state.tsx?raw';
@@ -40,6 +44,10 @@ export const codeSamples: Record<string, string> = {
   mutex: mutexSrc,
   'single-flight': singleFlightSrc,
   'debug-log': debugLogSrc,
+  'cache-manual': cacheManualSrc,
+  'cache-loading': cacheLoadingSrc,
+  'cache-ttl': cacheTtlSrc,
+  'cache-nested': cacheNestedSrc,
 
   // SolidJS
   'solid-counter': solidCounterSrc,

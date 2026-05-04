@@ -2,6 +2,10 @@ import { Divider, Grid, Typography } from '@mui/material';
 import { ExampleCard } from '@/entities/example';
 import { PageLayout } from '@/shared/ui/PageLayout/PageLayout';
 import { ArrayMethodsExample } from '../examples/array-methods';
+import { CacheManualExample } from '../examples/cache-manual';
+import { CacheLoadingExample } from '../examples/cache-loading';
+import { CacheTtlExample } from '../examples/cache-ttl';
+import { CacheNestedExample } from '../examples/cache-nested';
 import { DebugLogExample } from '../examples/debug-log';
 import { MutexExample } from '../examples/mutex';
 import { PathUtilsExample } from '../examples/path-utils';
@@ -67,6 +71,48 @@ export const UtilitiesPage = () => (
           codeKey="path-utils"
         >
           <PathUtilsExample />
+        </ExampleCard>
+      </Grid>
+
+      <SectionHeader label="Cache helpers" />
+
+      <Grid size={{ xs: 12, md: 6 }}>
+        <ExampleCard
+          title="Manual refresh"
+          description="Call refresh(fetcher) to drive fresh → pending → fresh transitions. Single-flight: concurrent callers share one in-flight promise."
+          codeKey="cache-manual"
+        >
+          <CacheManualExample />
+        </ExampleCard>
+      </Grid>
+
+      <Grid size={{ xs: 12, md: 6 }}>
+        <ExampleCard
+          title="Loading states"
+          description="Choose what the UI sees during pending: a placeholder value, or the previous data preserved in place."
+          codeKey="cache-loading"
+        >
+          <CacheLoadingExample />
+        </ExampleCard>
+      </Grid>
+
+      <Grid size={{ xs: 12, md: 6 }}>
+        <ExampleCard
+          title="TTL & auto-refresh"
+          description="Stamp an expiry timestamp on the data. Arm startAutoRefresh to loop: fresh → expired → pending → fresh."
+          codeKey="cache-ttl"
+        >
+          <CacheTtlExample />
+        </ExampleCard>
+      </Grid>
+
+      <Grid size={{ xs: 12, md: 6 }}>
+        <ExampleCard
+          title="Nested slice"
+          description="Cache one typed subtree while the rest of the snapshot stays plain. Expiring triggers refreshOnExpire automatically."
+          codeKey="cache-nested"
+        >
+          <CacheNestedExample />
         </ExampleCard>
       </Grid>
 

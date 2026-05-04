@@ -148,7 +148,7 @@ const BUILTIN_KEYS = [
 ] satisfies readonly (keyof BuiltinDispatchable<never>)[];
 
 /** All non-domain keys on a store object — typed against `Store` so drift is a compile error. */
-const NON_DOMAIN_KEYS = new Set([
+const NON_DOMAIN_KEYS = new Set<string>([
   'subscribe',
   'getSnapshot',
   'listenerCount',

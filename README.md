@@ -69,20 +69,21 @@ Run `npm run bench` to reproduce locally.
 
 | Operation                        |  ops/s |    ns/op |
 | -------------------------------- | -----: | -------: |
-| `store.get()` flat snapshot      | 216.8M |     5 ns |
-| `store.set()` object swap        |  18.9M |    53 ns |
-| `store.getByPath('a.b.c')`       |  18.2M |    55 ns |
-| `store.setByPath('a.b.c', v)`    |   9.0M |   111 ns |
-| `createDerivedStore` recompute   |   9.2M |   108 ns |
-| `arrayMethods.upsert()` hit      |   8.4M |   118 ns |
-| `store.update()` draft mutation  |   846K | 1,182 ns |
-| `produce()` flat clone + mutate  |   910K | 1,098 ns |
-| `batch()` 10× writes, 1 listener |   494K | 2,021 ns |
-| fan-out: 1,000 listeners         |   184K | 5,409 ns |
+| `store.get()` flat snapshot      | 175.1M |     6 ns |
+| `store.set()` object swap        |  27.9M |    36 ns |
+| `store.getByPath('a.b.c')`       |  11.7M |    85 ns |
+| `store.setByPath('a.b.c', v)`    |  12.7M |    79 ns |
+| `createDerivedStore` recompute   |   6.6M |   152 ns |
+| `arrayMethods.upsert()` hit      |   7.9M |   127 ns |
+| `store.update()` draft mutation  |   800K | 1,263 ns |
+| `produce()` flat clone + mutate  |   790K | 1,275 ns |
+| `batch()` 10× writes, 1 listener |   500K | 2,109 ns |
+| fan-out: 1,000 listeners         |   192K | 5,219 ns |
 
-> `update()` and `produce()` are `structuredClone`-bound by design — the cost is the clone, not the store.
+The hot path — `get()`, `set()`, `setByPath()` — sits in the single-digit to double-digit nanosecond range, well clear of anything a UI can saturate. `update()` and `produce()` cost what `structuredClone` costs: that's the POJO contract, paid explicitly, nothing hidden. `AsyncState` and `CachedState` are plain fields in the snapshot — no hidden scheduler, no extra layer. If you need more control over cost, reach for `set()` or `setByPath()` directly; the primitives are always there.
+
 > `dispatch()` overhead vs direct calls is zero — same ns/op at every tier.
-> Numbers are machine-specific. _Last updated: 2026-04-30_
+> Numbers are machine-specific. _Last updated: 2026-05-03_
 
 ---
 

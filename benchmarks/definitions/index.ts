@@ -6,6 +6,7 @@ import './path-utilities.ts';
 import './store-get-set-by-path.ts';
 import './produce.ts';
 import './create-array-methods.ts';
+import './create-cached.ts';
 import './create-derived-store.ts';
 import './create-store-dispatch.ts';
 import './end-to-end.ts';

@@ -1,3 +1,4 @@
+import GitHubIcon from '@mui/icons-material/GitHub';
 import MenuIcon from '@mui/icons-material/Menu';
 import { AppBar, Box, IconButton, Toolbar, Typography } from '@mui/material';
 import { ThemeToggleButton } from '@/shared/ui/ThemeToggleButton';
@@ -61,6 +62,17 @@ export const TopBar = ({ isMobile, onMenuClick }: TopBarProps) => (
       </Box>
       <Box sx={{ flexGrow: 1 }} />
       <ThemeToggleButton sx={{ border: 1, borderColor: 'divider', borderRadius: 1 }} />
+      <IconButton
+        component="a"
+        href="https://github.com/francisdesjardins/stardust"
+        target="_blank"
+        rel="noopener noreferrer"
+        size="small"
+        aria-label="View source on GitHub"
+        sx={{ ml: 1, border: 1, borderColor: 'divider', borderRadius: 1 }}
+      >
+        <GitHubIcon fontSize="small" />
+      </IconButton>
     </Toolbar>
   </AppBar>
 );

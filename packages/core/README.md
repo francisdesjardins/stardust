@@ -438,6 +438,108 @@ store.phones.upsert([a, b, c], function (item) {
 
 ---
 
+### `createCachedSlice(api, options?)`
+
+Cache a slice of the store — root or nested — with observable cache status. The managed store field holds a `CachedState<T>` discriminated union, making every status transition (idle → pending → fresh → expired → rejected) reactive via `watch` and `createDerivedStore`.
+
+**`CachedState<T>` union variants**
+
+| Variant             | Fields                                                     | Description                                                      |
+| ------------------- | ---------------------------------------------------------- | ---------------------------------------------------------------- |
+| `CachedIdle`        | `status: 'idle'`                                           | No data loaded yet.                                              |
+| `CachedPending<T>`  | `status: 'pending'; data: T \| undefined`                  | Fetch in-flight. `data` holds the previous value or placeholder. |
+| `CachedFresh<T>`    | `status: 'fresh'; data: T; expiresAt: number \| undefined` | Data is current.                                                 |
+| `CachedExpired<T>`  | `status: 'expired'; data: T; expiresAt: number`            | TTL elapsed — data available but stale.                          |
+| `CachedRejected<T>` | `status: 'rejected'; error: Error; data: T \| undefined`   | Fetch failed.                                                    |
+
+**Methods**
+
+| Method                             | Description                                                                                                                                                                                         |
+| ---------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `get()`                            | Returns the current `CachedState<TValue>`.                                                                                                                                                          |
+| `set(data, expiresAt?)`            | Writes `cachedFresh(data, expiresAt)`. Skips the store write when equal (via `equals`) and no `expiresAt` is given; always rewrites when `expiresAt` is set to reset the TTL.                       |
+| `expire()`                         | Manually transitions `fresh → expired`. No-op if not in `'fresh'` state.                                                                                                                            |
+| `refresh(fetcher, options?)`       | Calls `fetcher(current)`, transitions `pending → fresh`. Single-flight: concurrent callers share one execution.                                                                                     |
+| `refreshIfExpired(fetcher, opts?)` | Same as `refresh()` but only runs when status is `'expired'`. Returns `undefined` otherwise.                                                                                                        |
+| `startAutoRefresh({ interval })`   | Arms the auto-refresh cycle. `interval` (ms) is stamped as `expiresAt` on each refreshed value and used as the retry delay after rejection. If already `'expired'`, triggers the fetch immediately. |
+| `stopAutoRefresh()`                | Disables auto-fetch on expire. The `'fresh' → 'expired'` timer keeps firing — expiry stays observable. Call `expire()` explicitly to also cancel the pending timer.                                 |
+
+**Constructor options — `CachedOptions`**
+
+`keepPreviousData` and `placeholder` are **mutually exclusive** — TypeScript enforces this at the call site.
+
+| Option             | Type                                                               | Default     | Description                                                                                                                                                                          |
+| ------------------ | ------------------------------------------------------------------ | ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `keepPreviousData` | `true`                                                             | —           | Keep the current value visible while the refresh is in-flight (`CachedPending.data = previous`). Forbids `placeholder`.                                                              |
+| `placeholder`      | `TValue`                                                           | —           | Written as `CachedPending.data` before the fetch begins when `keepPreviousData` is absent/`false`. Acts as the helper-level default for both `refresh()` and auto-refresh.           |
+| `equals`           | `(a: TValue, b: TValue) => boolean`                                | `Object.is` | Skip the store write when the new value is equal to the current. For object snapshots, prefer `shallowEqual` — every fetch returns a new reference so `Object.is` is always `false`. |
+| `refreshOnExpire`  | `(current: TValue \| undefined, api: StoreApi) => Promise<TValue>` | —           | Called automatically each expiration cycle by `startAutoRefresh({ interval })`. Must return the new value — the helper writes `cachedFresh` and reschedules the timer.               |
+
+**Per-call options — `CachedRefreshOptions`** (passed to `refresh()` / `refreshIfExpired()`)
+
+`keepPreviousData` and `placeholder` are **mutually exclusive** here too — TS error if both are present.
+
+| Option             | Type     | Description                                                                                        |
+| ------------------ | -------- | -------------------------------------------------------------------------------------------------- |
+| `keepPreviousData` | `true`   | Overrides the constructor-level `keepPreviousData` for this call only. Forbids `placeholder`.      |
+| `placeholder`      | `TValue` | Overrides the constructor-level `placeholder` for this call only; written as `CachedPending.data`. |
+| `expiresAt`        | `number` | Absolute timestamp (ms) stamped on the `CachedFresh` result. Omit for indefinite freshness.        |
+
+```ts
+import {
+  cachedFresh,
+  cachedIdle,
+  createCachedSlice,
+  createStore,
+  type CachedState,
+} from '@stardust/core';
+
+const TTL = 60_000;
+
+// Root slice — the whole store IS a CachedState<Item[]>
+const itemStore = createStore(cachedFresh<Item[]>([]), (api) => ({
+  cache: createCachedSlice(api, {
+    placeholder: [],
+    refreshOnExpire: async (current, storeApi) => storeApi.getContext().fetchItems(),
+  }),
+}));
+
+// Arm auto-refresh with a 60 s interval (stamps expiresAt on each result)
+itemStore.cache.startAutoRefresh({ interval: TTL });
+
+// Sub-slice — profile is a nested CachedState<Profile>
+const appStore = createStore({ profile: cachedFresh({ name: 'Alice' }), version: 1 }, (api) => ({
+  profileCache: createCachedSlice(api, 'profile', {
+    keepPreviousData: true,
+    refreshOnExpire: async (current, storeApi) => storeApi.getContext().fetchProfile(),
+  }),
+}));
+
+// React: observe cache status in a selector
+const profileState = useStore(appStore, (s) => s.profile);
+if (profileState.status === 'fresh') {
+  console.log(profileState.data.name);
+} else if (profileState.status === 'expired') {
+  console.log('Stale:', profileState.data.name);
+}
+
+// Arm auto-refresh; stop on cleanup
+appStore.profileCache.startAutoRefresh({ interval: TTL });
+// on unmount:
+appStore.profileCache.stopAutoRefresh();
+
+// Manual refresh with explicit TTL
+await appStore.profileCache.refresh(async (current) => fetchProfile(current?.id ?? ''), {
+  expiresAt: Date.now() + TTL,
+});
+
+// Manual expire-then-refresh
+appStore.profileCache.expire(); // writes CachedExpired to snapshot immediately
+await appStore.profileCache.refreshIfExpired(async (current) => fetchProfile(current?.id ?? ''));
+```
+
+---
+
 ### `createStoreDispatch(store, options?)`
 
 Wraps a store into a single `dispatch(action, ...args)` function. Useful for passing a controlled mutation interface as context to another store, or for decoupling callers from the store shape.
@@ -499,7 +601,7 @@ function Counter() {
 
 ### `connectDebugLog(store, options?)`
 
-Connects a store to the `stardust:store` debug logger. No browser extension required. Every mutation (built-in and domain) is logged with its action name and the resulting snapshot.
+Connects a store to the `stardust:store` debug logger. No browser extension required. Every mutation (built-in and domain) is logged with its action name, a monotonic action ID plus sub-ID (`#0001-00`), and the resulting diff plus current snapshot.
 
 ```ts
 connectDebugLog<TSnapshot>(
@@ -508,10 +610,10 @@ connectDebugLog<TSnapshot>(
 ): () => void
 ```
 
-| Option  | Type       | Default             | Description                                                                                     |
-| ------- | ---------- | ------------------- | ----------------------------------------------------------------------------------------------- |
-| `name`  | `string`   | _(bare `store`)_    | Forms the logger namespace `store:name`. Omit for bare `store` namespace.                       |
-| `onLog` | `function` | _(built-in logger)_ | Custom log handler `(action, diff, durationMs, actionId, listenerCount) => void`. Bypasses the built-in logger entirely; the built-in logger prints `listeners:N` after subtracting its own internal subscription. |
+| Option  | Type       | Default             | Description                                                                                                                                                                                                                                                                    |
+| ------- | ---------- | ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `name`  | `string`   | _(bare `store`)_    | Forms the logger namespace `store:name`. Omit for bare `store` namespace.                                                                                                                                                                                                      |
+| `onLog` | `function` | _(built-in logger)_ | Custom log handler `(action, diff, durationMs, actionId, listenerCount) => void`. Bypasses the built-in logger entirely; the built-in logger prints `listeners:N` after subtracting its own internal subscription and includes the current snapshot object alongside the diff. |
 
 `connectDebugLog` has no built-in environment guard. Wrap the call yourself to control when it's active:
 
@@ -670,19 +772,20 @@ store.setByPath('items[0].name', 'foo'); // type-checked value
 
 Ten interaction patterns — each borrowing the best idea from a different library or ecosystem.
 
-| Pattern              | API                                             | Inspired by      | Cost                                 | When to reach for it                                                            |
-| -------------------- | ----------------------------------------------- | ---------------- | ------------------------------------ | ------------------------------------------------------------------------------- |
-| Whole-state swap     | `set(next)`                                     | Zustand          | O(1) — no copy                       | Atomic replacements, computed resets, simple atoms                              |
-| Path-based write     | `setByPath(path, value)`                        | react-hook-form  | O(depth) — structural sharing        | Surgical single-field updates in nested state                                   |
-| Draft mutation       | `update(recipe)`                                | Immer            | O(n) — full `structuredClone`        | Complex multi-field changes where mutation syntax is clearer                    |
-| Array CRUD           | `createArrayMethods(defaults).mount(api, path)` | RHF field arrays | O(array length) — structural sharing | Dynamic lists: add, remove, reorder, partial merge, path-set                    |
-| Computed / derived   | `createDerivedStore(sources, derive)`           | Redux selectors  | Lazy — zero cost when unused         | Cross-store projections, memoised computed values                               |
-| Grouped writes       | `batch(fn)`                                     | Redux batch      | Single notification                  | Multi-field atomicity, avoid intermediate render flickers                       |
-| Standalone transform | `produce(state, recipe)`                        | Immer standalone | O(n) — full `structuredClone`        | One-off transformations outside a store, pure utilities                         |
-| Dispatch             | `createStoreDispatch(store)`                    | Redux dispatch   | Near-zero — single property lookup   | Controlled store-to-store context, decoupled callers                            |
-| React context        | `createStoreContext(factory, options?)`         | React Context    | Per-mount `useState` initializer     | Isolated per-subtree store instances with typed `initial` + `context` props     |
-| Suspense integration | `useSuspenseStore(store, select, options?)`     | React Suspense   | Near-zero — WeakMap cache            | `AsyncState<T>` slices in Suspense trees; eliminates `status` guard boilerplate |
-| Debug logging        | `connectDebugLog(store, options?)`              | Custom logger    | Near-zero — wrap in `if (DEV)`       | Console mutation observer, action names, flat path diff, timing                 |
+| Pattern              | API                                                                           | Inspired by      | Cost                                 | When to reach for it                                                            |
+| -------------------- | ----------------------------------------------------------------------------- | ---------------- | ------------------------------------ | ------------------------------------------------------------------------------- |
+| Whole-state swap     | `set(next)`                                                                   | Zustand          | O(1) — no copy                       | Atomic replacements, computed resets, simple atoms                              |
+| Path-based write     | `setByPath(path, value)`                                                      | react-hook-form  | O(depth) — structural sharing        | Surgical single-field updates in nested state                                   |
+| Draft mutation       | `update(recipe)`                                                              | Immer            | O(n) — full `structuredClone`        | Complex multi-field changes where mutation syntax is clearer                    |
+| Array CRUD           | `createArrayMethods(defaults).mount(api, path)`                               | RHF field arrays | O(array length) — structural sharing | Dynamic lists: add, remove, reorder, partial merge, path-set                    |
+| Computed / derived   | `createDerivedStore(sources, derive)`                                         | Redux selectors  | Lazy — zero cost when unused         | Cross-store projections, memoised computed values                               |
+| Cache helpers        | `createCachedSlice(api, options?)` / `createCachedSlice(api, path, options?)` | Cache helpers    | Keep previous data during refresh    | Async refresh helpers for root and nested slices                                |
+| Grouped writes       | `batch(fn)`                                                                   | Redux batch      | Single notification                  | Multi-field atomicity, avoid intermediate render flickers                       |
+| Standalone transform | `produce(state, recipe)`                                                      | Immer standalone | O(n) — full `structuredClone`        | One-off transformations outside a store, pure utilities                         |
+| Dispatch             | `createStoreDispatch(store)`                                                  | Redux dispatch   | Near-zero — single property lookup   | Controlled store-to-store context, decoupled callers                            |
+| React context        | `createStoreContext(factory, options?)`                                       | React Context    | Per-mount `useState` initializer     | Isolated per-subtree store instances with typed `initial` + `context` props     |
+| Suspense integration | `useSuspenseStore(store, select, options?)`                                   | React Suspense   | Near-zero — WeakMap cache            | `AsyncState<T>` slices in Suspense trees; eliminates `status` guard boilerplate |
+| Debug logging        | `connectDebugLog(store, options?)`                                            | Custom logger    | Near-zero — wrap in `if (DEV)`       | Console mutation observer, action names, flat path diff, timing                 |
 
 ---
 

@@ -155,6 +155,98 @@ test('built-in logger group header includes live listener count', () => {
   expect(groupArgs.some((message) => message.includes('listeners:0'))).toBe(true);
 });
 
+test('built-in logger group header includes action sub-id', async () => {
+  const store = createStore({ status: 'idle', data: '' }, ({ update }) => ({
+    async load() {
+      update((d) => {
+        d.status = 'pending';
+      });
+      await new Promise<void>((resolve) => {
+        setTimeout(resolve, 0);
+      });
+      update((d) => {
+        d.status = 'fulfilled';
+      });
+    },
+  }));
+
+  const groupArgs: string[] = [];
+  const originalGroupCollapsed = console.groupCollapsed;
+  const originalGroupEnd = console.groupEnd;
+
+  console.groupCollapsed = (...args: unknown[]) => {
+    groupArgs.push(String(args[0]));
+  };
+  console.groupEnd = () => {};
+
+  setLogLevel('store');
+  const disconnect = connectDebugLog(store, {});
+  await store.load();
+  disconnect();
+  setLogLevel(false);
+
+  console.groupCollapsed = originalGroupCollapsed;
+  console.groupEnd = originalGroupEnd;
+
+  expect(groupArgs.some((message) => message.includes('#0001-00'))).toBe(true);
+});
+
+test('does not consume action ids for no-op mutations', () => {
+  const store = createStore({ count: 0 }, () => ({}));
+  const calls: Array<{ actionId: number; action: string }> = [];
+  const disconnect = connectDebugLog(store, {
+    onLog: (action, _diff, _duration, actionId) => {
+      if (action !== 'init') {
+        calls.push({ actionId, action });
+      }
+    },
+  });
+
+  const snapshot = store.getSnapshot();
+  store.set(snapshot);
+  store.set({ count: 1 });
+  disconnect();
+
+  expect(calls).toHaveLength(1);
+  expect(calls[0]?.actionId).toBe(1);
+  expect(calls[0]?.action).toBe('set');
+});
+
+test('built-in logger group body includes snapshot after diff', () => {
+  const store = createStore({ count: 0 }, () => ({}));
+  const debugArgs: unknown[] = [];
+  const originalDebug = console.debug;
+  const originalGroupCollapsed = console.groupCollapsed;
+  const originalGroupEnd = console.groupEnd;
+
+  console.groupCollapsed = () => {};
+  console.groupEnd = () => {};
+  console.debug = (...args: unknown[]) => {
+    debugArgs.push(args[0]);
+  };
+
+  setLogLevel('store');
+  const disconnect = connectDebugLog(store, {});
+  store.set({ count: 1 });
+  disconnect();
+  setLogLevel(false);
+
+  console.groupCollapsed = originalGroupCollapsed;
+  console.groupEnd = originalGroupEnd;
+  console.debug = originalDebug;
+
+  expect(
+    debugArgs.some((item) => {
+      return (
+        item !== null &&
+        typeof item === 'object' &&
+        'diff' in (item as Record<string, unknown>) &&
+        'snapshot' in (item as Record<string, unknown>)
+      );
+    })
+  ).toBe(true);
+});
+
 test('logs action name + diff on set', () => {
   const store = createStore({ count: 0 }, () => ({}));
   const calls: Array<{ action: string; diff: DiffResult }> = [];

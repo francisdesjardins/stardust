@@ -13,9 +13,10 @@ export function group(name: string, fn: () => void): void {
   m.group(name, fn);
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- mitata's bench type is very loose, and the wrapper doesn't modify it
 export function bench(name: string, fn: any): m.B {
   benchGroups.set(name, currentGroup);
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-argument -- pass through to mitata
   return m.bench(name, fn);
 }
 

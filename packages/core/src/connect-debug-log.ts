@@ -155,13 +155,17 @@ export function connectDebugLog<TSnapshot>(
     onLog('init', computeDiff(undefined, initSnapshot), 0, 0, store.listenerCount);
   } else {
     if (logger) {
-      logger.group('init #0000', () => computeDiff(undefined, initSnapshot));
+      logger.group('init #0000-00', () => ({
+        diff: computeDiff(undefined, initSnapshot),
+        snapshot: initSnapshot,
+      }));
     }
   }
 
   // ── Action tracking ────────────────────────────────────────────────────────
   let currentAction: string | undefined;
   let currentActionId: number | undefined;
+  let currentActionSubId = 0;
   let prevSnapshot: TSnapshot | undefined;
   let batchActions: string[] = [];
   let inBatch = false;
@@ -177,7 +181,8 @@ export function connectDebugLog<TSnapshot>(
       batchActions.push(actionName);
     } else {
       currentAction = actionName;
-      currentActionId = ++actionCounter;
+      currentActionId = undefined;
+      currentActionSubId = 0;
       prevSnapshot = store.getSnapshot();
       startTime = performance.now();
     }
@@ -190,6 +195,60 @@ export function connectDebugLog<TSnapshot>(
     startTime = undefined;
   }
 
+  function wrapDomainMethod<T extends (...args: unknown[]) => unknown>(
+    fn: T,
+    actionName: string
+  ): T {
+    return new Proxy(fn, {
+      apply(target: T, thisArg: unknown, args: Parameters<T>) {
+        if (trackingDepth === 0) {
+          trackAction(actionName);
+        }
+        trackingDepth++;
+        let result: unknown;
+        try {
+          result = Reflect.apply(target, thisArg, args);
+        } catch (error) {
+          trackingDepth--;
+          if (trackingDepth === 0) {
+            clearTracking();
+          }
+          throw error;
+        }
+        if (result instanceof Promise) {
+          return result.finally(() => {
+            trackingDepth--;
+            if (trackingDepth === 0) {
+              clearTracking();
+            }
+          });
+        }
+        trackingDepth--;
+        if (trackingDepth === 0) {
+          clearTracking();
+        }
+        return result;
+      },
+    });
+  }
+
+  // The proxy wrapper cannot preserve precise tuple-shaped parameters here,
+  // so we use `any[]` for the internal apply signature only.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  function wrapBuiltIn<T extends (...args: any[]) => unknown>(
+    fn: T,
+    actionName: (args: Parameters<T>) => string
+  ): T {
+    return new Proxy<T>(fn, {
+      apply(target: T, thisArg: unknown, args: Parameters<T>) {
+        if (trackingDepth === 0) {
+          trackAction(actionName(args));
+        }
+        return Reflect.apply(target, thisArg, args) as ReturnType<T>;
+      },
+    });
+  }
+
   // ── Wrap built-in mutation methods ─────────────────────────────────────────
 
   const originalSet = store.set;
@@ -200,58 +259,44 @@ export function connectDebugLog<TSnapshot>(
 
   const mutableStore = store as Record<string, unknown>;
 
-  mutableStore['set'] = function wrappedSet(
-    next: TSnapshot | ((prev: TSnapshot) => TSnapshot)
-  ): void {
-    if (trackingDepth === 0) {
-      trackAction('set');
-    }
-    originalSet.call(store, next);
-  };
-
-  mutableStore['update'] = function wrappedUpdate(recipe: (draft: TSnapshot) => void): void {
-    if (trackingDepth === 0) {
-      trackAction('update');
-    }
-    originalUpdate.call(store, recipe);
-  };
-
-  mutableStore['setByPath'] = function wrappedSetByPath<P extends PathsOf<TSnapshot>>(
-    path: P,
-    value: ValueAtPath<TSnapshot, P>
-  ): void {
-    if (trackingDepth === 0) {
-      trackAction(`setByPath(${path})`);
-    }
-    originalSetByPath.call(store, path, value);
-  };
-
-  mutableStore['reset'] = function wrappedReset(
-    next?: TSnapshot | ((initial: TSnapshot) => TSnapshot)
-  ): void {
-    if (trackingDepth === 0) {
-      trackAction('reset');
-    }
-    originalReset.call(store, next);
-  };
-
-  mutableStore['batch'] = function wrappedBatch(fn: () => void): void {
-    if (trackingDepth > 0) {
-      // Inside a domain method — passthrough; tracking is owned by the caller.
-      originalBatch.call(store, fn);
-      return;
-    }
-    inBatch = true;
-    batchActions = [];
-    prevSnapshot = store.getSnapshot();
-    startTime = performance.now();
-    originalBatch.call(store, () => {
-      fn();
-      inBatch = false;
-      currentAction = `batch(${batchActions.join(', ')})`;
-      batchActions = [];
+  function wrapBatch(fn: typeof originalBatch): typeof originalBatch {
+    return new Proxy<typeof originalBatch>(fn, {
+      apply(
+        target: typeof originalBatch,
+        thisArg: unknown,
+        args: Parameters<typeof originalBatch>
+      ) {
+        if (trackingDepth > 0) {
+          Reflect.apply(target, thisArg, args);
+          return;
+        }
+        inBatch = true;
+        batchActions = [];
+        prevSnapshot = store.getSnapshot();
+        startTime = performance.now();
+        currentActionId = undefined;
+        currentActionSubId = 0;
+        Reflect.apply(target, thisArg, [
+          () => {
+            args[0]();
+            inBatch = false;
+            currentAction = `batch(${batchActions.join(', ')})`;
+            batchActions = [];
+          },
+        ]);
+        return;
+      },
     });
-  };
+  }
+
+  mutableStore['set'] = wrapBuiltIn<typeof originalSet>(originalSet, () => 'set');
+  mutableStore['update'] = wrapBuiltIn<typeof originalUpdate>(originalUpdate, () => 'update');
+  mutableStore['setByPath'] = wrapBuiltIn<typeof originalSetByPath>(
+    originalSetByPath,
+    (args) => `setByPath(${args[0]})`
+  );
+  mutableStore['reset'] = wrapBuiltIn<typeof originalReset>(originalReset, () => 'reset');
+  mutableStore['batch'] = wrapBatch(originalBatch);
 
   // ── Wrap domain methods ────────────────────────────────────────────────────
 
@@ -272,36 +317,7 @@ export function connectDebugLog<TSnapshot>(
       if (typeof value === 'function') {
         const actionName = prefix ? `${prefix}.${key}` : key;
         originals.push({ fn: value as (...args: unknown[]) => unknown, owner: obj, key });
-        const original = value as (...args: unknown[]) => unknown;
-        obj[key] = function wrappedDomain(...args: unknown[]): unknown {
-          if (trackingDepth === 0) {
-            trackAction(actionName);
-          }
-          trackingDepth++;
-          let result: unknown;
-          try {
-            result = original(...args);
-          } catch (e) {
-            trackingDepth--;
-            if (trackingDepth === 0) {
-              clearTracking();
-            }
-            throw e;
-          }
-          if (result instanceof Promise) {
-            return (result as Promise<unknown>).finally(() => {
-              trackingDepth--;
-              if (trackingDepth === 0) {
-                clearTracking();
-              }
-            });
-          }
-          trackingDepth--;
-          if (trackingDepth === 0) {
-            clearTracking();
-          }
-          return result;
-        };
+        obj[key] = wrapDomainMethod(value as (...args: unknown[]) => unknown, actionName);
       } else if (value !== null && typeof value === 'object' && !Array.isArray(value)) {
         wrapMethods(value as Record<string, unknown>, prefix ? `${prefix}.${key}` : key);
       }
@@ -320,11 +336,16 @@ export function connectDebugLog<TSnapshot>(
       return;
     }
     const action = currentAction;
-    const actionId = currentActionId;
+    let actionId = currentActionId;
+    const subId = currentActionSubId++;
     const prev = prevSnapshot;
     const next = store.getSnapshot();
     const durationMs = startTime !== undefined ? performance.now() - startTime : 0;
     const listenerCount = store.listenerCount;
+    if (actionId === undefined) {
+      actionId = ++actionCounter;
+      currentActionId = actionId;
+    }
     if (trackingDepth === 0) {
       // Sync op or standalone built-in — clear tracking immediately.
       clearTracking();
@@ -335,16 +356,19 @@ export function connectDebugLog<TSnapshot>(
       startTime = performance.now();
     }
     if (onLog) {
-      onLog(action, computeDiff(prev, next), durationMs, actionId ?? 0, listenerCount);
+      onLog(action, computeDiff(prev, next), durationMs, actionId, listenerCount);
     } else {
       if (logger) {
         // The logger itself is subscribed to the store, so subtract it from the
         // printed listener count to show external listeners only.
         const visibleListenerCount = Math.max(0, listenerCount - 1);
-        const idTag = actionId !== undefined ? ` #${String(actionId).padStart(4, '0')}` : '';
+        const idTag = ` #${String(actionId).padStart(4, '0')}-${String(subId).padStart(2, '0')}`;
         logger.group(
           `${action}${idTag} (${durationMs.toFixed(2)}ms, listeners:${String(visibleListenerCount)})`,
-          () => computeDiff(prev, next)
+          () => ({
+            diff: computeDiff(prev, next),
+            snapshot: next,
+          })
         );
       }
     }

@@ -12,10 +12,6 @@ type StoreContractWithOptionalBind<TSnapshot> = StoreContract<TSnapshot> & {
 /** Extracts the snapshot type from a StoreContract without requiring TSnapshot as a separate type param. */
 type SnapshotOf<TStore> = TStore extends StoreContract<infer S> ? S : never;
 
-function identity<T>(x: T): T {
-  return x;
-}
-
 // ── Options ──────────────────────────────────────────────────────────────────
 
 /**
@@ -148,9 +144,12 @@ export function useStoreCore<TSnapshot, TSlice>(
     store.setContext?.(ctx);
   }
 
-  const sel: (snapshot: TSnapshot) => TSnapshot | TSlice = select
+  const sel: (snapshot: TSnapshot) => TSlice = select
     ? (snapshot) => select(snapshot, store)
-    : identity;
+    : // No selector: TSlice = TSnapshot at every call site (overload contract).
+      // Bridge through unknown so TypeScript accepts the assignment without a
+      // direct TSnapshot → TSlice assertion.
+      (snapshot) => snapshot as unknown as TSlice;
   const eq = equals ?? Object.is;
 
   // Cache the last selected value so getSnapshot returns the same reference
@@ -159,7 +158,7 @@ export function useStoreCore<TSnapshot, TSlice>(
   // detect tearing — returning a new object literal on every call (e.g.
   // select: s => ({ x: s.x })) would trigger an infinite re-render loop
   // (React error #185) without this cache.
-  const cache = useRef(sel(store.getSnapshot()));
+  const cache = useRef<TSlice>(sel(store.getSnapshot()));
 
   const subscribe = (listener: () => void): (() => void) => {
     return store.subscribe(() => {
@@ -171,7 +170,7 @@ export function useStoreCore<TSnapshot, TSlice>(
     });
   };
 
-  const getSnapshot = (): TSnapshot | TSlice => {
+  const getSnapshot = (): TSlice => {
     const next = sel(store.getSnapshot());
     if (eq(cache.current, next)) {
       return cache.current;
