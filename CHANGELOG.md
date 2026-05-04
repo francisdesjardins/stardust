@@ -11,6 +11,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 #### `@stardust/core`
 
+- `createCachedSlice` — `stopAutoRefresh()` no longer clears the expiry timer. The `'fresh'` → `'expired'` transition fires and notifies subscribers regardless of auto-refresh state, making expiry fully observable even when automatic re-fetching is disabled. Call `expire()` explicitly if you need to cancel the timer and immediately mark the cache as expired.
+- `createCachedSlice` — `startAutoRefresh()` now immediately triggers the `refreshOnExpire` fetch when the cache is already `'expired'` at call time, instead of being a no-op (previously `scheduleExpiryTimer` returned early for non-`'fresh'` states).
+- `createCachedSlice` — **`expire` option removed** from `CachedOptions`; TTL is now expressed directly on the data via `cachedFresh(data, expiresAt)`, `set(data, expiresAt)`, and `refresh(fetcher, { expiresAt })`. `startAutoRefresh({ interval })` replaces the `expire` option as the source of the recurring TTL for auto-refresh cycles — it stamps `expiresAt = Date.now() + interval` on each refreshed value and drives the first expiry when the initial state has no `expiresAt`. This removes the awkward duplication between the option and the initial `cachedFresh` timestamp.
+- `createCachedSlice` — `set(data)` now accepts an optional second argument `expiresAt?: number`. When omitted, the result has no TTL and stays fresh indefinitely. When provided, the expiry timer is scheduled at that absolute timestamp.
+- `createCachedSlice` — `refresh(fetcher, opts?)` now accepts `expiresAt?: number` in `CachedRefreshOptions`. Stamps the TTL on the `CachedFresh` result.
+- `createCachedSlice` — **breaking redesign**: the managed store field now holds a `CachedState<T>` discriminated union (`CachedIdle | CachedPending<T> | CachedFresh<T> | CachedExpired<T> | CachedRejected<T>`) instead of raw `T`. Cache status is now fully observable via `watch` and `createDerivedStore` — expiry fires into the snapshot. Use `cachedFresh(data)` as the initial store value; it returns `CachedState<T>` (wide union) so TypeScript infers `TSnapshot` correctly.
+- `createCachedSlice` — `set(data)` now always writes `cachedFresh`; the updater-function overload is removed.
+- `createCachedSlice` — `refresh(fetcher)` fetcher signature changed to `(current: TValue | undefined) => Promise<TValue>` (void return is no longer accepted). Transitions snapshot through `cachedPending → cachedFresh` on success, `cachedPending → cachedRejected` on error.
+- `createCachedSlice` — expiry timer is now **scheduled at construction** when the initial state is `'fresh'` and has a non-`undefined` `expiresAt`; on firing, the snapshot transitions to `CachedExpired<T>` (observable). `startAutoRefresh({ interval })` additionally enables automatic re-fetch on expiry.
+- `createCachedSlice` — `stopAutoRefresh()` sets `autoRefreshEnabled = false`, preventing any in-flight `refreshOnExpire` callback from rescheduling after stop.
+- `createCachedSlice` — `refreshOnExpire` now receives `(current: TValue | undefined, api)` and must return `Promise<TValue>` (void pattern removed).
 - `createArrayMethods` — redesigned as a two-stage factory: `createArrayMethods<TItem>(defaults)` returns an `ArrayMethodsFactory` with a `.mount(api, path)` method that binds helpers to a specific store and path; providing `TItem` explicitly prevents TypeScript from narrowing literal defaults (e.g. `asyncIdle`), eliminating the need for `as` casts
 - `connectDebugLog()` — built-in logger now reports `listeners:N` excluding its own internal debug subscription, while `onLog` receives the raw live listener count at notify time.
 
@@ -18,6 +29,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 #### `@stardust/core`
 
+- `createCachedSlice` — `isExpired()` removed; use `cache.get().status === 'expired'` instead.
+- `createCachedSlice` — `markFresh()` removed; the cache writes `cachedFresh` directly after a successful `refresh()`.
 - `createArrayMethods` — removed `methods` builder (4th param) and `ArrayMethodsApi` type; extend the domain API directly using normal domain methods instead
 - `ArrayMethodsApi` export removed; replaced by `ArrayMethodsFactory`
 
@@ -25,7 +38,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 #### `@stardust/core`
 
+- `CachedState<T>` discriminated union and constructors: `cachedIdle`, `cachedPending<T>()`, `cachedFresh<T>(data, expiresAt?)`, `cachedExpired<T>(data, expiresAt)`, `cachedRejected<T>(error, data?)`. Exported from `@stardust/core`.
+- `getCachedData<T>(state: CachedState<T>): T | undefined` — utility to safely extract data from any `CachedState<T>` variant.
+- `createCachedSlice` — `expire()` public method: manually transitions `fresh → expired` immediately, making it observable in `watch` / `createDerivedStore`.
+
 - `createArrayMethods` — `update(predicate, partialOrUpdater)` method on `ArrayMethods<TItem>`; patches the first matching item and does nothing when no match is found, preserving structural-sharing array writes; accepts a partial object or updater callback.
+- `createCachedSlice` — `placeholder` option on `CachedOptions`; committed before the fetch begins when `keepPreviousData` is `false`; `keepPreviousData: true` and `placeholder` are mutually exclusive — TypeScript enforces this at the call site via a discriminated union. Applies to both manual `refresh()` calls (as a helper-level default) and the auto-refresh timer.
+- `createCachedSlice` — benchmarks: 10 cases covering `get()`, `set()` (equality bypass and write+notify with 0/1/10 listeners), `isExpired()` both paths, and slice variants.
 - `createArrayMethods` — `upsert(needle, predicate)` method on `ArrayMethods<TItem>`; replaces the first item for which `predicate` returns `true` (with `this` bound to the needle), or appends if no match; accepts a single item or an array of items — batch upserts produce one store notification; predicate must be a `function` expression, not an arrow function
 - `store.listenerCount` — read-only getter on `Store` and `DerivedStore` that returns the number of active subscribers; O(1) read backed by `listeners.size`; useful for skipping expensive work when no one is watching (e.g. `if (store.listenerCount > 0) { … }`)
 - `createStore()` options — `context` field lets you seed the store's context at creation time instead of calling `store.setContext()` separately; `setContext()` still overwrites it at any point later
@@ -59,6 +78,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `useStore()` — `createSignal`-backed reactive hook with `onCleanup` teardown
   - Selector functions now receive the full store as a second argument `(snapshot, store) => ...`, consistent with the React adapter
 - `useSuspenseStore()` — `createResource`-driven Suspense hook; maps async states to SolidJS resource lifecycle
+
+### Fixed
+
+#### playground
+
+- `cache-loading` — section headers ("placeholder" / "keepPreviousData") were empty; labels restored.
+- `cache-nested` — caption incorrectly claimed `expire()` immediately triggers `refreshOnExpire`; corrected. Added Start/Stop auto-refresh buttons so `refreshOnExpire` is actually exercised in the example.
+- Extracted shared `cachedStatusColor` map from all four cache examples into `@/entities/example` to eliminate copy-paste duplication.
+
+#### `@stardust/core` (tests)
+
+- `expire()` is a no-op when state is `'idle'`, `'pending'`, or `'rejected'` — added explicit coverage.
+- `refresh()` called while already `'pending'` shares the in-flight promise — the second fetcher is never invoked — added explicit coverage.
+
+### Added
 
 #### `playground`
 

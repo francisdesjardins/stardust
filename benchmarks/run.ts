@@ -24,7 +24,9 @@ const RESULTS_DIR = resolve(__dirname, 'results');
 const LATEST_PATH = resolve(RESULTS_DIR, 'latest.json');
 
 function stddev(values: number[]): number {
-  if (values.length < 2) return 0;
+  if (values.length < 2) {
+    return 0;
+  }
   const mean = values.reduce((a, b) => a + b, 0) / values.length;
   return Math.sqrt(values.reduce((acc, v) => acc + (v - mean) ** 2, 0) / values.length);
 }
@@ -48,7 +50,9 @@ const entries: BenchEntry[] = [];
 
 for (const trial of benchmarks) {
   const firstRun = trial.runs[0];
-  if (!firstRun?.stats) continue;
+  if (!firstRun?.stats) {
+    continue;
+  }
   const { stats } = firstRun;
   const opsValues = stats.samples.map((s) => 1e9 / s);
   entries.push({

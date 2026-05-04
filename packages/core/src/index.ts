@@ -7,6 +7,23 @@ export type {
   AsyncState,
 } from './async-state';
 
+export {
+  cachedExpired,
+  cachedFresh,
+  cachedIdle,
+  cachedPending,
+  cachedRejected,
+  getCachedData,
+} from './cached-state';
+export type {
+  CachedExpired,
+  CachedFresh,
+  CachedIdle,
+  CachedPending,
+  CachedRejected,
+  CachedState,
+} from './cached-state';
+
 export { connectDebugLog } from './connect-debug-log';
 export type { ConnectDebugLogOptions, DiffResult } from './connect-debug-log';
 
@@ -20,6 +37,9 @@ export type {
   StoreSubscriptionOptions,
   UnwrapContext,
 } from './create-store';
+
+export { createCachedSlice } from './create-cached';
+export type { Cached, CachedOptions, CachedRefreshOptions } from './create-cached';
 
 export { createArrayMethods } from './create-array-methods';
 export type { ArrayMethods, ArrayMethodsFactory } from './create-array-methods';
