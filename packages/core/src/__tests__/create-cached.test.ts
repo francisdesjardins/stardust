@@ -173,7 +173,7 @@ test.describe('createCachedSlice - root snapshot', () => {
 
   test('startAutoRefresh() when idle immediately triggers the fetch', async () => {
     let autoRefreshCount = 0;
-    const store = createStore(cachedIdle, (api) => ({
+    const store = createStore(idleAs<{ value: string }>(), (api) => ({
       actions: {
         cache: createCachedSlice(api, {
           onExpire: async () => {
