@@ -62,8 +62,18 @@ export type { SafeAwaitResult } from './safe-await';
 
 export { shallowEqual } from './shallow-equal';
 
-export { createSingleFlight, safeSingleFlight } from './single-flight';
-export type { SingleFlight } from './single-flight';
+export {
+  createSingleFlight,
+  createFirstFlight,
+  createLastFlight,
+  safeSingleFlight,
+} from './single-flight';
+export type {
+  SingleFlight,
+  SingleFlightTask,
+  SingleFlightMode,
+  SingleFlightOptions,
+} from './single-flight';
 
 export { watch } from './watch';
 export type { WatchOptions } from './watch';

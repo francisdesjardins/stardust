@@ -103,7 +103,7 @@ const userStore = createStore<UserState, UserMethods, ApiClient>(
 Store methods can be `async` — `await dispatch(...)` and direct calls both return the promise. Three utilities from `@stardust/core` complement async methods well:
 
 - **`safeAwait(promise)`** — Go-style `[err, result]` tuple. Replaces `try/catch` blocks inside methods with inline error checks, keeping the happy path readable.
-- **`safeSingleFlight` / `createSingleFlight()`** — Deduplicates concurrent calls. While a task is in-flight every subsequent call receives the same promise — one network request, one store update, N callers resolved together. Gate clears on settlement so the next call starts fresh.
+- **`safeSingleFlight` / `createSingleFlight()`** — Deduplicates concurrent calls. Two modes: `'first'` (default) — first execution wins, all concurrent callers share its result; `'last'` — each new call supersedes the previous, all waiters receive the last result and the superseded task's `AbortSignal` is aborted. Named aliases: `createFirstFlight` / `createLastFlight`.
 - **`safeMutex` / `createMutex()`** — Serializes concurrent calls. N calls run N times, one at a time in submission order. Use when a method has multi-step side-effects (fetch → state write → cross-store dispatch) that must not interleave.
 
 |                  | `createSingleFlight()`      | `createMutex()`              |
@@ -720,30 +720,57 @@ function safeAwait<T>(promise: Promise<T>): Promise<SafeAwaitResult<T>>;
 
 ---
 
-### `createSingleFlight()` / `safeSingleFlight`
+### `createSingleFlight()` / `createFirstFlight()` / `createLastFlight()`
 
-Deduplicates concurrent async calls — while a task is in-flight every subsequent call for the same flight shares the same `Promise`. One execution, N callers resolved together. The gate clears on settlement so the next call starts a fresh execution.
+Deduplicates concurrent async calls. Two modes controlled by the `mode` option:
+
+| Mode                | Behaviour                                                                                                                                                                                        |
+| ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `'first'` (default) | First execution wins. All concurrent callers share its promise. Gate clears on settlement.                                                                                                       |
+| `'last'`            | Each new call supersedes the previous. The superseded task's `AbortSignal` is aborted immediately. All concurrent waiters share a single deferred that resolves with the **last** task's result. |
+
+Every task receives an `AbortSignal` as its first argument. Tasks that do not need it can ignore the parameter.
 
 ```ts
-import { createSingleFlight, safeSingleFlight } from '@stardust/core';
+import {
+  createSingleFlight,
+  createFirstFlight,
+  createLastFlight,
+  safeSingleFlight,
+} from '@stardust/core';
 
-// scoped — independent gate per resource
-const loadUser = createSingleFlight();
-const user = await loadUser(() => api.fetchUser(id)); // called once even with 10 concurrent calls
+// 'first' mode (default) — one network request for N concurrent callers
+const loadUser = createFirstFlight();
+const user = await loadUser(() => api.fetchUser(id));
 
-// module-level singleton — shared gate across all callers
-const result = await safeSingleFlight(() => expensiveInit());
+// same, via the generic factory
+const loadConfig = createSingleFlight(); // mode: 'first' by default
+
+// 'last' mode — search-box / autocomplete pattern; cancels the previous fetch
+const searchFlight = createLastFlight();
+const results = await searchFlight((signal) =>
+  fetch(`/api/search?q=${query}`, { signal }).then((r) => r.json())
+);
+
+// module-level singleton (first-wins only — a shared last-wins gate would cause
+// unrelated call sites to cancel each other)
+await safeSingleFlight(() => expensiveInit());
 ```
 
 **When to prefer over `createMutex`**: use single-flight when concurrent callers can share one result (e.g. fetching a resource). Use `createMutex` when each caller must trigger its own side-effect.
 
-**Type**
+**Types**
 
 ```ts
-type SingleFlight = <T>(task: () => Promise<T>) => Promise<T>;
+type SingleFlightTask<T> = (signal: AbortSignal) => Promise<T>;
+type SingleFlightMode = 'first' | 'last';
+type SingleFlightOptions = { mode?: SingleFlightMode };
+type SingleFlight = <T>(task: SingleFlightTask<T>) => Promise<T>;
 
-function createSingleFlight(): SingleFlight;
-const safeSingleFlight: SingleFlight;
+function createSingleFlight(options?: SingleFlightOptions): SingleFlight;
+function createFirstFlight(): SingleFlight;
+function createLastFlight(): SingleFlight;
+const safeSingleFlight: SingleFlight; // first-wins singleton
 ```
 
 ---
@@ -838,19 +865,19 @@ Snapshots must be `structuredClone`-compatible:
 
 ## Module Structure
 
-| File                           | Exports                                                                                                                                                  | Purpose                                                |
-| ------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------ |
-| `create-store.ts`              | `createStore`, `createStoreSubscription`, `StoreApi`, `Store`, `StoreSubscriptionOptions`                                                                | Core store factory                                     |
-| `produce.ts`                   | `produce`                                                                                                                                                | `structuredClone`-based draft updater                  |
-| `shallow-equal.ts`             | `shallowEqual`                                                                                                                                           | Shallow equality for `equals` option                   |
-| `watch.ts`                     | `watch`, `WatchOptions`                                                                                                                                  | Non-React store observer                               |
-| `create-derived-store.ts`      | `createDerivedStore`, `DerivedStore`, `DerivedStoreOptions`                                                                                              | Read-only computed store                               |
-| `create-array-methods.ts`      | `createArrayMethods`, `ArrayMethods`, `ArrayMethodsFactory`                                                                                              | Two-stage typed array helper factory                   |
-| `create-store-dispatch.ts`     | `createStoreDispatch`, `StoreDispatch`, `DispatchOptions`                                                                                                | Dispatch wrapper for controlled store access           |
-| `async-state.ts`               | `AsyncState`, `AsyncIdle`, `AsyncPending`, `AsyncFulfilled`, `AsyncRejected`, `asyncIdle`, `asyncPending`, `asyncFulfilled`, `asyncRejected`, `runAsync` | Standard async state shape                             |
-| `connect-debug-log.ts`         | `connectDebugLog`, `ConnectDebugLogOptions`                                                                                                              | Console logger via `stardust:store` namespace          |
-| `path-utils.ts`                | `PathsOf`, `ValueAtPath`, `parsePath`, `copyOnWritePath`                                                                                                 | Path types and structural sharing                      |
-| `safe-await.ts`                | `safeAwait`, `SafeAwaitResult`                                                                                                                           | Go-style `[error, result]` tuple for `Promise`         |
-| `single-flight.ts`             | `createSingleFlight`, `safeSingleFlight`, `SingleFlight`                                                                                                 | Deduplicates concurrent async calls                    |
-| `mutex.ts`                     | `createMutex`, `safeMutex`, `Mutex`                                                                                                                      | Serialises concurrent async calls                      |
-| `react.ts` (`@stardust/react`) | `useStore`, `UseStoreOptions`, `useSuspenseStore`, `createStoreContext`, `CreateStoreContextOptions`, `StoreContextResult`                               | React-specific entry point (keeps core zero-React-dep) |
+| File                           | Exports                                                                                                                                                          | Purpose                                                         |
+| ------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------- |
+| `create-store.ts`              | `createStore`, `createStoreSubscription`, `StoreApi`, `Store`, `StoreSubscriptionOptions`                                                                        | Core store factory                                              |
+| `produce.ts`                   | `produce`                                                                                                                                                        | `structuredClone`-based draft updater                           |
+| `shallow-equal.ts`             | `shallowEqual`                                                                                                                                                   | Shallow equality for `equals` option                            |
+| `watch.ts`                     | `watch`, `WatchOptions`                                                                                                                                          | Non-React store observer                                        |
+| `create-derived-store.ts`      | `createDerivedStore`, `DerivedStore`, `DerivedStoreOptions`                                                                                                      | Read-only computed store                                        |
+| `create-array-methods.ts`      | `createArrayMethods`, `ArrayMethods`, `ArrayMethodsFactory`                                                                                                      | Two-stage typed array helper factory                            |
+| `create-store-dispatch.ts`     | `createStoreDispatch`, `StoreDispatch`, `DispatchOptions`                                                                                                        | Dispatch wrapper for controlled store access                    |
+| `async-state.ts`               | `AsyncState`, `AsyncIdle`, `AsyncPending`, `AsyncFulfilled`, `AsyncRejected`, `asyncIdle`, `asyncPending`, `asyncFulfilled`, `asyncRejected`, `runAsync`         | Standard async state shape                                      |
+| `connect-debug-log.ts`         | `connectDebugLog`, `ConnectDebugLogOptions`                                                                                                                      | Console logger via `stardust:store` namespace                   |
+| `path-utils.ts`                | `PathsOf`, `ValueAtPath`, `parsePath`, `copyOnWritePath`                                                                                                         | Path types and structural sharing                               |
+| `safe-await.ts`                | `safeAwait`, `SafeAwaitResult`                                                                                                                                   | Go-style `[error, result]` tuple for `Promise`                  |
+| `single-flight.ts`             | `createSingleFlight`, `createFirstFlight`, `createLastFlight`, `safeSingleFlight`, `SingleFlight`, `SingleFlightTask`, `SingleFlightMode`, `SingleFlightOptions` | Deduplicates concurrent async calls (`'first'` / `'last'` mode) |
+| `mutex.ts`                     | `createMutex`, `safeMutex`, `Mutex`                                                                                                                              | Serialises concurrent async calls                               |
+| `react.ts` (`@stardust/react`) | `useStore`, `UseStoreOptions`, `useSuspenseStore`, `createStoreContext`, `CreateStoreContextOptions`, `StoreContextResult`                                       | React-specific entry point (keeps core zero-React-dep)          |

@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+#### `@stardust/core`
+
+- **`createSingleFlight` — `mode` option** — accepts `{ mode: 'first' | 'last' }`. `'first'` (default) preserves existing behaviour. `'last'` makes each new call supersede the previous: the superseded task's `AbortSignal` is aborted immediately, and all concurrent waiters share a single deferred that resolves with the last task's result — useful for search/autocomplete patterns.
+- **`SingleFlightTask<T>`** — task signature is now `(signal: AbortSignal) => Promise<T>`. Callers that do not need the signal can ignore the parameter; existing `() => Promise<T>` thunks remain assignable (TypeScript allows fewer-parameter callbacks).
+- **`createFirstFlight()` / `createLastFlight()`** — named convenience factories for each mode.
+
 ### Changed
 
 #### `@stardust/core`
