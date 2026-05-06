@@ -17,6 +17,8 @@ type DebugLogCompatibleStore<TSnapshot> = {
   ) => void;
   readonly batch: (fn: () => void) => void;
   readonly reset: (next?: TSnapshot | ((initial: TSnapshot) => TSnapshot)) => void;
+  readonly run: (actionName: string, fn: () => void) => void;
+  readonly actions: Record<string, unknown>;
 };
 
 // ── Options ──────────────────────────────────────────────────────────────────
@@ -54,20 +56,6 @@ export type ConnectDebugLogOptions = {
       ) => void)
     | undefined;
 };
-
-// ── Built-in keys (never treated as domain methods) ──────────────────────────
-
-const BUILTIN_KEYS = new Set([
-  'subscribe',
-  'getSnapshot',
-  'set',
-  'update',
-  'getByPath',
-  'setByPath',
-  'batch',
-  'reset',
-  'setContext',
-]);
 
 // ── Diff ─────────────────────────────────────────────────────────────────────
 
@@ -274,6 +262,7 @@ export function connectDebugLog<TSnapshot>(
   const originalSetByPath = store.setByPath;
   const originalBatch = store.batch;
   const originalReset = store.reset;
+  const originalRun = store.run;
 
   const mutableStore = store as Record<string, unknown>;
 
@@ -315,6 +304,7 @@ export function connectDebugLog<TSnapshot>(
   );
   mutableStore['reset'] = wrapBuiltIn<typeof originalReset>(originalReset, () => 'reset');
   mutableStore['batch'] = wrapBatch(originalBatch);
+  mutableStore['run'] = wrapBuiltIn<typeof originalRun>(originalRun, (args) => args[0]);
 
   // ── Wrap domain methods ────────────────────────────────────────────────────
 
@@ -326,25 +316,8 @@ export function connectDebugLog<TSnapshot>(
 
   const originals: OriginalEntry[] = [];
 
-  // Identity set of store function references to skip at the top level. Built by
-  // reading the *current* values — mutation built-ins are already the wrapBuiltIn
-  // proxies, non-mutation built-ins (subscribe, getSnapshot, …) are their originals.
-  // Using identity rather than the name-based BUILTIN_KEYS means a domain method
-  // that shadows a built-in name (e.g. `reset`) is NOT skipped — it has a different
-  // function reference and will be wrapped as a domain method with wrapDomainMethod.
-  const builtinFnIdentities = new Set<unknown>();
-  for (const key of BUILTIN_KEYS) {
-    const val = mutableStore[key];
-    if (val !== undefined) {
-      builtinFnIdentities.add(val);
-    }
-  }
-
   function wrapMethods(obj: Record<string, unknown>, prefix: string): void {
     for (const key of Object.keys(obj)) {
-      if (prefix === '' && builtinFnIdentities.has(obj[key])) {
-        continue;
-      }
       const value = obj[key];
       if (typeof value === 'function') {
         const actionName = prefix ? `${prefix}.${key}` : key;
@@ -356,7 +329,7 @@ export function connectDebugLog<TSnapshot>(
     }
   }
 
-  wrapMethods(mutableStore, '');
+  wrapMethods(store.actions, '');
 
   // ── Store subscription → logger ────────────────────────────────────────────
 
@@ -417,6 +390,7 @@ export function connectDebugLog<TSnapshot>(
     mutableStore['setByPath'] = originalSetByPath;
     mutableStore['batch'] = originalBatch;
     mutableStore['reset'] = originalReset;
+    mutableStore['run'] = originalRun;
 
     for (const entry of originals) {
       entry.owner[entry.key] = entry.fn;

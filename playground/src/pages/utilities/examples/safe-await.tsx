@@ -21,24 +21,29 @@ const fetchValue = (): Promise<{ value: number }> =>
 type LogEntry = { ok: boolean; msg: string };
 
 const logStore = createStore({ entries: [] as LogEntry[], loading: false }, ({ set, get }) => ({
-  async fetch() {
-    set({ ...get(), loading: true });
-    const [err, data] = await safeAwait(fetchValue());
-    if (err !== null) {
-      set({
-        loading: false,
-        entries: [{ ok: false, msg: err.message }, ...get().entries].slice(0, 6),
-      });
-    } else {
-      set({
-        loading: false,
-        entries: [{ ok: true, msg: `value = ${String(data.value)}` }, ...get().entries].slice(0, 6),
-      });
-    }
-  },
-  clear() {
-    set({ entries: [], loading: false });
-    callCount = 0;
+  actions: {
+    async fetch() {
+      set({ ...get(), loading: true });
+      const [err, data] = await safeAwait(fetchValue());
+      if (err !== null) {
+        set({
+          loading: false,
+          entries: [{ ok: false, msg: err.message }, ...get().entries].slice(0, 6),
+        });
+      } else {
+        set({
+          loading: false,
+          entries: [{ ok: true, msg: `value = ${String(data.value)}` }, ...get().entries].slice(
+            0,
+            6
+          ),
+        });
+      }
+    },
+    clear() {
+      set({ entries: [], loading: false });
+      callCount = 0;
+    },
   },
 }));
 
@@ -54,7 +59,7 @@ export function SafeAwaitExample() {
         size="small"
         disabled={loading}
         onClick={() => {
-          void logStore.fetch();
+          void logStore.actions.fetch();
         }}
       >
         Fetch (fails every 3rd call)
@@ -63,7 +68,7 @@ export function SafeAwaitExample() {
         variant="outlined"
         size="small"
         onClick={() => {
-          logStore.clear();
+          logStore.actions.clear();
         }}
       >
         Clear

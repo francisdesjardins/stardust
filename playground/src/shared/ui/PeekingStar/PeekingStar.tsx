@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
-import { Box } from '@mui/material';
+import { Box, useTheme } from '@mui/material';
+import { StardustStar } from './StardustStar';
 
 type Side = 'left' | 'right' | 'top' | 'bottom';
 
@@ -9,19 +10,28 @@ type Config = {
   key: number;
 };
 
-const ANIM_MS = 3600;
-const VISIBILITY_RATIO = 0.56;
+// Timing breakdown (all ms):
+//   slide-in + jiggle : 0 → 2 000
+//   visible + giggles : 2 000 → 122 000  (~2 min)
+//   wave + slide-out  : 122 000 → 125 000
+const ANIM_MS = 125_000;
+const FLING_MS = 650;
+
+const SIDE_VISIBILITY_RATIO: Readonly<Record<Side, number>> = {
+  left: 0.7,
+  right: 0.7,
+  top: 0.8,
+  bottom: 0.8,
+};
+
+function pct(ms: number) {
+  return `${((ms / ANIM_MS) * 100).toFixed(3)}%`;
+}
 
 function getResponsiveSize(viewportWidth: number) {
-  if (viewportWidth < 480) {
-    return 140;
-  }
-  if (viewportWidth < 640) {
-    return 160;
-  }
-  if (viewportWidth < 960) {
-    return 180;
-  }
+  if (viewportWidth < 480) return 140;
+  if (viewportWidth < 640) return 160;
+  if (viewportWidth < 960) return 180;
   return 200;
 }
 
@@ -35,37 +45,39 @@ function makeConfig(prev: Config | undefined, size: number): Config {
   const sides: readonly Side[] = ['left', 'right', 'top', 'bottom'];
   const pool = prev ? sides.filter((s) => s !== prev.side) : sides;
   const side = pool[Math.floor(Math.random() * pool.length)];
-  if (side === undefined) {
-    throw new Error('PeekingStar: side pool must not be empty');
-  }
+  if (side === undefined) throw new Error('PeekingStar: side pool must not be empty');
   return { side, offset: computeOffset(side, size), key: (prev?.key ?? 0) + 1 };
 }
 
-// 5-pointed star, 200×200 viewBox, outer r=90 inner r=36
-const STAR_D =
-  'M100,10 L121.2,70.9 L185.6,72.2 L134.2,111.1 L152.9,172.8 L100,136 L47.1,172.8 L65.8,111.1 L14.4,72.2 L78.8,70.9 Z';
-
 export function PeekingStar() {
+  const theme = useTheme();
+  const isDark = theme.palette.mode === 'dark';
   const [size, setSize] = useState(() =>
     typeof window !== 'undefined' ? getResponsiveSize(window.innerWidth) : 200
   );
   const [config, setConfig] = useState<Config | null>(null);
+  const [flung, setFlung] = useState(false);
+  const [flingDone, setFlingDone] = useState(false);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const sizeRef = useRef(size);
   const isFirstRef = useRef(true);
+  const dismissedRef = useRef(false);
 
   useEffect(() => {
     sizeRef.current = size;
   }, [size]);
 
   const scheduleNext = (prev?: Config) => {
-    if (timerRef.current) {
-      clearTimeout(timerRef.current);
-    }
-    const delay = isFirstRef.current ? 1500 + Math.random() * 1500 : 4000 + Math.random() * 5000;
+    if (dismissedRef.current) return;
+    if (timerRef.current) clearTimeout(timerRef.current);
+    const delay = isFirstRef.current
+      ? 1500 + Math.random() * 1500
+      : 180_000 + Math.random() * 60_000;
     isFirstRef.current = false;
     timerRef.current = setTimeout(() => {
       setConfig(makeConfig(prev, sizeRef.current));
+      setFlung(false);
+      setFlingDone(false);
     }, delay);
   };
 
@@ -82,24 +94,23 @@ export function PeekingStar() {
     scheduleNext();
 
     return () => {
-      if (timerRef.current) {
-        clearTimeout(timerRef.current);
-      }
+      if (timerRef.current) clearTimeout(timerRef.current);
       window.removeEventListener('resize', handleResize);
+      // Reset so StrictMode's second mount uses the short first-appearance delay
+      isFirstRef.current = true;
     };
   }, []);
 
-  if (!config) {
-    return null;
-  }
+  if (!config || flingDone) return null;
 
   const { side, offset, key } = config;
 
-  const visible = Math.round(size * VISIBILITY_RATIO);
+  const visible = Math.round(size * SIDE_VISIBILITY_RATIO[side]);
   const hidden = size - visible;
   const animName = `sd-ps-${key.toString()}`;
+  const flingAnimName = `sd-ps-fling-${key.toString()}`;
 
-  // Jiggle direction: lean away from the edge the star came from
+  // Lean direction: away from the edge
   const r = side === 'left' || side === 'top' ? -1 : 1;
   const sideRotation =
     side === 'top'
@@ -128,6 +139,16 @@ export function PeekingStar() {
           ? `translateY(-${hidden.toString()}px)${sideRotation}`
           : `translateY(${hidden.toString()}px)${sideRotation}`;
 
+  // Fling traverses the full screen; opacity stays 1 until past the far edge
+  const tFling =
+    side === 'left'
+      ? `translateX(150vw) rotate(${(r * 720).toString()}deg)`
+      : side === 'right'
+        ? `translateX(-150vw) rotate(${(r * 720).toString()}deg)`
+        : side === 'top'
+          ? `translateY(150vh) rotate(720deg)`
+          : `translateY(-150vh) rotate(720deg)`;
+
   const posStyle =
     side === 'left'
       ? { left: 0, top: offset }
@@ -137,109 +158,114 @@ export function PeekingStar() {
           ? { top: 0, left: offset }
           : { bottom: 0, left: offset };
 
+  const handleClick = () => {
+    if (dismissedRef.current) return;
+    dismissedRef.current = true;
+    if (timerRef.current) clearTimeout(timerRef.current);
+    setFlung(true);
+  };
+
+  // Giggle pattern varies by key so each visit feels different
+  const gSign = key % 2 === 0 ? 1 : -1;
+
+  const normalKeyframes = {
+    // — slide in fast (0 → 800ms) + spring jiggle (800 → 2000ms)
+    [pct(0)]: { transform: tHide },
+    [pct(400)]: { transform: `${tPeek} rotate(${(r * -16).toString()}deg) scale(1.12)` },
+    [pct(800)]: { transform: `${tPeek} rotate(${(r * 9).toString()}deg) scale(0.94)` },
+    [pct(1100)]: { transform: `${tPeek} rotate(${(r * -5).toString()}deg) scale(1.03)` },
+    [pct(1400)]: { transform: `${tPeek} rotate(${(r * 2).toString()}deg)` },
+    [pct(2000)]: { transform: `${tPeek} rotate(0deg) scale(1)` },
+
+    // — giggles every ~11s across the 2-min visible window, each ~600ms long
+    [pct(10_000)]: { transform: `${tPeek} rotate(${(gSign * 3).toString()}deg) scale(1.04)` },
+    [pct(10_300)]: { transform: `${tPeek} rotate(${(gSign * -2).toString()}deg)` },
+    [pct(10_600)]: { transform: `${tPeek} rotate(0deg) scale(1)` },
+
+    [pct(21_000)]: { transform: `${tPeek} rotate(${(gSign * -2.5).toString()}deg) scale(0.97)` },
+    [pct(21_300)]: { transform: `${tPeek} rotate(${(gSign * 1.5).toString()}deg)` },
+    [pct(21_600)]: { transform: `${tPeek} rotate(0deg) scale(1)` },
+
+    [pct(33_000)]: { transform: `${tPeek} rotate(${(gSign * 2).toString()}deg) scale(1.03)` },
+    [pct(33_300)]: { transform: `${tPeek} rotate(${(gSign * -3).toString()}deg) scale(0.98)` },
+    [pct(33_600)]: { transform: `${tPeek} rotate(0deg) scale(1)` },
+
+    [pct(45_000)]: { transform: `${tPeek} rotate(${(gSign * -3).toString()}deg) scale(1.02)` },
+    [pct(45_300)]: { transform: `${tPeek} rotate(${(gSign * 2).toString()}deg)` },
+    [pct(45_600)]: { transform: `${tPeek} rotate(0deg) scale(1)` },
+
+    [pct(57_000)]: { transform: `${tPeek} rotate(${(gSign * 2.5).toString()}deg) scale(0.96)` },
+    [pct(57_300)]: { transform: `${tPeek} rotate(${(gSign * -1.5).toString()}deg) scale(1.02)` },
+    [pct(57_600)]: { transform: `${tPeek} rotate(0deg) scale(1)` },
+
+    [pct(69_000)]: { transform: `${tPeek} rotate(${(gSign * -2).toString()}deg) scale(1.04)` },
+    [pct(69_300)]: { transform: `${tPeek} rotate(${(gSign * 3).toString()}deg) scale(0.97)` },
+    [pct(69_600)]: { transform: `${tPeek} rotate(0deg) scale(1)` },
+
+    [pct(81_000)]: { transform: `${tPeek} rotate(${(gSign * 3).toString()}deg)` },
+    [pct(81_300)]: { transform: `${tPeek} rotate(${(gSign * -2).toString()}deg) scale(1.02)` },
+    [pct(81_600)]: { transform: `${tPeek} rotate(0deg) scale(1)` },
+
+    [pct(93_000)]: { transform: `${tPeek} rotate(${(gSign * -2.5).toString()}deg) scale(0.98)` },
+    [pct(93_300)]: { transform: `${tPeek} rotate(${(gSign * 1).toString()}deg)` },
+    [pct(93_600)]: { transform: `${tPeek} rotate(0deg) scale(1)` },
+
+    [pct(107_000)]: { transform: `${tPeek} rotate(${(gSign * 2).toString()}deg) scale(1.03)` },
+    [pct(107_300)]: { transform: `${tPeek} rotate(${(gSign * -3).toString()}deg)` },
+    [pct(107_600)]: { transform: `${tPeek} rotate(0deg) scale(1)` },
+
+    // — wave goodbye then slide out (122 000 → 125 000ms)
+    [pct(122_000)]: { transform: `${tPeek} rotate(0deg) scale(1)` },
+    [pct(123_000)]: { transform: `${tPeek} rotate(${(r * 6).toString()}deg) scale(0.97)` },
+    [pct(123_800)]: { transform: `${tPeek} rotate(${(r * -3).toString()}deg)` },
+    [pct(ANIM_MS)]: { transform: tHide },
+  };
+
+  const flingKeyframes = {
+    '0%': { transform: tPeek, opacity: 1 },
+    // Spin up while still mostly on-screen
+    '20%': { transform: `${tPeek} rotate(${(r * 180).toString()}deg) scale(1.15)`, opacity: 1 },
+    // Hit the far edge at ~80% — start fading only then
+    '80%': { opacity: 1 },
+    '100%': { transform: tFling, opacity: 0 },
+  };
+
+  const boxKey = flung ? `fling-${key.toString()}` : key.toString();
+
   return (
     <Box
-      key={key}
+      key={boxKey}
       aria-hidden
-      onAnimationEnd={() => {
-        scheduleNext(config);
+      onClick={handleClick}
+      onAnimationEnd={(e) => {
+        // Guard against bubbled events from children (StardustStar may animate internally)
+        const expected = flung ? flingAnimName : animName;
+        if (e.animationName !== expected) return;
+
+        if (flung) {
+          setFlingDone(true);
+        } else {
+          scheduleNext(config);
+        }
       }}
       sx={{
         position: 'fixed',
         zIndex: 9999,
-        pointerEvents: 'none',
+        pointerEvents: 'auto',
+        cursor: 'pointer',
         width: size,
         height: size,
         ...posStyle,
-        animation: `${animName} ${ANIM_MS.toString()}ms ease-in-out forwards`,
+        animation: flung
+          ? `${flingAnimName} ${FLING_MS.toString()}ms cubic-bezier(0.2, 0, 0.6, 1) forwards`
+          : `${animName} ${ANIM_MS.toString()}ms linear forwards`,
 
-        [`@keyframes ${animName}`]: {
-          '0%': { transform: tHide },
-          // slide in with a bubbly overshoot
-          '17%': { transform: `${tPeek} rotate(${(r * -14).toString()}deg) scale(1.1)` },
-          '25%': { transform: `${tPeek} rotate(${(r * 8).toString()}deg) scale(0.95)` },
-          '32%': { transform: `${tPeek} rotate(${(r * -6).toString()}deg) scale(1.04)` },
-          '39%': { transform: `${tPeek} rotate(${(r * 3).toString()}deg)` },
-          '46%': { transform: `${tPeek} rotate(${(r * -1.5).toString()}deg)` },
-          // settled smile
-          '54%': { transform: `${tPeek} rotate(0deg) scale(1)` },
-          '68%': { transform: `${tPeek} rotate(0deg) scale(1)` },
-          // tiny wave before leaving
-          '76%': { transform: `${tPeek} rotate(${(r * 5).toString()}deg) scale(0.98)` },
-          '83%': { transform: `${tPeek} rotate(${(r * -3).toString()}deg)` },
-          // slide back out
-          '100%': { transform: tHide },
-        },
+        [`@keyframes ${flung ? flingAnimName : animName}`]: flung
+          ? flingKeyframes
+          : normalKeyframes,
       }}
     >
-      <svg viewBox="0 0 200 200" width={size} height={size} overflow="visible">
-        <defs>
-          <filter id="sd-ps-glow" x="-30%" y="-30%" width="160%" height="160%">
-            <feGaussianBlur in="SourceGraphic" stdDeviation="5" result="blur" />
-            <feMerge>
-              <feMergeNode in="blur" />
-              <feMergeNode in="SourceGraphic" />
-            </feMerge>
-          </filter>
-          <radialGradient id="sd-ps-fill" cx="38%" cy="32%" r="68%">
-            <stop offset="0%" stopColor="#fbc8ff" />
-            <stop offset="55%" stopColor="#e040fb" />
-            <stop offset="100%" stopColor="#8e00b0" />
-          </radialGradient>
-        </defs>
-
-        {/* star body */}
-        <path
-          d={STAR_D}
-          fill="url(#sd-ps-fill)"
-          stroke="#c000e0"
-          strokeWidth="2"
-          filter="url(#sd-ps-glow)"
-        />
-
-        {/* rosy cheeks */}
-        <ellipse cx="76" cy="109" rx="13" ry="8" fill="#ff6ec7" opacity="0.38" />
-        <ellipse cx="124" cy="109" rx="13" ry="8" fill="#ff6ec7" opacity="0.38" />
-
-        {/* eyes — white sclera */}
-        <circle cx="83" cy="88" r="9" fill="white" />
-        <circle cx="117" cy="88" r="9" fill="white" />
-        {/* pupils — offset up-left for cute look */}
-        <circle cx="81" cy="86" r="5" fill="#2a002a" />
-        <circle cx="115" cy="86" r="5" fill="#2a002a" />
-        {/* eye shine */}
-        <circle cx="83" cy="84" r="2" fill="white" />
-        <circle cx="117" cy="84" r="2" fill="white" />
-
-        {/* smile */}
-        <path
-          d="M 77,110 Q 100,134 123,110"
-          fill="none"
-          stroke="#2a002a"
-          strokeWidth="4"
-          strokeLinecap="round"
-        />
-
-        {/* nose */}
-        <circle cx="100" cy="103" r="2.5" fill="#2a002a" opacity="0.45" />
-
-        {/* sparkles around tips */}
-        <text x="16" y="50" fontSize="13" fill="#fbc8ff" opacity="0.9">
-          ✦
-        </text>
-        <text x="160" y="50" fontSize="10" fill="#fbc8ff" opacity="0.85">
-          ✧
-        </text>
-        <text x="172" y="148" fontSize="9" fill="#fbc8ff" opacity="0.75">
-          ✦
-        </text>
-        <text x="10" y="152" fontSize="12" fill="#fbc8ff" opacity="0.8">
-          ✧
-        </text>
-        <text x="88" y="188" fontSize="8" fill="#fbc8ff" opacity="0.7">
-          ✦
-        </text>
-      </svg>
+      <StardustStar size={size} isDark={isDark} />
     </Box>
   );
 }

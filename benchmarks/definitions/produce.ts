@@ -59,7 +59,9 @@ group('produce', () => {
 
   bench('produce 20-key flat', function* () {
     const state: Record<string, number> = {};
-    for (let i = 0; i < 20; i++) state[`key${String(i)}`] = i;
+    for (let i = 0; i < 20; i++) {
+      state[`key${String(i)}`] = i;
+    }
     yield () =>
       produce(state, (d) => {
         d['key0'] = 999;
@@ -73,7 +75,9 @@ group('produce', () => {
     yield () =>
       produce(state, (d) => {
         const item = d.items[0];
-        if (item) item.value = 'changed';
+        if (item) {
+          item.value = 'changed';
+        }
       });
   });
 });

@@ -35,15 +35,17 @@ npm install @stardust/core
 import { createStore } from '@stardust/core';
 
 const counter = createStore({ count: 0 }, ({ update }) => ({
-  increment() {
-    update((d) => {
-      d.count++;
-    });
+  actions: {
+    increment() {
+      update((d) => {
+        d.count++;
+      });
+    },
   },
 }));
 
 // Outside any framework
-counter.increment();
+counter.actions.increment();
 counter.getSnapshot(); // { count: 1 }
 counter.reset(); // restores { count: 0 }
 ```
@@ -59,7 +61,7 @@ Creates a store with a POJO snapshot and domain methods.
 ```ts
 createStore<TState, TMethods, TContext = never>(
   initialSnapshot: TState,
-  builder: (api: StoreApi<TState, TContext>) => TMethods,
+  builder: (api: StoreApi<TState, TContext>) => { readonly actions: TMethods },
   options?: StoreSubscriptionOptions<TState, TContext>,
 ): Store<TState, TMethods>
 ```
@@ -83,12 +85,14 @@ type ApiClient = { fetchUser(id: string): Promise<User> };
 const userStore = createStore<UserState, UserMethods, ApiClient>(
   { user: null },
   ({ update, getContext }) => ({
-    async load(id: string) {
-      const api = getContext(); // ApiClient — always defined
-      const user = await api.fetchUser(id);
-      update((d) => {
-        d.user = user;
-      });
+    actions: {
+      async load(id: string) {
+        const api = getContext(); // ApiClient — always defined
+        const user = await api.fetchUser(id);
+        update((d) => {
+          d.user = user;
+        });
+      },
     },
   })
 );
@@ -129,17 +133,19 @@ const loadFlight = createSingleFlight();
 const configStore = createStore<ConfigState, ConfigMethods, ApiClient>(
   { config: asyncIdle },
   ({ update, getContext }) => ({
-    load(): Promise<void> {
-      return loadFlight(() =>
-        runAsync(
-          () => getContext().fetchConfig(),
-          (state) => {
-            update((d) => {
-              d.config = state;
-            });
-          }
-        )
-      );
+    actions: {
+      load(): Promise<void> {
+        return loadFlight(() =>
+          runAsync(
+            () => getContext().fetchConfig(),
+            (state) => {
+              update((d) => {
+                d.config = state;
+              });
+            }
+          )
+        );
+      },
     },
   })
 );
@@ -150,27 +156,29 @@ const rxLoadMutex = createMutex();
 const rxStore = createStore<RxState, RxMethods, RxContext>(
   { prescription: asyncIdle },
   ({ update, getContext }) => ({
-    load(rxId: string): Promise<void> {
-      return rxLoadMutex(async () => {
-        const { api, logger } = getContext();
-        update((d) => {
-          d.prescription = asyncPending;
-        });
-        const [err, rx] = await safeAwait(api.fetchPrescription(rxId));
-        if (err !== null) {
-          logger.warn('Failed to load prescription', { rxId, error: err.message });
+    actions: {
+      load(rxId: string): Promise<void> {
+        return rxLoadMutex(async () => {
+          const { api, logger } = getContext();
           update((d) => {
-            d.prescription = asyncRejected(err);
+            d.prescription = asyncPending;
           });
-          return;
-        }
-        const { services, ...rxData } = rx;
-        update((d) => {
-          d.prescription = asyncFulfilled(rxData);
-          d.services = services;
+          const [err, rx] = await safeAwait(api.fetchPrescription(rxId));
+          if (err !== null) {
+            logger.warn('Failed to load prescription', { rxId, error: err.message });
+            update((d) => {
+              d.prescription = asyncRejected(err);
+            });
+            return;
+          }
+          const { services, ...rxData } = rx;
+          update((d) => {
+            d.prescription = asyncFulfilled(rxData);
+            d.services = services;
+          });
+          await getContext().patientDispatch('load', rx.patientId);
         });
-        await getContext().patientDispatch('load', rx.patientId);
-      });
+      },
     },
   })
 );
@@ -193,19 +201,20 @@ Use `MaybeContext<T>` when context may arrive asynchronously — `getContext()` 
 
 #### `Store` instance (returned)
 
-| Property                 | Description                                                                         |
-| ------------------------ | ----------------------------------------------------------------------------------- |
-| `subscribe(listener)`    | Adds a listener, returns unsubscribe. Compatible with `useSyncExternalStore`        |
-| `getSnapshot()`          | Returns the current snapshot                                                        |
-| `listenerCount`          | Number of active subscribers. `0` means no component or watcher is subscribed       |
-| `set(next)`              | Same as `StoreApi.set`                                                              |
-| `update(recipe)`         | Same as `StoreApi.update`                                                           |
-| `getByPath(path)`        | Same as `StoreApi.getByPath`                                                        |
-| `setByPath(path, value)` | Same as `StoreApi.setByPath`                                                        |
-| `batch(fn)`              | Same as `StoreApi.batch`                                                            |
-| `reset()`                | Same as `StoreApi.reset`                                                            |
-| `setContext(ctx)`        | Injects the context value. Accepts the unwrapped `TContext` (not `MaybeContext<T>`) |
-| `...methods`             | All domain methods from the builder                                                 |
+| Property                 | Description                                                                                   |
+| ------------------------ | --------------------------------------------------------------------------------------------- |
+| `subscribe(listener)`    | Adds a listener, returns unsubscribe. Compatible with `useSyncExternalStore`                  |
+| `getSnapshot()`          | Returns the current snapshot                                                                  |
+| `listenerCount`          | Number of active subscribers. `0` means no component or watcher is subscribed                 |
+| `set(next)`              | Same as `StoreApi.set`                                                                        |
+| `update(recipe)`         | Same as `StoreApi.update`                                                                     |
+| `getByPath(path)`        | Same as `StoreApi.getByPath`                                                                  |
+| `setByPath(path, value)` | Same as `StoreApi.setByPath`                                                                  |
+| `batch(fn)`              | Same as `StoreApi.batch`                                                                      |
+| `reset()`                | Same as `StoreApi.reset`                                                                      |
+| `run(name, fn)`          | Execute `fn` under a named action scope (for external mutations tracked by `connectDebugLog`) |
+| `setContext(ctx)`        | Injects the context value. Accepts the unwrapped `TContext` (not `MaybeContext<T>`)           |
+| `actions`                | Object containing all domain methods from the builder (`store.actions.methodName()`)          |
 
 ---
 
@@ -414,22 +423,24 @@ const phoneOps = createArrayMethods<Phone>({ number: '', label: 'mobile' });
 
 // Stage 2 — bind inside the domain builder (optimized writes: structural sharing, no structuredClone)
 const store = createStore({ phones: [] as Phone[] }, (api) => ({
-  phones: phoneOps.mount(api, 'phones'),
+  actions: {
+    phones: phoneOps.mount(api, 'phones'),
+  },
 }));
 
-store.phones.add({ number: '514...' }); // append with overrides
-store.phones.set(0, { label: 'work' }); // partial merge
-store.phones.update((item) => item.number === '514...', { label: 'work' }); // patch the first matching item
-store.phones.setByPath(0, 'number', '…'); // typed path setter
-store.phones.remove(1); // delete by index
-store.phones.move(0, 2); // reorder
+store.actions.phones.add({ number: '514...' }); // append with overrides
+store.actions.phones.set(0, { label: 'work' }); // partial merge
+store.actions.phones.update((item) => item.number === '514...', { label: 'work' }); // patch the first matching item
+store.actions.phones.setByPath(0, 'number', '…'); // typed path setter
+store.actions.phones.remove(1); // delete by index
+store.actions.phones.move(0, 2); // reorder
 
 // upsert: replace matching item or append — predicate `this` is the needle
-store.phones.upsert(incoming, function (item) {
+store.actions.phones.upsert(incoming, function (item) {
   return item.number === this.number;
 });
 // batch upsert: one store write for all needles
-store.phones.upsert([a, b, c], function (item) {
+store.actions.phones.upsert([a, b, c], function (item) {
   return item.number === this.number;
 });
 ```
@@ -498,21 +509,25 @@ const TTL = 60_000;
 
 // Root slice — the whole store IS a CachedState<Item[]>
 const itemStore = createStore(cachedFresh<Item[]>([]), (api) => ({
-  cache: createCachedSlice(api, {
-    placeholder: [],
-    refreshOnExpire: async (current, storeApi) => storeApi.getContext().fetchItems(),
-  }),
+  actions: {
+    cache: createCachedSlice(api, {
+      placeholder: [],
+      refreshOnExpire: async (current, storeApi) => storeApi.getContext().fetchItems(),
+    }),
+  },
 }));
 
 // Arm auto-refresh with a 60 s interval (stamps expiresAt on each result)
-itemStore.cache.startAutoRefresh({ interval: TTL });
+itemStore.actions.cache.startAutoRefresh({ interval: TTL });
 
 // Sub-slice — profile is a nested CachedState<Profile>
 const appStore = createStore({ profile: cachedFresh({ name: 'Alice' }), version: 1 }, (api) => ({
-  profileCache: createCachedSlice(api, 'profile', {
-    keepPreviousData: true,
-    refreshOnExpire: async (current, storeApi) => storeApi.getContext().fetchProfile(),
-  }),
+  actions: {
+    profileCache: createCachedSlice(api, 'profile', {
+      keepPreviousData: true,
+      refreshOnExpire: async (current, storeApi) => storeApi.getContext().fetchProfile(),
+    }),
+  },
 }));
 
 // React: observe cache status in a selector
@@ -524,18 +539,20 @@ if (profileState.status === 'fresh') {
 }
 
 // Arm auto-refresh; stop on cleanup
-appStore.profileCache.startAutoRefresh({ interval: TTL });
+appStore.actions.profileCache.startAutoRefresh({ interval: TTL });
 // on unmount:
-appStore.profileCache.stopAutoRefresh();
+appStore.actions.profileCache.stopAutoRefresh();
 
 // Manual refresh with explicit TTL
-await appStore.profileCache.refresh(async (current) => fetchProfile(current?.id ?? ''), {
+await appStore.actions.profileCache.refresh(async (current) => fetchProfile(current?.id ?? ''), {
   expiresAt: Date.now() + TTL,
 });
 
 // Manual expire-then-refresh
-appStore.profileCache.expire(); // writes CachedExpired to snapshot immediately
-await appStore.profileCache.refreshIfExpired(async (current) => fetchProfile(current?.id ?? ''));
+appStore.actions.profileCache.expire(); // writes CachedExpired to snapshot immediately
+await appStore.actions.profileCache.refreshIfExpired(async (current) =>
+  fetchProfile(current?.id ?? '')
+);
 ```
 
 ---
@@ -548,24 +565,26 @@ Wraps a store into a single `dispatch(action, ...args)` function. Useful for pas
 import { createStore, createStoreDispatch } from '@stardust/core';
 
 const counter = createStore({ count: 0 }, ({ update }) => ({
-  increment() {
-    update((d) => {
-      d.count += 1;
-    });
+  actions: {
+    increment() {
+      update((d) => {
+        d.count += 1;
+      });
+    },
   },
 }));
 
 // Domain-only dispatch — built-ins not reachable
 const dispatch = createStoreDispatch(counter);
 dispatch('increment'); // ✅ domain method
-dispatch('set', { count: 0 }); // ❌ type error — builtin
+dispatch('set', { count: 0 }); // ❌ type error — not a domain action
 
-// Opt in the built-in reset
-const withReset = createStoreDispatch(counter, { builtin: ['reset'] });
-withReset('reset'); // ✅
+// Restrict dispatchable actions
+const limited = createStoreDispatch(counter, { domain: ['increment'] });
+limited('increment'); // ✅
 ```
 
-By default, only domain methods are dispatchable. Built-in operations (`set`, `update`, `getByPath`, `setByPath`, `batch`, `reset`) are never reachable unless explicitly listed in `options.builtin`.
+By default, all domain actions from `store.actions` are dispatchable. Use the `domain` option to restrict which actions are allowed. Built-in operations (`set`, `update`, `reset`, etc.) are never dispatchable — call them directly on the store instead.
 
 ---
 
@@ -579,8 +598,10 @@ import { createStoreContext } from '@stardust/react';
 const CounterCtx = createStoreContext(
   () =>
     createStore({ count: 0 }, ({ update }) => ({
-      increment() {
-        update((d) => { d.count += 1; });
+      actions: {
+        increment() {
+          update((d) => { d.count += 1; });
+        },
       },
     })),
   { name: 'Counter' },
@@ -593,7 +614,7 @@ const CounterCtx = createStoreContext(
 function Counter() {
   const store = CounterCtx.useStoreContext();
   const count = CounterCtx.useSnapshot((s) => s.count);
-  return <button onClick={store.increment}>{count}</button>;
+  return <button onClick={store.actions.increment}>{count}</button>;
 }
 ```
 
@@ -825,7 +846,7 @@ Snapshots must be `structuredClone`-compatible:
 | `watch.ts`                     | `watch`, `WatchOptions`                                                                                                                                  | Non-React store observer                               |
 | `create-derived-store.ts`      | `createDerivedStore`, `DerivedStore`, `DerivedStoreOptions`                                                                                              | Read-only computed store                               |
 | `create-array-methods.ts`      | `createArrayMethods`, `ArrayMethods`, `ArrayMethodsFactory`                                                                                              | Two-stage typed array helper factory                   |
-| `create-store-dispatch.ts`     | `createStoreDispatch`, `StoreDispatch`, `BuiltinDispatchable`, `DispatchableActions`, `DispatchOptions`                                                  | Dispatch wrapper for controlled store access           |
+| `create-store-dispatch.ts`     | `createStoreDispatch`, `StoreDispatch`, `DispatchOptions`                                                                                                | Dispatch wrapper for controlled store access           |
 | `async-state.ts`               | `AsyncState`, `AsyncIdle`, `AsyncPending`, `AsyncFulfilled`, `AsyncRejected`, `asyncIdle`, `asyncPending`, `asyncFulfilled`, `asyncRejected`, `runAsync` | Standard async state shape                             |
 | `connect-debug-log.ts`         | `connectDebugLog`, `ConnectDebugLogOptions`                                                                                                              | Console logger via `stardust:store` namespace          |
 | `path-utils.ts`                | `PathsOf`, `ValueAtPath`, `parsePath`, `copyOnWritePath`                                                                                                 | Path types and structural sharing                      |

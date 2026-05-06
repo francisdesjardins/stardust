@@ -194,6 +194,10 @@ export type UnwrapContext<TContext> = TContext extends MaybeContext<infer U> ? U
  *   - `reset(updater)` — receives a clone of the **current baseline** (not the live snapshot),
  *     returns the next baseline, deep-clones and commits it. Use for partial baseline adjustments
  *     when the full initial shape is not in scope.
+ * - `run(actionName, fn)` — executes `fn` under a named action scope. When
+ *   `connectDebugLog` is attached, the action name appears in the log instead of the
+ *   "Untracked store mutation" warning. Use this in `watch` callbacks or other external
+ *   code that mutates the store outside any domain method.
  * - `getContext()` — returns the readonly context bound via `useStore({ context })`.
  *   Return type depends on `TContext`: plain `TContext` returns `TContext` directly
  *   (context is always present); `MaybeContext<T>` returns `T | undefined` (context
@@ -211,6 +215,7 @@ export type StoreApi<TSnapshot, TContext = never> = {
   ) => void;
   readonly batch: (fn: () => void) => void;
   readonly reset: (next?: TSnapshot | ((initial: TSnapshot) => TSnapshot)) => void;
+  readonly run: (actionName: string, fn: () => void) => void;
   readonly getContext: () => GetContextResult<TContext>;
 };
 
@@ -219,33 +224,36 @@ export type StoreApi<TSnapshot, TContext = never> = {
  *
  * Combines the minimal subscription contract (`subscribe`, `getSnapshot`,
  * `listenerCount`) with mutation methods (`set`, `update`, `setByPath`, etc.),
- * context binding, and all domain-specific methods returned from your `methods`
- * builder.
+ * context binding, and all domain-specific methods under `store.actions`.
  *
  * - Use `setContext(ctx)` to inject a context object (e.g. API client) for use in store methods.
  * - All core methods are documented in {@link StoreApi}.
- * - Domain methods are spread onto the store object and can be called directly.
+ * - Domain methods live under `store.actions`.
  *
  * @template TSnapshot - The shape of the store's snapshot (POJO state).
- * @template TMethods - The domain methods returned from your builder.
+ * @template TMethods - The domain methods returned from your builder's `actions` key.
  * @template TContext - Optional context type (see {@link MaybeContext}).
  *
  * @example <caption>Counter store with domain methods</caption>
  * const counter = createStore({ count: 0 }, ({ update }) => ({
- *   increment() { update(d => { d.count += 1; }); },
- *   decrement() { update(d => { d.count -= 1; }); },
+ *   actions: {
+ *     increment() { update(d => { d.count += 1; }); },
+ *     decrement() { update(d => { d.count -= 1; }); },
+ *   },
  * }));
  *
- * counter.increment();
- * counter.decrement();
+ * counter.actions.increment();
+ * counter.actions.decrement();
  *
  * @example <caption>Injecting context (API client)</caption>
  * type Ctx = { api: ApiClient };
  * const store = createStore<State, Methods, Ctx>(initial, (api) => ({
- *   async load() {
- *     const data = await api.getContext().api.fetch();
- *     api.set({ ...api.get(), data });
- *   }
+ *   actions: {
+ *     async load() {
+ *       const data = await api.getContext().api.fetch();
+ *       api.set({ ...api.get(), data });
+ *     },
+ *   },
  * }));
  * store.setContext({ api: myApiClient });
  */
@@ -271,9 +279,17 @@ export type Store<TSnapshot, TMethods, TContext = never> = {
   readonly batch: (fn: () => void) => void;
   /** Reset the snapshot to the initial or a new baseline. */
   readonly reset: (next?: TSnapshot | ((initial: TSnapshot) => TSnapshot)) => void;
+  /**
+   * Execute `fn` under a named action scope. When `connectDebugLog` is attached,
+   * the action name appears in the log. Use in `watch` callbacks or any external
+   * code that mutates the store outside a domain method.
+   */
+  readonly run: (actionName: string, fn: () => void) => void;
   /** Inject a context object for use in store methods. */
   readonly setContext: (ctx: UnwrapContext<TContext>) => void;
-} & TMethods;
+  /** Domain methods returned from the builder. */
+  readonly actions: TMethods;
+};
 
 /**
  * Creates a domain-specific store backed by `createStoreSubscription`.
@@ -326,13 +342,15 @@ export type Store<TSnapshot, TMethods, TContext = never> = {
  *
  * @example
  * const counter = createStore({ count: 0 }, ({ update }) => ({
- *   increment() { update(draft => { draft.count += 1; }); },
- *   decrement() { update(draft => { draft.count -= 1; }); },
+ *   actions: {
+ *     increment() { update(draft => { draft.count += 1; }); },
+ *     decrement() { update(draft => { draft.count -= 1; }); },
+ *   },
  * }));
  */
 export function createStore<TSnapshot, TMethods extends Record<string, unknown>, TContext = never>(
   initialSnapshot: TSnapshot,
-  methods: (api: StoreApi<TSnapshot, TContext>) => TMethods,
+  methods: (api: StoreApi<TSnapshot, TContext>) => { readonly actions: TMethods },
   options?: StoreSubscriptionOptions<TSnapshot, TContext>
 ): Store<TSnapshot, TMethods, TContext> {
   const clone: (value: TSnapshot) => TSnapshot = options?.deepClone ?? structuredClone;
@@ -444,6 +462,10 @@ export function createStore<TSnapshot, TMethods extends Record<string, unknown>,
   // applied to store.update / store.set from outside (e.g. connectDebugLog)
   // is therefore visible to domain methods — including async continuations.
 
+  function run(_actionName: string, fn: () => void): void {
+    fn();
+  }
+
   const store = {
     subscribe: sub.subscribe,
     getSnapshot: sub.getSnapshot,
@@ -456,20 +478,16 @@ export function createStore<TSnapshot, TMethods extends Record<string, unknown>,
     setByPath,
     batch,
     reset,
+    run,
     setContext(ctx: UnwrapContext<TContext>): void {
       contextCell.value = ctx as TContext | undefined;
     },
+    actions: {} as TMethods,
   };
 
   // ── Forwarding api ────────────────────────────────────────────────────────
   // Domain methods receive this api. Each method forwards through `store` so
   // external wrappers on store.update / store.set are picked up at call time.
-  //
-  // `reset` is the one exception: it references the built-in closure directly
-  // rather than going through `store.reset`. Object.assign(store, domainMethods)
-  // below can overwrite `store.reset` with a user-defined domain method of the
-  // same name, so forwarding through `store.reset` at call time would cause
-  // infinite recursion when that domain method calls `api.reset()`.
 
   const api: StoreApi<TSnapshot, TContext> = {
     get: sub.getSnapshot,
@@ -487,10 +505,13 @@ export function createStore<TSnapshot, TMethods extends Record<string, unknown>,
       store.batch(fn);
     },
     reset,
+    run: (actionName, fn) => {
+      store.run(actionName, fn);
+    },
     getContext,
   };
 
-  const domainMethods = methods(api);
+  store.actions = methods(api).actions;
 
-  return Object.assign(store, domainMethods);
+  return store;
 }

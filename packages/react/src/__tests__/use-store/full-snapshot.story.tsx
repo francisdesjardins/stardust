@@ -2,13 +2,15 @@ import { createStore } from '@stardust/core';
 import { useStore } from '@stardust/react';
 
 const counterStore = createStore({ count: 0 }, ({ set, update }) => ({
-  increment() {
-    update((draft) => {
-      draft.count += 1;
-    });
-  },
-  reset() {
-    set({ count: 0 });
+  actions: {
+    increment() {
+      update((draft) => {
+        draft.count += 1;
+      });
+    },
+    reset() {
+      set({ count: 0 });
+    },
   },
 }));
 
@@ -23,14 +25,14 @@ export function FullSnapshotHarness() {
       <span data-testid="count">{snap.count}</span>
       <button
         onClick={() => {
-          counterStore.increment();
+          counterStore.actions.increment();
         }}
       >
         Increment
       </button>
       <button
         onClick={() => {
-          counterStore.reset();
+          counterStore.actions.reset();
         }}
       >
         Reset

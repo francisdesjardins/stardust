@@ -9,28 +9,30 @@ const mutex = createMutex();
 let nextId = 1;
 
 const jobStore = createStore({ jobs: [] as Job[] }, ({ set, get }) => ({
-  async run() {
-    const id = nextId++;
-    set({ jobs: [...get().jobs, { id, status: 'queued' }] });
+  actions: {
+    async run() {
+      const id = nextId++;
+      set({ jobs: [...get().jobs, { id, status: 'queued' }] });
 
-    await mutex(async () => {
-      set({ jobs: get().jobs.map((j) => (j.id === id ? { ...j, status: 'running' } : j)) });
-      await new Promise<void>((r) => setTimeout(r, 700));
-      set({ jobs: get().jobs.map((j) => (j.id === id ? { ...j, status: 'done' } : j)) });
-    });
-  },
-  clear() {
-    set({ jobs: [] });
-    nextId = 1;
+      await mutex(async () => {
+        set({ jobs: get().jobs.map((j) => (j.id === id ? { ...j, status: 'running' } : j)) });
+        await new Promise<void>((r) => setTimeout(r, 700));
+        set({ jobs: get().jobs.map((j) => (j.id === id ? { ...j, status: 'done' } : j)) });
+      });
+    },
+    clear() {
+      set({ jobs: [] });
+      nextId = 1;
+    },
   },
 }));
 
 connectDebugLog(jobStore, { name: 'jobs' });
 
 const queueThree = () => {
-  void jobStore.run();
-  void jobStore.run();
-  void jobStore.run();
+  void jobStore.actions.run();
+  void jobStore.actions.run();
+  void jobStore.actions.run();
 };
 
 export function MutexExample() {
@@ -44,7 +46,7 @@ export function MutexExample() {
     <ExampleLayout
       result={`${String(done)} done · ${String(running)} running · ${String(queued)} queued`}
     >
-      <Button variant="outlined" size="small" onClick={() => void jobStore.run()}>
+      <Button variant="outlined" size="small" onClick={() => void jobStore.actions.run()}>
         Queue job
       </Button>
       <Button variant="outlined" size="small" onClick={queueThree}>
@@ -56,7 +58,7 @@ export function MutexExample() {
         color="error"
         disabled={jobs.length === 0}
         onClick={() => {
-          jobStore.clear();
+          jobStore.actions.clear();
         }}
       >
         Clear

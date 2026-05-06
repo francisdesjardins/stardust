@@ -68,7 +68,9 @@ Powered by [mitata](https://github.com/evanwashere/mitata). Results written to `
 
 `createStore()` produces a snapshot object + domain methods. The low-level plumbing (`subscribe` / `getSnapshot` / `emit` / `notify`) lives in `createStoreSubscription()`, which both `createStore` and `createDerivedStore` build on.
 
-**Sibling method dispatch**: to call one domain method from another, assign all methods to a local `const m` in the builder closure and return it. TypeScript infers the full type; the forward reference is safe because methods are only ever invoked after construction:
+**Builder shape**: the factory callback must return `{ readonly actions: TMethods }`. Domain methods live at `store.actions.*`; built-ins (`set`, `update`, `reset`, `getSnapshot`, `getByPath`, `setByPath`, `batch`, `setContext`, `run`) remain flat on the store root.
+
+**Sibling method dispatch**: to call one domain method from another, assign all methods to a local `const self` inside the `actions` object and return it. TypeScript infers the full type; the forward reference is safe because methods are only ever invoked after construction:
 
 ```ts
 createStore(init, ({ update }) => {
@@ -83,7 +85,7 @@ createStore(init, ({ update }) => {
       self.increment();
     },
   };
-  return self;
+  return { actions: self };
 });
 ```
 
@@ -103,6 +105,9 @@ Key relationships:
   - `startAutoRefresh({ interval })` sets `autoRefreshEnabled = true`, stores the recurring interval, and arms the cycle: it stamps `expiresAt = Date.now() + interval` on each refreshed value so subsequent cycles continue automatically. If the state is already `'expired'`, `refreshOnExpire` is triggered immediately. If the state is `'fresh'` with no `expiresAt`, the first expiry is scheduled after `interval` ms. `stopAutoRefresh()` sets `autoRefreshEnabled = false` — the fresh→expired timer continues to fire (expiry remains observable), but no fetch is triggered.
   - `keepPreviousData` and `placeholder` are mutually exclusive — enforced at the TypeScript level via a discriminated union on both `CachedOptions` and `CachedRefreshOptions`.
   - `refreshOnExpire` receives `(current: TValue | undefined, api)` and must return `Promise<TValue>`.
+- **`createStoreDispatch(store, options?)`** — function-based dispatch for string-path actions. Flattens nested domain methods into dot-notation paths (e.g. `'todos.add'`) and returns a function that routes calls by path: `dispatch('todos.add', text)`. Use the `domain` option to restrict which actions are callable — runtime error if a disallowed action is attempted. Useful for Redux-like patterns.
+- **`createBoundActions(store, options?)`** — object-shaped dispatch (alternative to `createStoreDispatch`). Returns an object mirroring the structure of `store.actions`, allowing method calls via property access: `actions.todos.add(text)` instead of `dispatch('todos.add', text)`. Supports the same `domain` option for restricting callable methods. Useful in React contexts where object method syntax is more ergonomic.
+- **`store.run(actionName, fn)`** — built-in that executes a mutation within a named action scope. Used by external code (watch callbacks, event handlers) to annotate mutations so `connectDebugLog` logs them under the given name instead of flagging an untracked mutation. When called inside a domain method the outer action name takes precedence.
 - **`batch(fn)`** — increments a depth counter; listeners are deferred until depth returns to zero.
 
 All mutations short-circuit notification when `equals(prev, next)` returns `true` (default `Object.is`).
@@ -120,6 +125,8 @@ All mutations short-circuit notification when `equals(prev, next)` returns `true
 `createStoreContext()` wraps a factory in React Context. Each `Provider` mount creates a fresh store instance (via `useState` lazy initializer); the store is garbage-collected on unmount. An optional `onUnmount` hook handles explicit teardown of non-GC resources (timers, sockets). Default is `null` — do not pass `store.reset()` here as it resolves to any user-defined domain method of that name, not the built-in baseline restore.
 
 `useSuspenseStore()` implements the React Suspense protocol: throws a `Promise` while idle/pending, throws an `Error` when rejected, returns `T` when fulfilled. A `WeakMap` caches pending promises to avoid creating a new one per render.
+
+`useStoreCachedSlice(store, path, options)` subscribes to a `CachedState<T>` slice with ref-counted auto-refresh lifecycle: the first mount calls `startAutoRefresh()`, the last unmount calls `stopAutoRefresh()`. Transitions `idle → expired` on first mount when auto-refresh is configured so `refreshOnExpire` fires immediately.
 
 ### SolidJS adapter (`packages/solid/src/`)
 

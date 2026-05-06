@@ -14,7 +14,7 @@ type Profile = { name: string; syncedAt: string };
 const initial: Profile = { name: 'Nova', syncedAt: 'never' };
 
 const store = createStore(cachedFresh(initial), (api) => ({
-  cache: createCachedSlice(api),
+  actions: { cache: createCachedSlice(api) },
 }));
 
 connectDebugLog(store, { name: 'cache-manual' });
@@ -26,7 +26,7 @@ export function CacheManualExample() {
   const data = getCachedData(state) ?? initial;
 
   async function refresh() {
-    await store.cache.refresh(async (prev) => {
+    await store.actions.cache.refresh(async (prev) => {
       await sleep(800);
       const base = prev ?? initial;
       return { name: base.name, syncedAt: new Date().toLocaleTimeString() };

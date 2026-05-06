@@ -23,18 +23,20 @@ const configStore = createStore(
     hits: 0,
   },
   ({ set, get }) => ({
-    load() {
-      set({ ...get(), calls: get().calls + 1 });
-      return loadFlight(() =>
-        fetchConfig().then((config) => {
-          // All callers that joined this flight receive the result simultaneously
-          set({ ...get(), config, hits: networkHits, resolved: get().calls });
-        })
-      );
-    },
-    reset() {
-      set({ config: null, calls: 0, resolved: 0, hits: 0 });
-      networkHits = 0;
+    actions: {
+      load() {
+        set({ ...get(), calls: get().calls + 1 });
+        return loadFlight(() =>
+          fetchConfig().then((config) => {
+            // All callers that joined this flight receive the result simultaneously
+            set({ ...get(), config, hits: networkHits, resolved: get().calls });
+          })
+        );
+      },
+      reset() {
+        set({ config: null, calls: 0, resolved: 0, hits: 0 });
+        networkHits = 0;
+      },
     },
   })
 );
@@ -42,9 +44,9 @@ const configStore = createStore(
 connectDebugLog(configStore, { name: 'config' });
 
 const loadThree = () => {
-  void configStore.load();
-  void configStore.load();
-  void configStore.load();
+  void configStore.actions.load();
+  void configStore.actions.load();
+  void configStore.actions.load();
 };
 
 export function SingleFlightExample() {
@@ -56,7 +58,7 @@ export function SingleFlightExample() {
         variant="outlined"
         size="small"
         onClick={() => {
-          void configStore.load();
+          void configStore.actions.load();
         }}
       >
         load()
@@ -69,7 +71,7 @@ export function SingleFlightExample() {
         size="small"
         color="error"
         onClick={() => {
-          configStore.reset();
+          configStore.actions.reset();
         }}
       >
         Reset

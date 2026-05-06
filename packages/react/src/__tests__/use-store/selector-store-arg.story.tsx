@@ -8,13 +8,15 @@ type PricingState = { basePrice: number };
 
 function makePricingStore() {
   return createStore({ basePrice: 100 }, ({ get, update }: StoreApi<PricingState>) => ({
-    getTotal(): number {
-      return get().basePrice * 1.2;
-    },
-    setBase(n: number) {
-      update((d) => {
-        d.basePrice = n;
-      });
+    actions: {
+      getTotal(): number {
+        return get().basePrice * 1.2;
+      },
+      setBase(n: number) {
+        update((d) => {
+          d.basePrice = n;
+        });
+      },
     },
   }));
 }
@@ -26,14 +28,14 @@ const selectorStoreArgStore = makePricingStore();
  * without closing over the store variable.
  */
 export function SelectorStoreArgHarness() {
-  const total = useStore(selectorStoreArgStore, (_s, store) => store.getTotal());
+  const total = useStore(selectorStoreArgStore, (_s, store) => store.actions.getTotal());
 
   return (
     <div>
       <span data-testid="total">{total}</span>
       <button
         onClick={() => {
-          selectorStoreArgStore.setBase(200);
+          selectorStoreArgStore.actions.setBase(200);
         }}
       >
         Set 200

@@ -53,52 +53,52 @@ group('createCachedSlice', () => {
 
   bench('get() — root pass-through', function* () {
     const store = createStore(cachedFresh(structuredClone(INITIAL_PAYLOAD)), (api) => ({
-      cache: createCachedSlice(api),
+      actions: { cache: createCachedSlice(api) },
     }));
-    yield () => store.cache.get();
+    yield () => store.actions.cache.get();
   });
 
   // ── set ─────────────────────────────────────────────────────────────────
 
   bench('set() — same value (equality bypass)', function* () {
     const store = createStore(cachedFresh(structuredClone(INITIAL_PAYLOAD)), (api) => ({
-      cache: createCachedSlice(api),
+      actions: { cache: createCachedSlice(api) },
     }));
     const data = getCachedData(store.getSnapshot())!;
-    yield () => store.cache.set(data);
+    yield () => store.actions.cache.set(data);
   });
 
   bench('set() — new value (write + notify, 0 listeners)', function* () {
     let n = 0;
     const store = createStore(cachedFresh(structuredClone(INITIAL_PAYLOAD)), (api) => ({
-      cache: createCachedSlice(api),
+      actions: { cache: createCachedSlice(api) },
     }));
     yield () => {
-      store.cache.set({ ...INITIAL_PAYLOAD, notifications: ++n });
+      store.actions.cache.set({ ...INITIAL_PAYLOAD, notifications: ++n });
     };
   });
 
   bench('set() — new value (write + notify, 1 listener)', function* () {
     let n = 0;
     const store = createStore(cachedFresh(structuredClone(INITIAL_PAYLOAD)), (api) => ({
-      cache: createCachedSlice(api),
+      actions: { cache: createCachedSlice(api) },
     }));
     store.subscribe(() => {});
     yield () => {
-      store.cache.set({ ...INITIAL_PAYLOAD, notifications: ++n });
+      store.actions.cache.set({ ...INITIAL_PAYLOAD, notifications: ++n });
     };
   });
 
   bench('set() — new value (write + notify, 10 listeners)', function* () {
     let n = 0;
     const store = createStore(cachedFresh(structuredClone(INITIAL_PAYLOAD)), (api) => ({
-      cache: createCachedSlice(api),
+      actions: { cache: createCachedSlice(api) },
     }));
     for (let i = 0; i < 10; i++) {
       store.subscribe(() => {});
     }
     yield () => {
-      store.cache.set({ ...INITIAL_PAYLOAD, notifications: ++n });
+      store.actions.cache.set({ ...INITIAL_PAYLOAD, notifications: ++n });
     };
   });
 
@@ -108,10 +108,10 @@ group('createCachedSlice', () => {
     // Start fresh, call expire() once during setup to reach 'expired' state.
     // Subsequent iterations hit the 'not fresh' guard and return immediately.
     const store = createStore(cachedFresh(structuredClone(INITIAL_PAYLOAD)), (api) => ({
-      cache: createCachedSlice(api),
+      actions: { cache: createCachedSlice(api) },
     }));
-    store.cache.expire();
-    yield () => store.cache.expire();
+    store.actions.cache.expire();
+    yield () => store.actions.cache.expire();
   });
 
   bench('expire() — fresh → expired', function* () {
@@ -119,14 +119,14 @@ group('createCachedSlice', () => {
     // transition (clearExpiryTimer + setState) is always exercised.
     const makeStore = () =>
       createStore(cachedFresh(structuredClone(INITIAL_PAYLOAD)), (api) => ({
-        cache: createCachedSlice(api),
+        actions: { cache: createCachedSlice(api) },
       }));
     yield {
       [0]() {
         return makeStore();
       },
       bench(store: ReturnType<typeof makeStore>) {
-        store.cache.expire();
+        store.actions.cache.expire();
       },
     };
   });
@@ -135,30 +135,30 @@ group('createCachedSlice', () => {
 
   bench('slice set() — same value (equality bypass)', function* () {
     const store = createStore(structuredClone(INITIAL_SLICE), (api) => ({
-      profileCache: createCachedSlice(api, 'profile'),
+      actions: { profileCache: createCachedSlice(api, 'profile') },
     }));
     const profile = getCachedData(store.getSnapshot().profile)!;
-    yield () => store.profileCache.set(profile);
+    yield () => store.actions.profileCache.set(profile);
   });
 
   bench('slice set() — new value (copy-on-write spine + notify, 0 listeners)', function* () {
     let n = 0;
     const store = createStore(structuredClone(INITIAL_SLICE), (api) => ({
-      profileCache: createCachedSlice(api, 'profile'),
+      actions: { profileCache: createCachedSlice(api, 'profile') },
     }));
     yield () => {
-      store.profileCache.set({ name: `Nova${String(n++)}`, status: 'ready' });
+      store.actions.profileCache.set({ name: `Nova${String(n++)}`, status: 'ready' });
     };
   });
 
   bench('slice set() — new value (copy-on-write spine + notify, 1 listener)', function* () {
     let n = 0;
     const store = createStore(structuredClone(INITIAL_SLICE), (api) => ({
-      profileCache: createCachedSlice(api, 'profile'),
+      actions: { profileCache: createCachedSlice(api, 'profile') },
     }));
     store.subscribe(() => {});
     yield () => {
-      store.profileCache.set({ name: `Nova${String(n++)}`, status: 'ready' });
+      store.actions.profileCache.set({ name: `Nova${String(n++)}`, status: 'ready' });
     };
   });
 });

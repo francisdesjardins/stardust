@@ -38,7 +38,7 @@ export type {
   UnwrapContext,
 } from './create-store';
 
-export { createCachedSlice } from './create-cached';
+export { createCachedSlice, getCachedSliceInstance } from './create-cached';
 export type { Cached, CachedOptions, CachedRefreshOptions } from './create-cached';
 
 export { createArrayMethods } from './create-array-methods';
@@ -48,12 +48,9 @@ export { createDerivedStore } from './create-derived-store';
 export type { DerivedStore, DerivedStoreOptions } from './create-derived-store';
 
 export { createStoreDispatch } from './create-store-dispatch';
-export type {
-  BuiltinDispatchable,
-  DispatchableActions,
-  DispatchOptions,
-  StoreDispatch,
-} from './create-store-dispatch';
+export type { DispatchOptions, LeafPaths, StoreDispatch } from './create-store-dispatch';
+
+export { createBoundActions } from './create-bound-actions';
 
 export { createMutex, safeMutex } from './mutex';
 export type { Mutex } from './mutex';

@@ -138,7 +138,7 @@ test.describe('copyOnWritePath', () => {
 
   test('returns original when intermediate segment is undefined', () => {
     const original = { a: { b: 1 } };
-    const sparse = new Array<string | number>(2); // [undefined, undefined]
+    const sparse = Array.from<string | number>({ length: 2 }); // [undefined, undefined]
     const result = copyOnWritePath(original, sparse, 99);
     expect(result).toBe(original);
   });
@@ -178,7 +178,7 @@ test.describe('setAtPath', () => {
 
   test('bails on undefined segment', () => {
     const obj = { a: { b: 1 } } as Record<string, unknown>;
-    const sparse = new Array<string | number>(2); // [undefined, undefined]
+    const sparse = Array.from<string | number>({ length: 2 }); // [undefined, undefined]
     setAtPath(obj, sparse, 99);
     expect(obj).toEqual({ a: { b: 1 } }); // unchanged
   });

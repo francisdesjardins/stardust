@@ -1,17 +1,8 @@
 import { createStore } from '@stardust/core';
 import { useStore } from '@stardust/react';
 
-type FormState = { name: string; email: string; submitted: boolean };
-
-type FormStoreMethods = {
-  setField(key: 'name' | 'email', value: string): void;
-  submit(): void;
-  reset(): void;
-};
-
-const formStore = createStore<FormState, FormStoreMethods>(
-  { name: '', email: '', submitted: false },
-  ({ set, update }) => ({
+const formStore = createStore({ name: '', email: '', submitted: false }, ({ set, update }) => ({
+  actions: {
     setField(key: 'name' | 'email', value: string) {
       update((draft) => {
         draft[key] = value;
@@ -25,8 +16,8 @@ const formStore = createStore<FormState, FormStoreMethods>(
     reset() {
       set({ name: '', email: '', submitted: false });
     },
-  })
-);
+  },
+}));
 
 /**
  * Two selectors on the same store — verifies independent slice tracking.
@@ -41,28 +32,28 @@ export function MultiSliceHarness() {
       <span data-testid="submitted">{String(submitted)}</span>
       <button
         onClick={() => {
-          formStore.setField('name', 'Alice');
+          formStore.actions.setField('name', 'Alice');
         }}
       >
         Set Name
       </button>
       <button
         onClick={() => {
-          formStore.setField('email', 'alice@test.com');
+          formStore.actions.setField('email', 'alice@test.com');
         }}
       >
         Set Email
       </button>
       <button
         onClick={() => {
-          formStore.submit();
+          formStore.actions.submit();
         }}
       >
         Submit
       </button>
       <button
         onClick={() => {
-          formStore.reset();
+          formStore.actions.reset();
         }}
       >
         Reset

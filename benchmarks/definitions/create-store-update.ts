@@ -24,55 +24,63 @@ const NESTED_INITIAL: Nested = {
 group('createStore — update', () => {
   bench('update() single field flat', function* () {
     const store = createStore({ ...FLAT_INITIAL }, ({ update }) => ({
-      increment() {
-        update((d) => {
-          d.count += 1;
-        });
+      actions: {
+        increment() {
+          update((d) => {
+            d.count += 1;
+          });
+        },
       },
     }));
-    yield () => store.increment();
+    yield () => store.actions.increment();
   });
 
   bench('update() multi-field flat', function* () {
     const store = createStore({ ...FLAT_INITIAL }, ({ update }) => ({
-      mutateAll() {
-        update((d) => {
-          d.count += 1;
-          d.label = 'changed';
-          d.active = !d.active;
-        });
+      actions: {
+        mutateAll() {
+          update((d) => {
+            d.count += 1;
+            d.label = 'changed';
+            d.active = !d.active;
+          });
+        },
       },
     }));
-    yield () => store.mutateAll();
+    yield () => store.actions.mutateAll();
   });
 
   bench('update() deeply nested', function* () {
     const store = createStore(structuredClone(NESTED_INITIAL), ({ update }) => ({
-      changeCity() {
-        update((d) => {
-          d.user.address.city = 'Vancouver';
-        });
+      actions: {
+        changeCity() {
+          update((d) => {
+            d.user.address.city = 'Vancouver';
+          });
+        },
       },
     }));
-    yield () => store.changeCity();
+    yield () => store.actions.changeCity();
   });
 
   bench('update() array push (reset each)', function* () {
     const store = createStore({ items: [1, 2, 3] }, ({ update }) => ({
-      push() {
-        update((d) => {
-          d.items.push(99);
-        });
-      },
-      reset() {
-        update((d) => {
-          d.items.length = 3;
-        });
+      actions: {
+        push() {
+          update((d) => {
+            d.items.push(99);
+          });
+        },
+        reset() {
+          update((d) => {
+            d.items.length = 3;
+          });
+        },
       },
     }));
     yield () => {
-      store.push();
-      store.reset();
+      store.actions.push();
+      store.actions.reset();
     };
   });
 });

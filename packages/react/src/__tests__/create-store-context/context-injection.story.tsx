@@ -10,8 +10,10 @@ const PricingContext = createStoreContext(
     createStore<PricingState, { getTotal: () => number }, TaxCtx>(
       { basePrice: 100 },
       ({ get, getContext }: StoreApi<PricingState, TaxCtx>) => ({
-        getTotal(): number {
-          return get().basePrice * (1 + getContext().taxRate);
+        actions: {
+          getTotal(): number {
+            return get().basePrice * (1 + getContext().taxRate);
+          },
         },
       })
     ),
@@ -24,7 +26,7 @@ function PricingInner() {
   return (
     <div>
       <span data-testid="base">{basePrice}</span>
-      <span data-testid="total">{Math.round(store.getTotal())}</span>
+      <span data-testid="total">{Math.round(store.actions.getTotal())}</span>
     </div>
   );
 }

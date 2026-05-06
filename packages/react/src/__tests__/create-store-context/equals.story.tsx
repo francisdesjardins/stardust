@@ -5,10 +5,12 @@ import { createStoreContext } from '@stardust/react';
 const PosCtx = createStoreContext(
   () =>
     createStore({ x: 0, y: 0, label: 'origin' }, ({ update }) => ({
-      nudgeLabel() {
-        update((d) => {
-          d.label = 'nudged';
-        });
+      actions: {
+        nudgeLabel() {
+          update((d) => {
+            d.label = 'nudged';
+          });
+        },
       },
     })),
   { name: 'Pos' }
@@ -32,7 +34,7 @@ function PosInner() {
     <div>
       <span data-testid="x">{pos.x}</span>
       <span data-testid="renders" ref={spanRef} />
-      <button onClick={store.nudgeLabel}>Nudge label</button>
+      <button onClick={store.actions.nudgeLabel}>Nudge label</button>
     </div>
   );
 }

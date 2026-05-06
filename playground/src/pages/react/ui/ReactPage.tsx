@@ -5,6 +5,7 @@ import { CreateStoreContextExample } from '../examples/create-store-context';
 import { UseSuspenseStoreExample } from '../examples/use-suspense-store';
 import { UseStoreExample } from '../examples/use-store';
 import { UseStoreSelectorExample } from '../examples/use-store-selector';
+import { UseStoreCachedSliceExample } from '../examples/use-store-cached-slice';
 
 export const ReactPage = () => (
   <PageLayout
@@ -30,6 +31,15 @@ export const ReactPage = () => (
           <UseStoreSelectorExample />
         </ExampleCard>
       </Grid>
+      <Grid size={{ xs: 12 }}>
+        <ExampleCard
+          title="createStoreContext"
+          description="Scoped store per React subtree — multiple independent instances via context, no prop drilling."
+          codeKey="create-store-context"
+        >
+          <CreateStoreContextExample />
+        </ExampleCard>
+      </Grid>
       <Grid size={{ xs: 12, md: 6 }}>
         <ExampleCard
           title="useSuspenseStore"
@@ -39,13 +49,13 @@ export const ReactPage = () => (
           <UseSuspenseStoreExample />
         </ExampleCard>
       </Grid>
-      <Grid size={{ xs: 12 }}>
+      <Grid size={{ xs: 12, md: 6 }}>
         <ExampleCard
-          title="createStoreContext"
-          description="Scoped store per React subtree — multiple independent instances via context, no prop drilling."
-          codeKey="create-store-context"
+          title="useStoreCachedSlice"
+          description="Subscribe to a cached slice with auto-refresh coordination. Reference counting prevents stopping sync at the wrong moment."
+          codeKey="use-store-cached-slice"
         >
-          <CreateStoreContextExample />
+          <UseStoreCachedSliceExample />
         </ExampleCard>
       </Grid>
     </Grid>

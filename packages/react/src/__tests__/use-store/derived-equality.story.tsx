@@ -3,18 +3,22 @@ import { createDerivedStore, createStore, shallowEqual } from '@stardust/core';
 import { useStore } from '@stardust/react';
 
 const counterStore = createStore({ count: 0 }, ({ update }) => ({
-  increment() {
-    update((d) => {
-      d.count += 1;
-    });
+  actions: {
+    increment() {
+      update((d) => {
+        d.count += 1;
+      });
+    },
   },
 }));
 
 const labelStore = createStore({ label: 'x' }, ({ update }) => ({
-  setLabel(v: string) {
-    update((d) => {
-      d.label = v;
-    });
+  actions: {
+    setLabel(v: string) {
+      update((d) => {
+        d.label = v;
+      });
+    },
   },
 }));
 
@@ -66,14 +70,14 @@ function RenderTracker({
       <button
         onClick={() => {
           // Change label only — should NOT cause derived to re-notify
-          labelStore.setLabel(`label-${String(Date.now())}`);
+          labelStore.actions.setLabel(`label-${String(Date.now())}`);
         }}
       >
         Change Label Only
       </button>
       <button
         onClick={() => {
-          counterStore.increment();
+          counterStore.actions.increment();
         }}
       >
         Increment Counter

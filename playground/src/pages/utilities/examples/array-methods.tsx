@@ -10,7 +10,9 @@ const initialItems: Item[] = [];
 
 const listOps = createArrayMethods(initialItem);
 const listStore = createStore({ items: initialItems }, (api) => ({
-  list: listOps.mount(api, 'items'),
+  actions: {
+    list: listOps.mount(api, 'items'),
+  },
 }));
 
 connectDebugLog(listStore, { name: 'list' });
@@ -40,7 +42,7 @@ export function ArrayMethodsExample() {
   function syncFromServer() {
     const batch = SERVER_BATCHES[batchIndex % SERVER_BATCHES.length] ?? [];
     batchIndex++;
-    listStore.list.upsert(
+    listStore.actions.list.upsert(
       batch.map((s) => ({ ...initialItem, name: s.name, qty: s.qty })),
       function (item) {
         return item.name === this.name;
@@ -60,7 +62,7 @@ export function ArrayMethodsExample() {
               size="small"
               disabled={items.some((i) => i.name === name)}
               onClick={() => {
-                listStore.list.add({ name });
+                listStore.actions.list.add({ name });
               }}
             >
               + {name}
@@ -72,7 +74,7 @@ export function ArrayMethodsExample() {
             color="error"
             disabled={items.length === 0}
             onClick={() => {
-              listStore.list.remove(items.length - 1);
+              listStore.actions.list.remove(items.length - 1);
             }}
           >
             remove last
@@ -89,7 +91,7 @@ export function ArrayMethodsExample() {
                 variant={item.picked ? 'filled' : 'outlined'}
                 color={item.picked ? 'success' : 'default'}
                 onClick={() => {
-                  listStore.list.update((entry) => entry.name === item.name, {
+                  listStore.actions.list.update((entry) => entry.name === item.name, {
                     picked: !item.picked,
                   });
                 }}
@@ -103,7 +105,7 @@ export function ArrayMethodsExample() {
                 size="small"
                 disabled={item.qty <= 1}
                 onClick={() => {
-                  listStore.list.setByPath(i, 'qty', item.qty - 1);
+                  listStore.actions.list.setByPath(i, 'qty', item.qty - 1);
                 }}
               >
                 −
@@ -114,7 +116,7 @@ export function ArrayMethodsExample() {
               <Button
                 size="small"
                 onClick={() => {
-                  listStore.list.setByPath(i, 'qty', item.qty + 1);
+                  listStore.actions.list.setByPath(i, 'qty', item.qty + 1);
                 }}
               >
                 +
@@ -124,7 +126,7 @@ export function ArrayMethodsExample() {
                 <Button
                   size="small"
                   onClick={() => {
-                    listStore.list.move(i, i - 1);
+                    listStore.actions.list.move(i, i - 1);
                   }}
                 >
                   ↑
@@ -134,7 +136,7 @@ export function ArrayMethodsExample() {
                 <Button
                   size="small"
                   onClick={() => {
-                    listStore.list.move(i, i + 1);
+                    listStore.actions.list.move(i, i + 1);
                   }}
                 >
                   ↓

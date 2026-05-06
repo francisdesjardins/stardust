@@ -4,10 +4,12 @@ import { createStoreContext } from '@stardust/react';
 const InitialCounterCtx = createStoreContext(
   (initial: { count: number }) =>
     createStore(initial, ({ update }) => ({
-      increment() {
-        update((d) => {
-          d.count += 1;
-        });
+      actions: {
+        increment() {
+          update((d) => {
+            d.count += 1;
+          });
+        },
       },
     })),
   { name: 'InitialCounter' }
@@ -19,7 +21,7 @@ function InitialCounterInner() {
   return (
     <div>
       <span data-testid="count">{count}</span>
-      <button onClick={store.increment}>Increment</button>
+      <button onClick={store.actions.increment}>Increment</button>
     </div>
   );
 }

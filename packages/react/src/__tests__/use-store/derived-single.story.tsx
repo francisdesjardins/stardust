@@ -1,16 +1,14 @@
 import { createDerivedStore, createStore, shallowEqual } from '@stardust/core';
 import { useStore } from '@stardust/react';
 
-const counterStore = createStore({ count: 0 }, ({ update }) => ({
-  increment() {
-    update((d) => {
-      d.count += 1;
-    });
-  },
-  reset() {
-    update((d) => {
-      d.count = 0;
-    });
+const counterStore = createStore({ count: 0 }, ({ update, reset }) => ({
+  actions: {
+    increment() {
+      update((d) => {
+        d.count += 1;
+      });
+    },
+    reset,
   },
 }));
 
@@ -31,14 +29,14 @@ export function DerivedSingleHarness() {
       <span data-testid="doubled">{doubled}</span>
       <button
         onClick={() => {
-          counterStore.increment();
+          counterStore.actions.increment();
         }}
       >
         Increment
       </button>
       <button
         onClick={() => {
-          counterStore.reset();
+          counterStore.actions.reset();
         }}
       >
         Reset

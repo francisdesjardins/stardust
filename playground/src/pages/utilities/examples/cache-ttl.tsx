@@ -20,13 +20,15 @@ const sleep = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
 
 // Starts fresh with a 4 s TTL. The timer begins ticking from module load.
 const store = createStore(cachedFresh(initial, Date.now() + INTERVAL), (api) => ({
-  cache: createCachedSlice(api, {
-    keepPreviousData: true,
-    refreshOnExpire: async (prev) => {
-      await sleep(1_200);
-      return { value: (prev?.value ?? 0) + 1, refreshedAt: new Date().toLocaleTimeString() };
-    },
-  }),
+  actions: {
+    cache: createCachedSlice(api, {
+      keepPreviousData: true,
+      onExpire: async (prev) => {
+        await sleep(1_200);
+        return { value: (prev?.value ?? 0) + 1, refreshedAt: new Date().toLocaleTimeString() };
+      },
+    }),
+  },
 }));
 
 connectDebugLog(store, { name: 'cache-ttl' });
@@ -38,17 +40,17 @@ export function CacheTtlExample() {
 
   function startAuto() {
     setAutoRunning(true);
-    store.cache.startAutoRefresh({ interval: INTERVAL });
+    store.actions.cache.startAutoRefresh({ expiresAfter: INTERVAL });
   }
 
   function stopAuto() {
     setAutoRunning(false);
-    store.cache.stopAutoRefresh();
+    store.actions.cache.stopAutoRefresh();
   }
 
   function reset() {
-    store.cache.stopAutoRefresh();
-    store.cache.set(initial, Date.now() + INTERVAL);
+    store.actions.cache.stopAutoRefresh();
+    store.actions.cache.set(initial, Date.now() + INTERVAL);
     setAutoRunning(false);
   }
 
@@ -81,7 +83,7 @@ export function CacheTtlExample() {
             variant="outlined"
             size="small"
             onClick={() => {
-              store.cache.expire();
+              store.actions.cache.expire();
             }}
           >
             Expire now

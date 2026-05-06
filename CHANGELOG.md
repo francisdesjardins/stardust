@@ -11,6 +11,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 #### `@stardust/core`
 
+- **`createStore()` builder signature** — the factory callback now returns `{ readonly actions: TMethods }` instead of a flat object. Domain methods are accessed at `store.actions.*` instead of `store.*`. All built-ins (`set`, `update`, `reset`, `subscribe`, `getSnapshot`, `getByPath`, `setByPath`, `batch`, `setContext`, `run`) remain flat on the store object. This eliminates shadowing concerns and simplifies domain-method detection in `connectDebugLog` and `createStoreDispatch`.
+- **`Store<TSnapshot, TMethods, TContext>` type** — now includes `readonly actions: TMethods` property instead of spreading methods onto the store root. The type structure is `{ set, update, ..., actions, ... }` with clear namespace separation.
+- **`createStoreDispatch()` domain restriction** — now only supports dispatching domain actions from `store.actions`. The `NON_DOMAIN_KEYS` filtering is removed; domain methods are identified by iterating `store.actions` directly at construction time. Built-in exposure options (`canDispatchSet`, etc.) are no longer supported — use the built-in methods directly (e.g. `store.set(...)` or `store.update(...)`). The `domain` option still filters which actions are dispatchable.
+- **`createStoreDispatch()` leaf-path support** — domain methods are flattened at construction time via `flattenLeaves()`, allowing nested actions to be dispatched via dot-notation (e.g. `dispatch('todos.add', text)` for `store.actions.todos.add(text)`). Type-level `LeafPaths<TMethods>` extracts all leaf function paths; `LeafAt<T, Path>` resolves function types at dot-notation paths for full type safety.
 - `createCachedSlice` — `stopAutoRefresh()` no longer clears the expiry timer. The `'fresh'` → `'expired'` transition fires and notifies subscribers regardless of auto-refresh state, making expiry fully observable even when automatic re-fetching is disabled. Call `expire()` explicitly if you need to cancel the timer and immediately mark the cache as expired.
 - `createCachedSlice` — `startAutoRefresh()` now immediately triggers the `refreshOnExpire` fetch when the cache is already `'expired'` at call time, instead of being a no-op (previously `scheduleExpiryTimer` returned early for non-`'fresh'` states).
 - `createCachedSlice` — **`expire` option removed** from `CachedOptions`; TTL is now expressed directly on the data via `cachedFresh(data, expiresAt)`, `set(data, expiresAt)`, and `refresh(fetcher, { expiresAt })`. `startAutoRefresh({ interval })` replaces the `expire` option as the source of the recurring TTL for auto-refresh cycles — it stamps `expiresAt = Date.now() + interval` on each refreshed value and drives the first expiry when the initial state has no `expiresAt`. This removes the awkward duplication between the option and the initial `cachedFresh` timestamp.
@@ -25,10 +29,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `createArrayMethods` — redesigned as a two-stage factory: `createArrayMethods<TItem>(defaults)` returns an `ArrayMethodsFactory` with a `.mount(api, path)` method that binds helpers to a specific store and path; providing `TItem` explicitly prevents TypeScript from narrowing literal defaults (e.g. `asyncIdle`), eliminating the need for `as` casts
 - `connectDebugLog()` — built-in logger now reports `listeners:N` excluding its own internal debug subscription, while `onLog` receives the raw live listener count at notify time.
 
+### Added
+
+#### `@stardust/core`
+
+- **`store.run(actionName, fn)`** — built-in method that executes an untracked mutation within a named action scope. Useful for external code (e.g., `watch` callbacks, event handlers outside domain methods) that needs to mutate the store without triggering an "untracked mutation" warning from `connectDebugLog`. `connectDebugLog` wraps `run()` to set `currentAction` for the duration, ensuring the mutation is logged and tracked. When called inside a domain method, the outer action name takes precedence.
+
 ### Removed
 
 #### `@stardust/core`
 
+- **`BuiltinDispatchable` and `DispatchableActions` type exports** — removed from `createStoreDispatch` as they are no longer relevant; `createStoreDispatch` now only supports domain actions from `store.actions`.
 - `createCachedSlice` — `isExpired()` removed; use `cache.get().status === 'expired'` instead.
 - `createCachedSlice` — `markFresh()` removed; the cache writes `cachedFresh` directly after a successful `refresh()`.
 - `createArrayMethods` — removed `methods` builder (4th param) and `ArrayMethodsApi` type; extend the domain API directly using normal domain methods instead
@@ -71,6 +82,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `useSuspenseStore()` — React Suspense protocol hook; throws `Promise` while pending, throws `Error` on rejection, returns `T` on fulfillment
 - `createStoreContext()` — React Context factory; each `Provider` mount creates an isolated store instance via lazy `useState` initializer
   - `useSnapshot` selector now also receives the store as a second argument `(snapshot, store) => ...`
+- `useStoreCachedSlice()` — hook to subscribe to a cached slice with automatic reference counting for `startAutoRefresh` / `stopAutoRefresh`
+  - Coordinates auto-refresh across multiple components — only the first mount calls `startAutoRefresh()`, only the last unmount calls `stopAutoRefresh()`
+  - Automatically transitions `idle → expired` on mount when auto-refresh is configured, triggering `refreshOnExpire` flows
+  - Uses WeakMap to track per-Cached-instance reference counts; maintains a cache of selected values for tearing prevention
+  - Selector functions receive both the full `CachedState<T>` discriminated union and the extracted data (via `getCachedData()`), allowing rich status-aware selections
 - React Compiler (`babel-plugin-react-compiler` target `'19'`) applied at build time — no manual `useMemo` / `useCallback` / `React.memo` required
 
 #### `@stardust/solid`

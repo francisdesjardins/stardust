@@ -4,10 +4,12 @@ import { createStoreContext } from '@stardust/react';
 const CounterCtx = createStoreContext(
   () =>
     createStore({ count: 0 }, ({ update }) => ({
-      increment() {
-        update((d) => {
-          d.count += 1;
-        });
+      actions: {
+        increment() {
+          update((d) => {
+            d.count += 1;
+          });
+        },
       },
     })),
   { name: 'TwoProviders' }
@@ -19,7 +21,7 @@ function CounterLabel({ label }: { label: string }) {
   return (
     <div>
       <span data-testid={`count-${label}`}>{count}</span>
-      <button data-testid={`inc-${label}`} onClick={store.increment}>
+      <button data-testid={`inc-${label}`} onClick={store.actions.increment}>
         +
       </button>
     </div>

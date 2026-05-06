@@ -18,6 +18,7 @@ import useStoreSrc from '@/pages/react/examples/use-store.tsx?raw';
 import useStoreSelectorSrc from '@/pages/react/examples/use-store-selector.tsx?raw';
 import useSuspenseStoreSrc from '@/pages/react/examples/use-suspense-store.tsx?raw';
 import createStoreContextSrc from '@/pages/react/examples/create-store-context.tsx?raw';
+import useStoreCachedSliceSrc from '@/pages/react/examples/use-store-cached-slice.tsx?raw';
 import solidCounterSrc from '@/pages/solid/examples/solid-counter.solid.tsx?raw';
 import solidReactBridgeSrc from '@/pages/solid/examples/SolidCounterWrapper.tsx?raw';
 import sharedStoreSrc from '@/pages/solid/examples/shared-store.tsx?raw';
@@ -34,6 +35,7 @@ export const codeSamples: Record<string, string> = {
   'use-store-selector': useStoreSelectorSrc,
   'use-suspense-store': useSuspenseStoreSrc,
   'create-store-context': createStoreContextSrc,
+  'use-store-cached-slice': useStoreCachedSliceSrc,
 
   // Utilities
   'array-methods': arrayMethodsSrc,

@@ -17,20 +17,22 @@ type UserState = { user: AsyncState<UserData> };
 
 const fulfilledInitial: UserState = { user: asyncIdle };
 const fulfilledStore = createStore(fulfilledInitial, ({ update }) => ({
-  fulfill(name: string): void {
-    update((d) => {
-      d.user = asyncFulfilled({ name });
-    });
-  },
-  pend(): void {
-    update((d) => {
-      d.user = asyncPending;
-    });
-  },
-  reset(): void {
-    update((d) => {
-      d.user = asyncIdle;
-    });
+  actions: {
+    fulfill(name: string): void {
+      update((d) => {
+        d.user = asyncFulfilled({ name });
+      });
+    },
+    pend(): void {
+      update((d) => {
+        d.user = asyncPending;
+      });
+    },
+    reset(): void {
+      update((d) => {
+        d.user = asyncIdle;
+      });
+    },
   },
 }));
 
@@ -50,14 +52,14 @@ export function FulfilledHarness() {
       </Suspense>
       <button
         onClick={() => {
-          fulfilledStore.fulfill('Alice');
+          fulfilledStore.actions.fulfill('Alice');
         }}
       >
         Fulfill
       </button>
       <button
         onClick={() => {
-          fulfilledStore.pend();
+          fulfilledStore.actions.pend();
         }}
       >
         Pend
@@ -77,15 +79,17 @@ export function FulfilledHarness() {
 
 const rejectedInitial: UserState = { user: asyncIdle };
 const rejectedStore = createStore(rejectedInitial, ({ update }) => ({
-  reject(message: string): void {
-    update((d) => {
-      d.user = asyncRejected(new Error(message));
-    });
-  },
-  reset(): void {
-    update((d) => {
-      d.user = asyncIdle;
-    });
+  actions: {
+    reject(message: string): void {
+      update((d) => {
+        d.user = asyncRejected(new Error(message));
+      });
+    },
+    reset(): void {
+      update((d) => {
+        d.user = asyncIdle;
+      });
+    },
   },
 }));
 
@@ -107,7 +111,7 @@ export function RejectedHarness() {
       </ErrorBoundary>
       <button
         onClick={() => {
-          rejectedStore.reject('load failed');
+          rejectedStore.actions.reject('load failed');
         }}
       >
         Reject
@@ -131,15 +135,17 @@ const contextInitial: UserState = { user: asyncIdle };
 const contextStore = createStore<UserState, { fulfill(): void; reset(): void }, GreeterApi>(
   contextInitial,
   ({ update, getContext }) => ({
-    fulfill(): void {
-      update((d) => {
-        d.user = asyncFulfilled({ name: getContext().greeting });
-      });
-    },
-    reset(): void {
-      update((d) => {
-        d.user = asyncIdle;
-      });
+    actions: {
+      fulfill(): void {
+        update((d) => {
+          d.user = asyncFulfilled({ name: getContext().greeting });
+        });
+      },
+      reset(): void {
+        update((d) => {
+          d.user = asyncIdle;
+        });
+      },
     },
   })
 );
@@ -162,7 +168,7 @@ export function ContextHarness() {
       </Suspense>
       <button
         onClick={() => {
-          contextStore.fulfill();
+          contextStore.actions.fulfill();
         }}
       >
         Fulfill

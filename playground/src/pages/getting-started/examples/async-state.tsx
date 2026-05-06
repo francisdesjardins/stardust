@@ -26,21 +26,23 @@ const initialUserState: { userId: number; asyncUser: AsyncState<User> } = {
 };
 
 const userStore = createStore(initialUserState, ({ set, get }) => ({
-  async loadUser() {
-    const id = get().userId;
-    set({ ...get(), asyncUser: asyncPending });
-    try {
-      const user = await fetchUser(id);
-      set({ userId: id + 1, asyncUser: asyncFulfilled(user) });
-    } catch (err) {
-      set({
-        ...get(),
-        asyncUser: asyncRejected(err instanceof Error ? err : new Error(String(err))),
-      });
-    }
-  },
-  reset() {
-    set({ userId: 1, asyncUser: asyncIdle });
+  actions: {
+    async loadUser() {
+      const id = get().userId;
+      set({ ...get(), asyncUser: asyncPending });
+      try {
+        const user = await fetchUser(id);
+        set({ userId: id + 1, asyncUser: asyncFulfilled(user) });
+      } catch (err) {
+        set({
+          ...get(),
+          asyncUser: asyncRejected(err instanceof Error ? err : new Error(String(err))),
+        });
+      }
+    },
+    reset() {
+      set({ userId: 1, asyncUser: asyncIdle });
+    },
   },
 }));
 
@@ -68,7 +70,7 @@ export function AsyncStateExample() {
 
   return (
     <ExampleLayout result={`status: ${asyncUser.status}`}>
-      <Button variant="outlined" size="small" onClick={() => userStore.loadUser()}>
+      <Button variant="outlined" size="small" onClick={() => userStore.actions.loadUser()}>
         Load Next User
       </Button>
       <Button
@@ -76,7 +78,7 @@ export function AsyncStateExample() {
         size="small"
         color="error"
         onClick={() => {
-          userStore.reset();
+          userStore.actions.reset();
         }}
       >
         Reset

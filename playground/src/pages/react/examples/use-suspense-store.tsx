@@ -16,13 +16,15 @@ type Profile = { name: string; role: string };
 const initialProfile: { data: AsyncState<Profile> } = { data: asyncIdle };
 
 const profileStore = createStore(initialProfile, ({ set }) => ({
-  async fetch() {
-    set({ data: asyncPending });
-    await new Promise((r) => setTimeout(r, 700));
-    set({ data: asyncFulfilled({ name: 'Francis', role: 'Engineer' }) });
-  },
-  reset() {
-    set({ data: asyncIdle });
+  actions: {
+    async fetch() {
+      set({ data: asyncPending });
+      await new Promise((r) => setTimeout(r, 700));
+      set({ data: asyncFulfilled({ name: 'Francis', role: 'Engineer' }) });
+    },
+    reset() {
+      set({ data: asyncIdle });
+    },
   },
 }));
 
@@ -42,7 +44,7 @@ export function UseSuspenseStoreExample() {
 
   return (
     <ExampleLayout result={data.status}>
-      <Button variant="outlined" size="small" onClick={() => profileStore.fetch()}>
+      <Button variant="outlined" size="small" onClick={() => profileStore.actions.fetch()}>
         Fetch Profile
       </Button>
       <Button
@@ -50,7 +52,7 @@ export function UseSuspenseStoreExample() {
         size="small"
         color="error"
         onClick={() => {
-          profileStore.reset();
+          profileStore.actions.reset();
         }}
       >
         Reset

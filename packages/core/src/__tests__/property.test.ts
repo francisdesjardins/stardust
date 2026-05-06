@@ -244,24 +244,26 @@ function makeFuzzStore() {
   return createStore(
     { count: 0, label: '', items: [] as string[] } satisfies FuzzSnapshot,
     ({ set, update, setByPath }) => ({
-      increment: () => {
-        update((d) => {
-          d.count += 1;
-        });
-      },
-      setLabel: (v: string) => {
-        setByPath('label', v);
-      },
-      addItem: (v: string) => {
-        update((d) => {
-          d.items.push(v);
-        });
-      },
-      setCount: (n: number) => {
-        setByPath('count', n);
-      },
-      reset: () => {
-        set({ count: 0, label: '', items: [] });
+      actions: {
+        increment: () => {
+          update((d) => {
+            d.count += 1;
+          });
+        },
+        setLabel: (v: string) => {
+          setByPath('label', v);
+        },
+        addItem: (v: string) => {
+          update((d) => {
+            d.items.push(v);
+          });
+        },
+        setCount: (n: number) => {
+          setByPath('count', n);
+        },
+        reset: () => {
+          set({ count: 0, label: '', items: [] });
+        },
       },
     })
   );
@@ -312,27 +314,27 @@ test.describe('store — immutability fuzz sequences', () => {
 
           switch (op.type) {
             case 'increment':
-              store.increment();
+              store.actions.increment();
               break;
             case 'setLabel':
-              store.setLabel(op.value);
+              store.actions.setLabel(op.value);
               break;
             case 'addItem':
-              store.addItem(op.value);
+              store.actions.addItem(op.value);
               break;
             case 'setCount':
-              store.setCount(op.value);
+              store.actions.setCount(op.value);
               break;
             case 'reset':
-              store.reset();
+              store.actions.reset();
               break;
             case 'batch':
               store.batch(() => {
                 for (const bop of op.ops) {
                   if (bop.type === 'increment') {
-                    store.increment();
+                    store.actions.increment();
                   } else {
-                    store.setCount(bop.value);
+                    store.actions.setCount(bop.value);
                   }
                 }
               });
@@ -369,9 +371,9 @@ test.describe('store — immutability fuzz sequences', () => {
             const snap = store.getSnapshot();
             history.push({ snap, count: snap.count, label: snap.label });
             if (w.field === 'count') {
-              store.setCount(w.value);
+              store.actions.setCount(w.value);
             } else {
-              store.setLabel(w.value);
+              store.actions.setLabel(w.value);
             }
           }
 
@@ -396,7 +398,7 @@ test.describe('store — immutability fuzz sequences', () => {
           for (const item of itemsToAdd) {
             const snap = store.getSnapshot();
             history.push({ arr: snap.items, length: snap.items.length });
-            store.addItem(item);
+            store.actions.addItem(item);
           }
 
           // Each captured array reference must not have grown (was not mutated in-place)

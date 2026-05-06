@@ -2,10 +2,10 @@ import { useStore } from '@stardust/solid';
 import type { Store } from '@stardust/core';
 
 type CountState = { count: number };
-type CountMethods = { increment: () => void; decrement: () => void };
+type CountActions = { increment: () => void; decrement: () => void };
 
 type SolidCounterProps = {
-  store: Store<CountState, CountMethods>;
+  store: Store<CountState, CountActions>;
   label?: string;
 };
 
@@ -17,7 +17,7 @@ export function SolidCounter({ store, label = 'SolidJS' }: SolidCounterProps) {
       <span style={{ fontSize: '0.75rem', color: '#888' }}>{label}</span>
       <button
         onClick={() => {
-          store.decrement();
+          store.actions.decrement();
         }}
         style={{ padding: '4px 12px', cursor: 'pointer' }}
       >
@@ -26,7 +26,7 @@ export function SolidCounter({ store, label = 'SolidJS' }: SolidCounterProps) {
       <span style={{ minWidth: '2ch', textAlign: 'center' }}>{state().count}</span>
       <button
         onClick={() => {
-          store.increment();
+          store.actions.increment();
         }}
         style={{ padding: '4px 12px', cursor: 'pointer' }}
       >

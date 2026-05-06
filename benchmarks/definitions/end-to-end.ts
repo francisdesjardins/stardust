@@ -24,31 +24,39 @@ const NESTED_INITIAL: Nested = {
 group('End-to-end: store + listeners', () => {
   bench('update() + 1 listener', function* () {
     const store = createStore({ ...FLAT_INITIAL }, ({ update }) => ({
-      increment() {
-        update((d) => {
-          d.count += 1;
-        });
+      actions: {
+        increment() {
+          update((d) => {
+            d.count += 1;
+          });
+        },
       },
     }));
     store.subscribe(() => {});
-    yield () => store.increment();
+    yield () => store.actions.increment();
   });
 
   bench('update() + 10 listeners', function* () {
     const store = createStore({ ...FLAT_INITIAL }, ({ update }) => ({
-      increment() {
-        update((d) => {
-          d.count += 1;
-        });
+      actions: {
+        increment() {
+          update((d) => {
+            d.count += 1;
+          });
+        },
       },
     }));
-    for (let i = 0; i < 10; i++) store.subscribe(() => {});
-    yield () => store.increment();
+    for (let i = 0; i < 10; i++) {
+      store.subscribe(() => {});
+    }
+    yield () => store.actions.increment();
   });
 
   bench('setByPath + 10 listeners nested', function* () {
-    const store = createStore(structuredClone(NESTED_INITIAL), () => ({}));
-    for (let i = 0; i < 10; i++) store.subscribe(() => {});
+    const store = createStore(structuredClone(NESTED_INITIAL), () => ({ actions: {} }));
+    for (let i = 0; i < 10; i++) {
+      store.subscribe(() => {});
+    }
     yield () => store.setByPath('user.address.city', 'Vancouver');
   });
 });

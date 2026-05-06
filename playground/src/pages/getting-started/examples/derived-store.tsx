@@ -4,11 +4,13 @@ import { Button, Chip, Stack } from '@mui/material';
 import { ExampleLayout } from '@/entities/example';
 
 const cartStore = createStore({ items: [] as string[] }, ({ set, get }) => ({
-  addItem(item: string) {
-    set({ items: [...get().items, item] });
-  },
-  clearCart() {
-    set({ items: [] });
+  actions: {
+    addItem(item: string) {
+      set({ items: [...get().items, item] });
+    },
+    clearCart() {
+      set({ items: [] });
+    },
   },
 }));
 
@@ -39,7 +41,7 @@ export function DerivedStoreExample() {
             variant="outlined"
             size="small"
             onClick={() => {
-              cartStore.addItem(item);
+              cartStore.actions.addItem(item);
             }}
           >
             Add {item}
@@ -51,7 +53,7 @@ export function DerivedStoreExample() {
           color="error"
           disabled={isEmpty}
           onClick={() => {
-            cartStore.clearCart();
+            cartStore.actions.clearCart();
           }}
         >
           Clear

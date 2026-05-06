@@ -15,19 +15,21 @@ const todoStore = createStore(initialSnapshot, (api) => {
   const todos = todosOps.mount(api, 'todos');
 
   return {
-    todos: {
-      add(text: string) {
-        batch(() => {
-          const snapshot = get();
-          todos.add({ text, done: false, id: snapshot.nextId });
-          setByPath('nextId', snapshot.nextId + 1);
-        });
-      },
-      toggle(id: number) {
-        todos.update(
-          (t) => t.id === id,
-          (s) => ({ done: !s.done })
-        );
+    actions: {
+      todos: {
+        add(text: string) {
+          batch(() => {
+            const snapshot = get();
+            todos.add({ text, done: false, id: snapshot.nextId });
+            setByPath('nextId', snapshot.nextId + 1);
+          });
+        },
+        toggle(id: number) {
+          todos.update(
+            (t) => t.id === id,
+            (s) => ({ done: !s.done })
+          );
+        },
       },
     },
   };
@@ -50,7 +52,7 @@ export function UseStoreExample() {
             variant="outlined"
             size="small"
             onClick={() => {
-              todoStore.todos.add(p);
+              todoStore.actions.todos.add(p);
             }}
           >
             + {p}
@@ -77,7 +79,7 @@ export function UseStoreExample() {
             variant={t.done ? 'filled' : 'outlined'}
             color={t.done ? 'primary' : 'default'}
             onClick={() => {
-              todoStore.todos.toggle(t.id);
+              todoStore.actions.todos.toggle(t.id);
             }}
           />
         ))}

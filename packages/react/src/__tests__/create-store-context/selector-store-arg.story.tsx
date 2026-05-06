@@ -7,13 +7,15 @@ type PricingState = { basePrice: number };
 const PricingCtx = createStoreContext(
   () =>
     createStore({ basePrice: 100 }, ({ get, update }: StoreApi<PricingState>) => ({
-      getTotal(): number {
-        return get().basePrice * 1.2;
-      },
-      setBase(n: number) {
-        update((d) => {
-          d.basePrice = n;
-        });
+      actions: {
+        getTotal(): number {
+          return get().basePrice * 1.2;
+        },
+        setBase(n: number) {
+          update((d) => {
+            d.basePrice = n;
+          });
+        },
       },
     })),
   { name: 'Pricing' }
@@ -22,14 +24,14 @@ const PricingCtx = createStoreContext(
 function PricingInner() {
   const store = PricingCtx.useStoreContext();
   // Domain method accessed via the store second argument — no extra useStoreContext call needed.
-  const total = PricingCtx.useSnapshot((_s, store) => store.getTotal());
+  const total = PricingCtx.useSnapshot((_s, store) => store.actions.getTotal());
 
   return (
     <div>
       <span data-testid="total">{total}</span>
       <button
         onClick={() => {
-          store.setBase(200);
+          store.actions.setBase(200);
         }}
       >
         Set 200

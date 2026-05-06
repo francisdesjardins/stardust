@@ -12,8 +12,10 @@ function makePricingStore() {
   return createStore(
     { basePrice: 100 },
     ({ get, getContext }: StoreApi<PricingState, PricingCtx>) => ({
-      getTotal(): number {
-        return get().basePrice * (1 + getContext().taxRate);
+      actions: {
+        getTotal(): number {
+          return get().basePrice * (1 + getContext().taxRate);
+        },
       },
     })
   );
@@ -30,7 +32,7 @@ export function ContextHarness() {
   // getTotal() is called inside the selector so it runs within useSyncExternalStore's
   // snapshot cycle — the React Compiler cannot memoize it away.
   const { base, total } = useStore(contextStore, {
-    select: (snapshot, store) => ({ base: snapshot.basePrice, total: store.getTotal() }),
+    select: (snapshot, store) => ({ base: snapshot.basePrice, total: store.actions.getTotal() }),
     context: { taxRate: 1 },
     equals: shallowEqual,
   });
@@ -58,7 +60,7 @@ export function ContextWithSelectorHarness() {
   const { base, total } = useStore(selectorContextStore, {
     select: (snapshot, store) => ({
       base: snapshot.basePrice,
-      total: store.getTotal(),
+      total: store.actions.getTotal(),
     }),
     context: { taxRate: 3 },
     equals: shallowEqual,

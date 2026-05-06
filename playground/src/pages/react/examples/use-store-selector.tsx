@@ -9,25 +9,29 @@ type CartState = { items: { name: string; price: number }[] };
 const cartStore = createStore(
   { items: [] as CartState['items'] },
   ({ get, update }: StoreApi<CartState>) => ({
-    subtotal(): number {
-      return get().items.reduce((sum, item) => sum + item.price, 0);
-    },
-    tax(): number {
-      return Math.round(get().items.reduce((sum, item) => sum + item.price, 0) * 0.15 * 100) / 100;
-    },
-    total(): number {
-      const sub = get().items.reduce((sum, item) => sum + item.price, 0);
-      return Math.round((sub + Math.round(sub * 0.15 * 100) / 100) * 100) / 100;
-    },
-    addItem(item: CartState['items'][number]) {
-      update((d) => {
-        d.items.push(item);
-      });
-    },
-    clear() {
-      update((d) => {
-        d.items = [];
-      });
+    actions: {
+      subtotal(): number {
+        return get().items.reduce((sum, item) => sum + item.price, 0);
+      },
+      tax(): number {
+        return (
+          Math.round(get().items.reduce((sum, item) => sum + item.price, 0) * 0.15 * 100) / 100
+        );
+      },
+      total(): number {
+        const sub = get().items.reduce((sum, item) => sum + item.price, 0);
+        return Math.round((sub + Math.round(sub * 0.15 * 100) / 100) * 100) / 100;
+      },
+      addItem(item: CartState['items'][number]) {
+        update((d) => {
+          d.items.push(item);
+        });
+      },
+      clear() {
+        update((d) => {
+          d.items = [];
+        });
+      },
     },
   })
 );
@@ -46,9 +50,9 @@ export function UseStoreSelectorExample() {
   const { count, subtotal, tax, total } = useStore(cartStore, {
     select: (s, store) => ({
       count: s.items.length,
-      subtotal: store.subtotal(),
-      tax: store.tax(),
-      total: store.total(),
+      subtotal: store.actions.subtotal(),
+      tax: store.actions.tax(),
+      total: store.actions.total(),
     }),
     equals: shallowEqual,
   });
@@ -63,7 +67,7 @@ export function UseStoreSelectorExample() {
               variant="outlined"
               size="small"
               onClick={() => {
-                cartStore.addItem(item);
+                cartStore.actions.addItem(item);
               }}
             >
               + {item.name} (${item.price.toFixed(2)})
@@ -75,7 +79,7 @@ export function UseStoreSelectorExample() {
             color="error"
             disabled={count === 0}
             onClick={() => {
-              cartStore.clear();
+              cartStore.actions.clear();
             }}
           >
             Clear

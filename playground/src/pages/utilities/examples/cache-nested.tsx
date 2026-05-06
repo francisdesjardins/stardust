@@ -16,7 +16,7 @@ const names = ['Nova', 'Aster', 'Lyra', 'Vega'];
 
 const sleep = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
 
-const INTERVAL = 5_000;
+const EXPIRES_AFTER = 5_000;
 
 async function fetchNextProfile(prev: Profile | undefined): Promise<Profile> {
   await sleep(700);
@@ -33,10 +33,12 @@ const store = createStore(
     lastVisit: new Date().toLocaleTimeString(),
   },
   (api) => ({
-    profileCache: createCachedSlice(api, 'profile', {
-      keepPreviousData: true,
-      refreshOnExpire: fetchNextProfile,
-    }),
+    actions: {
+      profileCache: createCachedSlice(api, 'profile', {
+        keepPreviousData: true,
+        onExpire: fetchNextProfile,
+      }),
+    },
   })
 );
 
@@ -49,12 +51,12 @@ export function CacheNestedExample() {
 
   function startAuto() {
     setAutoRunning(true);
-    store.profileCache.startAutoRefresh({ interval: INTERVAL });
+    store.actions.profileCache.startAutoRefresh({ expiresAfter: EXPIRES_AFTER });
   }
 
   function stopAuto() {
     setAutoRunning(false);
-    store.profileCache.stopAutoRefresh();
+    store.actions.profileCache.stopAutoRefresh();
   }
 
   return (
@@ -81,7 +83,7 @@ export function CacheNestedExample() {
           <Button
             variant="outlined"
             size="small"
-            onClick={() => void store.profileCache.refresh(fetchNextProfile)}
+            onClick={() => void store.actions.profileCache.refresh(fetchNextProfile)}
           >
             Refresh profile
           </Button>
@@ -90,13 +92,13 @@ export function CacheNestedExample() {
             size="small"
             color="warning"
             onClick={() => {
-              store.profileCache.expire();
+              store.actions.profileCache.expire();
             }}
           >
             Expire now
           </Button>
           <Button variant="outlined" size="small" onClick={startAuto} disabled={autoRunning}>
-            Start auto-refresh ({INTERVAL / 1_000}s)
+            Start auto-refresh ({EXPIRES_AFTER / 1_000}s)
           </Button>
           <Button variant="outlined" size="small" onClick={stopAuto} disabled={!autoRunning}>
             Stop auto-refresh

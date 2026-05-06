@@ -16,25 +16,27 @@ const initial: Profile = {
 };
 
 const profileStore = createStore({ profile: initial }, ({ set, get }) => ({
-  relocate(city: string, zip: string) {
-    set({
-      profile: produce(get().profile, (draft) => {
-        draft.address.city = city;
-        draft.address.zip = zip;
-      }),
-    });
-  },
-  addTag(tag: string) {
-    set({
-      profile: produce(get().profile, (draft) => {
-        if (!draft.tags.includes(tag)) {
-          draft.tags.push(tag);
-        }
-      }),
-    });
-  },
-  reset() {
-    set({ profile: initial });
+  actions: {
+    relocate(city: string, zip: string) {
+      set({
+        profile: produce(get().profile, (draft) => {
+          draft.address.city = city;
+          draft.address.zip = zip;
+        }),
+      });
+    },
+    addTag(tag: string) {
+      set({
+        profile: produce(get().profile, (draft) => {
+          if (!draft.tags.includes(tag)) {
+            draft.tags.push(tag);
+          }
+        }),
+      });
+    },
+    reset() {
+      set({ profile: initial });
+    },
   },
 }));
 
@@ -49,7 +51,7 @@ export function ProduceExample() {
         variant="outlined"
         size="small"
         onClick={() => {
-          profileStore.relocate('Toronto', 'M5V 3A8');
+          profileStore.actions.relocate('Toronto', 'M5V 3A8');
         }}
       >
         Move → Toronto
@@ -58,7 +60,7 @@ export function ProduceExample() {
         variant="outlined"
         size="small"
         onClick={() => {
-          profileStore.relocate('Vancouver', 'V6B 1S5');
+          profileStore.actions.relocate('Vancouver', 'V6B 1S5');
         }}
       >
         Move → Vancouver
@@ -67,7 +69,7 @@ export function ProduceExample() {
         variant="outlined"
         size="small"
         onClick={() => {
-          profileStore.addTag('editor');
+          profileStore.actions.addTag('editor');
         }}
       >
         Add "editor" tag
@@ -76,7 +78,7 @@ export function ProduceExample() {
         variant="outlined"
         size="small"
         onClick={() => {
-          profileStore.addTag('viewer');
+          profileStore.actions.addTag('viewer');
         }}
       >
         Add "viewer" tag
@@ -86,7 +88,7 @@ export function ProduceExample() {
         size="small"
         color="error"
         onClick={() => {
-          profileStore.reset();
+          profileStore.actions.reset();
         }}
       >
         Reset
