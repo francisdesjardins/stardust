@@ -9,6 +9,7 @@ import {
 import { useStoreCachedSlice } from '@stardust/react';
 import { Button, Chip, Stack, Typography, CircularProgress } from '@mui/material';
 import { ExampleLayout } from '@/entities/example';
+import { shallowEqual } from '@stardust/core';
 
 type User = { id: number; name: string; email: string };
 
@@ -60,9 +61,28 @@ const apiStore = createStore(initialSnapshot, (api) => {
 
 connectDebugLog(apiStore, { name: 'api' });
 
+type QueryStateLike<T> = {
+  isLoading: boolean;
+  isFetching: boolean;
+  data: T | null;
+  error: Error | null;
+};
+
+const toQueryStateLike = <T,>(state: CachedState<T>, data: T | undefined): QueryStateLike<T> => ({
+  isLoading: state.status === 'idle' || (state.status === 'pending' && !data),
+  isFetching: state.status === 'pending',
+  data: data ?? null,
+  error: state.status === 'rejected' ? state.error : null,
+});
+
 export function UseStoreCachedSliceExample() {
   const cache = useStoreCachedSlice(apiStore, 'data.cached');
   const data = getCachedData(cache);
+
+  const queryState = useStoreCachedSlice(apiStore, 'data.cached', {
+    select: (cached, data) => toQueryStateLike(cached, data),
+    equals: shallowEqual,
+  });
 
   const status =
     cache.status === 'idle'
@@ -153,7 +173,8 @@ export function UseStoreCachedSliceExample() {
           Auto-fetches on mount (idle → expired → onExpire). Refreshes every 10 s. Open the browser
           console with{' '}
           <code>localStorage.setItem(&apos;stardust:log=api&apos;, &apos;1&apos;)</code> to see
-          debug logs.
+          debug logs. The typed selector helper also exposes `queryState.data` as
+          <code>{queryState.data?.name ?? 'null'}</code>.
         </Typography>
       </Stack>
     </ExampleLayout>

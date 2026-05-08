@@ -8,7 +8,7 @@ import type { CachedState, Cached } from '@stardust/core';
 type SnapshotOf<TStore> = TStore extends StoreContract<infer S> ? S : never;
 
 /** Unwraps `TData` from `CachedState<TData>`. */
-type CachedValueOf<T> = T extends CachedState<infer U> ? U : never;
+type CachedValueOf<T> = T extends { data: infer U } ? U : never;
 
 /**
  * Walks up the dot-path chain to detect whether any prefix already resolves to a
@@ -95,6 +95,21 @@ export type UseStoreCachedSliceOptions<TCachedState, TSelected> = {
 export function useStoreCachedSlice<
   TStore extends StoreContract<unknown>,
   TPath extends CachedPathsOf<SnapshotOf<TStore>>,
+>(store: TStore, path: TPath): ValueAtPath<SnapshotOf<TStore>, TPath>;
+
+export function useStoreCachedSlice<
+  TStore extends StoreContract<unknown>,
+  TPath extends CachedPathsOf<SnapshotOf<TStore>>,
+  TSelected,
+>(
+  store: TStore,
+  path: TPath,
+  options: UseStoreCachedSliceOptions<ValueAtPath<SnapshotOf<TStore>, TPath>, TSelected>
+): TSelected;
+
+export function useStoreCachedSlice<
+  TStore extends StoreContract<unknown>,
+  TPath extends CachedPathsOf<SnapshotOf<TStore>>,
   // TSlice defaults to the full CachedState<T> at the path so callers that omit
   // `select` get back the correctly-typed union without having to write it out.
   TSlice = ValueAtPath<SnapshotOf<TStore>, TPath>,
@@ -171,7 +186,23 @@ export function useStoreCachedSlice<
       cached.startAutoRefresh();
     }
 
+    // Re-arm auto-refresh when the snapshot is externally reset to idle while this
+    // component is still mounted (e.g. store.reset()). The effect deps [cached, store]
+    // don't change on reset, so we need an explicit subscription to detect it.
+    let unsubscribeResetWatch: (() => void) | undefined;
+    if (autoRefreshConfigured) {
+      let prevStatus = cached.get().status;
+      unsubscribeResetWatch = store.subscribe(() => {
+        const currentStatus = cached.get().status;
+        if (currentStatus === 'idle' && prevStatus !== 'idle') {
+          cached.startAutoRefresh();
+        }
+        prevStatus = currentStatus;
+      });
+    }
+
     return () => {
+      unsubscribeResetWatch?.();
       const latest = cachedRefCounts.get(cached);
       if (!latest) {
         return;

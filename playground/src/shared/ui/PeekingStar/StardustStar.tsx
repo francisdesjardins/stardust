@@ -49,6 +49,95 @@ const STAR_SVG_TEMPLATE = `<svg
       #path175 { animation-delay: 2.3s; }
       #polygon25 { animation-delay: 1.25s; }
       #polygon27 { animation-delay: 1.5s; }
+
+      /*
+       * Pivot on the inner end (nose side) → outer end swings down = frown.
+       * Left brow:  transform-origin right → positive deg = outer-left goes down
+       * Right brow: transform-origin left  → negative deg = outer-right goes down
+       *
+       * Both timelines are long and irregular so resting periods vary in length,
+       * making each active moment feel like a real reaction rather than a loop.
+       * Cycle lengths 11.3 s / 7.9 s are co-prime enough that the brows drift
+       * into new pairings for ~90 s before repeating.
+       *
+       * Plausible combos that emerge from the drift:
+       *   both neutral         → calm
+       *   both frowning        → angry / concentrated
+       *   left only            → sceptical left
+       *   right only           → sceptical right
+       *   left twitch + right hold → annoyed / suspicious
+       *   both flutter rapidly → exasperated
+       */
+
+      /*
+       * +deg on left  = outer-left  DOWN (frown)   -deg = outer-left  UP (raise)
+       * -deg on right = outer-right DOWN (frown)   +deg = outer-right UP (raise)
+       *
+       * Expressions that emerge from the 11.3 s / 7.9 s drift:
+       *   both 0              → neutral
+       *   left+  right-       → angry
+       *   left-  right+       → surprised / happy
+       *   left+  right 0      → sceptical-left
+       *   left 0  right-      → sceptical-right
+       *   left-  right-       → confused / one-sided quirk
+       *   rapid twitches      → exasperated
+       */
+
+      @keyframes sd-eyebrow-left {
+        0%,   6%  { transform: rotate(0deg);   animation-timing-function: ease-in; }
+        /* frown snap + double-down */
+        9%        { transform: rotate(26deg);   animation-timing-function: ease-out; }
+        13%       { transform: rotate(14deg);   animation-timing-function: ease-in; }
+        16%       { transform: rotate(30deg);   animation-timing-function: ease-out; }
+        21%,  40% { transform: rotate(0deg);   animation-timing-function: ease-in; }
+        /* raise — surprised */
+        43%       { transform: rotate(-16deg);  animation-timing-function: cubic-bezier(0.34,1.5,0.64,1); }
+        47%,  60% { transform: rotate(0deg);   animation-timing-function: ease-in; }
+        /* gentle frown */
+        63%       { transform: rotate(18deg);   animation-timing-function: ease-in-out; }
+        67%,  76% { transform: rotate(0deg);   animation-timing-function: ease-in; }
+        /* raise twitch */
+        79%       { transform: rotate(-10deg);  animation-timing-function: ease-out; }
+        81%       { transform: rotate(0deg);   animation-timing-function: ease-in; }
+        /* irritated rapid frown */
+        84%       { transform: rotate(22deg);   animation-timing-function: cubic-bezier(0.34,1.56,0.64,1); }
+        87%       { transform: rotate(9deg);    animation-timing-function: ease-in; }
+        90%       { transform: rotate(24deg);   animation-timing-function: ease-out; }
+        95%, 100% { transform: rotate(0deg); }
+      }
+
+      @keyframes sd-eyebrow-right {
+        0%,  13%  { transform: rotate(0deg);   animation-timing-function: ease-in; }
+        /* big angry frown + flutter */
+        18%       { transform: rotate(-28deg);  animation-timing-function: ease-out; }
+        26%       { transform: rotate(-28deg);  animation-timing-function: ease-in; }
+        28%       { transform: rotate(-10deg);  animation-timing-function: ease-in; }
+        30%       { transform: rotate(-28deg);  animation-timing-function: ease-out; }
+        38%,  52% { transform: rotate(0deg);   animation-timing-function: ease-in; }
+        /* raise — happy / surprised */
+        55%       { transform: rotate(18deg);   animation-timing-function: cubic-bezier(0.34,1.5,0.64,1); }
+        59%,  68% { transform: rotate(0deg);   animation-timing-function: ease-in; }
+        /* slow exasperated droop */
+        72%       { transform: rotate(-16deg);  animation-timing-function: ease-in-out; }
+        76%       { transform: rotate(-22deg);  animation-timing-function: ease-out; }
+        81%,  89% { transform: rotate(0deg);   animation-timing-function: ease-in; }
+        /* quick raise twitch */
+        92%       { transform: rotate(12deg);   animation-timing-function: ease-out; }
+        95%, 100% { transform: rotate(0deg); }
+      }
+
+      #path20 {
+        transform-box: fill-box;
+        transform-origin: right center;
+        animation: sd-eyebrow-left 11.3s linear infinite;
+        animation-delay: -2.7s;
+      }
+      #path22 {
+        transform-box: fill-box;
+        transform-origin: left center;
+        animation: sd-eyebrow-right 7.9s linear infinite;
+        animation-delay: -1.3s;
+      }
     </style>
   </defs>
   <g

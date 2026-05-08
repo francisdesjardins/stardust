@@ -42,7 +42,7 @@ function computeOffset(side: Side, size: number) {
 }
 
 function makeConfig(prev: Config | undefined, size: number): Config {
-  const sides: readonly Side[] = ['left', 'right', 'top', 'bottom'];
+  const sides: readonly Side[] = ['left', 'right', 'bottom'];
   const pool = prev ? sides.filter((s) => s !== prev.side) : sides;
   const side = pool[Math.floor(Math.random() * pool.length)];
   if (side === undefined) throw new Error('PeekingStar: side pool must not be empty');

@@ -1,10 +1,13 @@
 import arrayMethodsSrc from '@/pages/utilities/examples/array-methods.tsx?raw';
 import storeDispatchSrc from '@/pages/utilities/examples/store-dispatch.tsx?raw';
+import boundActionsSrc from '@/pages/utilities/examples/bound-actions.tsx?raw';
+import runAsyncSrc from '@/pages/utilities/examples/run-async.tsx?raw';
 import produceSrc from '@/pages/utilities/examples/produce.tsx?raw';
 import pathUtilsSrc from '@/pages/utilities/examples/path-utils.tsx?raw';
 import safeAwaitSrc from '@/pages/utilities/examples/safe-await.tsx?raw';
 import mutexSrc from '@/pages/utilities/examples/mutex.tsx?raw';
 import singleFlightSrc from '@/pages/utilities/examples/single-flight.tsx?raw';
+import singleFlightLastSrc from '@/pages/utilities/examples/single-flight-last.tsx?raw';
 import debugLogSrc from '@/pages/utilities/examples/debug-log.tsx?raw';
 import cacheManualSrc from '@/pages/utilities/examples/cache-manual.tsx?raw';
 import cacheLoadingSrc from '@/pages/utilities/examples/cache-loading.tsx?raw';
@@ -40,11 +43,14 @@ export const codeSamples: Record<string, string> = {
   // Utilities
   'array-methods': arrayMethodsSrc,
   'store-dispatch': storeDispatchSrc,
+  'bound-actions': boundActionsSrc,
   produce: produceSrc,
   'path-utils': pathUtilsSrc,
   'safe-await': safeAwaitSrc,
   mutex: mutexSrc,
+  'run-async': runAsyncSrc,
   'single-flight': singleFlightSrc,
+  'single-flight-last': singleFlightLastSrc,
   'debug-log': debugLogSrc,
   'cache-manual': cacheManualSrc,
   'cache-loading': cacheLoadingSrc,

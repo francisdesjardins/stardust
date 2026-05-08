@@ -678,4 +678,57 @@ test.describe('createCachedSlice - sub-slice', () => {
     expect(states).toContain('expired'); // subscriber was notified
     expect(store.getSnapshot().version).toBe(1); // rest of snapshot unchanged
   });
+
+  test('startAutoRefresh() on sub-slice fires onExpire and writes only to slice path — rest of snapshot untouched', async () => {
+    let fetchCount = 0;
+    const store = createStore({ profile: idleAs<{ name: string }>(), version: 1 }, (api) => ({
+      actions: {
+        cache: createCachedSlice(api, 'profile', {
+          expiresAfter: 50,
+          onExpire: async () => {
+            fetchCount += 1;
+            return { name: 'Auto' };
+          },
+        }),
+      },
+    }));
+    const cache = store.actions.cache;
+
+    cache.startAutoRefresh();
+    await new Promise((resolve) => setTimeout(resolve, 80));
+
+    expect(fetchCount).toBeGreaterThanOrEqual(1);
+    expect(store.getSnapshot().profile).toMatchObject({ status: 'fresh', data: { name: 'Auto' } });
+    // Sibling field must be untouched
+    expect(store.getSnapshot().version).toBe(1);
+    cache.stopAutoRefresh();
+  });
+
+  test('refresh() on sub-slice deduplicates three concurrent callers — fetcher runs once', async () => {
+    let fetchCount = 0;
+    const store = createStore({ profile: idleAs<{ name: string }>(), version: 1 }, (api) => ({
+      actions: { cache: createCachedSlice(api, 'profile') },
+    }));
+    const cache = store.actions.cache;
+
+    let resolveFetch: ((value: { name: string }) => void) | undefined;
+    const fetcher = () =>
+      new Promise<{ name: string }>((resolve) => {
+        fetchCount += 1;
+        resolveFetch = resolve;
+      });
+
+    const [p1, p2, p3] = [cache.refresh(fetcher), cache.refresh(fetcher), cache.refresh(fetcher)];
+
+    resolveFetch?.({ name: 'Shared' });
+    const results = await Promise.all([p1, p2, p3]);
+
+    expect(fetchCount).toBe(1);
+    expect(results).toEqual([{ name: 'Shared' }, { name: 'Shared' }, { name: 'Shared' }]);
+    expect(store.getSnapshot().profile).toMatchObject({
+      status: 'fresh',
+      data: { name: 'Shared' },
+    });
+    expect(store.getSnapshot().version).toBe(1);
+  });
 });

@@ -1,4 +1,4 @@
-import { connectDebugLog, createSingleFlight, createStore } from '@stardust/core';
+import { connectDebugLog, createFirstFlight, createStore } from '@stardust/core';
 import { useStore } from '@stardust/react';
 import { Button, Chip, Stack, Typography } from '@mui/material';
 import { ExampleLayout } from '@/entities/example';
@@ -13,7 +13,7 @@ const fetchConfig = (): Promise<{ theme: string; version: string }> =>
     }, 800);
   });
 
-const loadFlight = createSingleFlight();
+const loadFlight = createFirstFlight();
 
 const configStore = createStore(
   {
@@ -22,20 +22,26 @@ const configStore = createStore(
     resolved: 0,
     hits: 0,
   },
-  ({ set, get }) => ({
+  ({ update, reset: resetSnapshot }) => ({
     actions: {
       load() {
-        set({ ...get(), calls: get().calls + 1 });
+        update((d) => {
+          d.calls += 1;
+        });
         return loadFlight(() =>
           fetchConfig().then((config) => {
             // All callers that joined this flight receive the result simultaneously
-            set({ ...get(), config, hits: networkHits, resolved: get().calls });
+            update((d) => {
+              d.config = config;
+              d.hits = networkHits;
+              d.resolved = d.calls;
+            });
           })
         );
       },
       reset() {
-        set({ config: null, calls: 0, resolved: 0, hits: 0 });
         networkHits = 0;
+        resetSnapshot();
       },
     },
   })
