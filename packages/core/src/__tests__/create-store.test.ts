@@ -89,6 +89,38 @@ test.describe('createStoreSubscription', () => {
 });
 
 test.describe('createStore', () => {
+  test.describe('no-actions overload', () => {
+    test('built-ins work without an actions callback', () => {
+      const store = createStore({ count: 0 });
+      expect(store.getSnapshot()).toEqual({ count: 0 });
+      store.set({ count: 1 });
+      expect(store.getSnapshot()).toEqual({ count: 1 });
+      store.update((d) => {
+        d.count += 1;
+      });
+      expect(store.getSnapshot()).toEqual({ count: 2 });
+      store.reset();
+      expect(store.getSnapshot()).toEqual({ count: 0 });
+    });
+
+    test('options can be passed as second argument', () => {
+      let calls = 0;
+      const equals = (a: { count: number }, b: { count: number }) => {
+        calls++;
+        return a.count === b.count;
+      };
+      const store = createStore({ count: 0 }, { equals });
+      store.set({ count: 0 });
+      expect(calls).toBeGreaterThan(0);
+      expect(store.getSnapshot()).toEqual({ count: 0 });
+    });
+
+    test('store.actions is not present', () => {
+      const store = createStore({ count: 0 });
+      expect('actions' in store).toBe(false);
+    });
+  });
+
   test('getSnapshot returns the initial snapshot', () => {
     const store = createStore({ count: 0 }, () => ({ actions: {} }));
     expect(store.getSnapshot()).toEqual({ count: 0 });

@@ -292,6 +292,15 @@ export type Store<TSnapshot, TMethods, TContext = never> = {
 };
 
 /**
+ * A store created without an actions builder — exposes built-ins only.
+ * `store.actions` is not present on this type.
+ */
+export type ActionlessStore<TSnapshot, TContext = never> = Omit<
+  Store<TSnapshot, Record<never, never>, TContext>,
+  'actions'
+>;
+
+/**
  * Creates a domain-specific store backed by `createStoreSubscription`.
  *
  * ## POJO contract
@@ -341,6 +350,11 @@ export type Store<TSnapshot, TMethods, TContext = never> = {
  *   current one. Defaults to `Object.is`.
  *
  * @example
+ * // Built-ins only — no domain methods needed
+ * const store = createStore({ count: 0 });
+ * store.set({ count: 1 });
+ *
+ * @example
  * const counter = createStore({ count: 0 }, ({ update }) => ({
  *   actions: {
  *     increment() { update(draft => { draft.count += 1; }); },
@@ -348,24 +362,42 @@ export type Store<TSnapshot, TMethods, TContext = never> = {
  *   },
  * }));
  */
+export function createStore<TSnapshot, TContext = never>(
+  initialSnapshot: TSnapshot,
+  options?: StoreSubscriptionOptions<TSnapshot, TContext>
+): ActionlessStore<TSnapshot, TContext>;
 export function createStore<TSnapshot, TMethods extends Record<string, unknown>, TContext = never>(
   initialSnapshot: TSnapshot,
   methods: (api: StoreApi<TSnapshot, TContext>) => { readonly actions: TMethods },
   options?: StoreSubscriptionOptions<TSnapshot, TContext>
-): Store<TSnapshot, TMethods, TContext> {
-  const clone: (value: TSnapshot) => TSnapshot = options?.deepClone ?? structuredClone;
+): Store<TSnapshot, TMethods, TContext>;
+export function createStore<
+  TSnapshot,
+  TMethods extends Record<string, unknown> = Record<never, never>,
+  TContext = never,
+>(
+  initialSnapshot: TSnapshot,
+  methodsOrOptions?:
+    | ((api: StoreApi<TSnapshot, TContext>) => { readonly actions: TMethods })
+    | StoreSubscriptionOptions<TSnapshot, TContext>,
+  options?: StoreSubscriptionOptions<TSnapshot, TContext>
+): Store<TSnapshot, TMethods, TContext> | ActionlessStore<TSnapshot, TContext> {
+  const methods = typeof methodsOrOptions === 'function' ? methodsOrOptions : undefined;
+  const resolvedOptions: StoreSubscriptionOptions<TSnapshot, TContext> | undefined =
+    typeof methodsOrOptions === 'function' ? options : methodsOrOptions;
+  const clone: (value: TSnapshot) => TSnapshot = resolvedOptions?.deepClone ?? structuredClone;
   let resetSnapshot = clone(initialSnapshot);
   const sub = createStoreSubscription(
     initialSnapshot,
-    options && { equals: options.equals, deepClone: options.deepClone }
+    resolvedOptions && { equals: resolvedOptions.equals, deepClone: resolvedOptions.deepClone }
   );
-  const equals = options?.equals ?? Object.is;
+  const equals = resolvedOptions?.equals ?? Object.is;
 
   // ── Context slot ─────────────────────────────────────────────────────────
   // Mutable cell written by useStore({ context }) before any method is called.
   // Methods are always invoked from event handlers (post-commit), never during
   // render, so the slot is always populated by the time getContext() runs.
-  const contextCell = { value: options?.context as TContext | undefined };
+  const contextCell = { value: resolvedOptions?.context as TContext | undefined };
 
   function getContext(): GetContextResult<TContext> {
     // The conditional type GetContextResult<TContext> resolves to either
@@ -482,8 +514,7 @@ export function createStore<TSnapshot, TMethods extends Record<string, unknown>,
     setContext(ctx: UnwrapContext<TContext>): void {
       contextCell.value = ctx as TContext | undefined;
     },
-    actions: {} as TMethods,
-  };
+  } as Store<TSnapshot, TMethods, TContext>;
 
   // ── Forwarding api ────────────────────────────────────────────────────────
   // Domain methods receive this api. Each method forwards through `store` so
@@ -511,7 +542,9 @@ export function createStore<TSnapshot, TMethods extends Record<string, unknown>,
     getContext,
   };
 
-  store.actions = methods(api).actions;
+  if (methods) {
+    (store as unknown as { actions: TMethods }).actions = methods(api).actions;
+  }
 
   return store;
 }
