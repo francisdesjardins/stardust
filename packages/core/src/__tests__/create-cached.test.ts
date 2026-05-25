@@ -685,9 +685,9 @@ test.describe('createCachedSlice - sub-slice', () => {
       actions: {
         cache: createCachedSlice(api, 'profile', {
           expiresAfter: 50,
-          onExpire: async () => {
+          onExpire: () => {
             fetchCount += 1;
-            return { name: 'Auto' };
+            return Promise.resolve({ name: 'Auto' });
           },
         }),
       },
