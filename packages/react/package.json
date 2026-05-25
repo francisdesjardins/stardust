@@ -37,18 +37,18 @@
     "test:component:ui": "playwright test -c playwright.config.ts --project=component --ui"
   },
   "devDependencies": {
-    "@playwright/experimental-ct-react": "1.59.1",
-    "@playwright/test": "1.59.1",
+    "@playwright/experimental-ct-react": "1.60.0",
+    "@playwright/test": "1.60.0",
     "@rolldown/plugin-babel": "0.2.3",
     "@stardust/core": "*",
-    "@types/react": "^19.2.14",
+    "@types/react": "^19.2.15",
     "@types/react-dom": "^19.2.3",
-    "@vitejs/plugin-react": "^6.0.1",
+    "@vitejs/plugin-react": "^6.0.2",
     "babel-plugin-react-compiler": "1.0.0",
     "react": "^19.2.6",
     "react-dom": "^19.2.6",
     "rimraf": "^6.1.3",
-    "vite": "^8.0.11",
-    "vite-plugin-dts": "5.0.0"
+    "vite": "^8.0.14",
+    "vite-plugin-dts": "5.0.1"
   }
 }
