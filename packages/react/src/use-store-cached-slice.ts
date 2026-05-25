@@ -1,7 +1,7 @@
 import { useEffect, useRef, useSyncExternalStore } from 'react';
-import type { StoreContract, StoreApi, PathsOf, ValueAtPath } from '@stardust/core';
-import { createCachedSlice, getCachedData, getCachedSliceInstance } from '@stardust/core';
-import type { CachedState, Cached } from '@stardust/core';
+import type { StoreContract, PathsOf, ValueAtPath } from '@stardust/core';
+import { getCachedData, getCachedSliceInstance } from '@stardust/core';
+import type { CachedState } from '@stardust/core';
 
 // ── Internal types ────────────────────────────────────────────────────────────
 
@@ -43,7 +43,6 @@ type RefCountEntry = {
 // WeakMap keys use object identity only — the generic on Cached<T> is irrelevant
 // for lookup, so we key by `object` to avoid threading the value type through maps.
 const cachedRefCounts = new WeakMap<object, RefCountEntry>();
-const cachedInstanceCache = new WeakMap<object, Map<string, Cached<unknown>>>();
 
 // ── Options ───────────────────────────────────────────────────────────────────
 
@@ -68,11 +67,10 @@ export type UseStoreCachedSliceOptions<TCachedState, TSelected> = {
  * React hook to subscribe to a `CachedState<T>` slice within a Stardust store.
  *
  * **Auto-refresh coordination**: multiple components using the same `(store, path)`
- * pair share one `Cached<T>` instance. The registry-first lookup returns the
- * store-builder's instance (which has `onExpire` wired up) when available; a bare
- * instance is created only for ad-hoc usage without a builder-declared slice.
- * Only the first mount calls `startAutoRefresh()` and only the last unmount calls
- * `stopAutoRefresh()`.
+ * pair share the `Cached<T>` instance registered by the store builder (i.e. via
+ * `createCachedSlice(api, path, …)`). Only the first mount calls
+ * `startAutoRefresh()` and only the last unmount calls `stopAutoRefresh()`.
+ * Throws at hook call time if no `Cached` instance is registered for `(store, path)`.
  *
  * **Idle → expired transition**: on mount, if the slice is `'idle'` and
  * `isAutoRefreshable` is `true`, it is immediately expired so that `onExpire` kicks in.
@@ -123,40 +121,18 @@ export function useStoreCachedSlice<
   const select = options?.select;
   const equals = options?.equals ?? Object.is;
 
-  // createCachedSlice requires a StoreApi (write-side) rather than StoreContract (read-only).
-  // The cast is safe: every store from createStore satisfies StoreApi internally.
-  // We preserve SnapshotOf<TStore> so createCachedSlice can verify the path at compile time.
-  const storeApi = store as unknown as StoreApi<SnapshotOf<TStore>, unknown>;
-
-  // ── Cached instance management ────────────────────────────────────────────
-  // Prefer the store-builder's registered instance (which has onExpire configured).
-  // Fall back to creating a bare instance for ad-hoc usage; startAutoRefresh will
-  // be a noop on it since isAutoRefreshable will be false.
-
-  const getCachedInstance = (): Cached<unknown> => {
-    // store.getSnapshot === api.get === sub.getSnapshot — same reference used as registry key.
-    const fromRegistry = getCachedSliceInstance(store.getSnapshot, path);
-    if (fromRegistry) {
-      return fromRegistry;
-    }
-
-    let pathMap = cachedInstanceCache.get(store);
-    if (!pathMap) {
-      pathMap = new Map();
-      cachedInstanceCache.set(store, pathMap);
-    }
-
-    const existing = pathMap.get(path);
-    if (existing) {
-      return existing;
-    }
-
-    const fresh = createCachedSlice(storeApi, path) as unknown as Cached<unknown>;
-    pathMap.set(path, fresh);
-    return fresh;
-  };
-
-  const cached = getCachedInstance();
+  // The Cached instance must be registered by the store builder via
+  // createCachedSlice(api, path, …). Ad-hoc construction is not supported here:
+  // it would require write-side access (StoreApi) that StoreContract does not
+  // expose, and would silently skip user-provided onExpire wiring.
+  // store.getSnapshot === api.get — same reference used as registry key.
+  const cached = getCachedSliceInstance(store.getSnapshot, path);
+  if (!cached) {
+    throw new Error(
+      `useStoreCachedSlice: no Cached instance registered for path "${path}". ` +
+        `Declare one in the store builder with createCachedSlice(api, "${path}", …).`
+    );
+  }
 
   // ── Auto-refresh reference counting ──────────────────────────────────────
   // Multiple components may subscribe to the same cached slice.

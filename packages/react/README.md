@@ -57,7 +57,7 @@ const user = useStore(store, (s) => ({ ...s.user }), shallowEqual);
 Selector functions receive the snapshot **and** the full store, so domain methods are accessible without closing over the store:
 
 ```tsx
-const total = useStore(pricingStore, (s, store) => store.computeTotal());
+const total = useStore(pricingStore, (s, store) => store.actions.computeTotal());
 ```
 
 ### `useStoreCachedSlice(store, path, { select?, equals? })`
@@ -87,7 +87,7 @@ const data = useStoreCachedSlice(store, 'api.data', {
 **Key behaviors:**
 
 - **Reference counting**: multiple components using the same cached slice coordinate via a WeakMap. Only the first mount calls `startAutoRefresh()`, and only the last unmount calls `stopAutoRefresh()`.
-- **Idle → expired transition**: automatically transitions `idle → expired` on mount (when auto-refresh is configured) to trigger `refreshOnExpire` flows.
+- **Idle → expired transition**: automatically transitions `idle → expired` on mount (when auto-refresh is configured) to trigger `onExpire` flows.
 - **Selector receives both union and data**: selectors get `(cached: CachedState<T>, data: T | undefined)` to support rich status-aware selections without re-extracting data.
 
 ### `useSuspenseStore(store, selector?)`

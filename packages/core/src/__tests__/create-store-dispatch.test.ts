@@ -290,6 +290,46 @@ test.describe('createStoreDispatch', () => {
     dispatch('increment');
     expect(store.getSnapshot().count).toBe(1);
   });
+
+  // ── Late binding: wrappers installed after construction ───────────────
+
+  test('dispatch invokes wrappers installed on store.actions after construction', () => {
+    const store = createStore({ count: 0 }, ({ update }) => ({
+      actions: {
+        increment() {
+          update((d) => {
+            d.count += 1;
+          });
+        },
+        nested: {
+          double() {
+            update((d) => {
+              d.count *= 2;
+            });
+          },
+        },
+      },
+    }));
+    const dispatch = createStoreDispatch(store);
+
+    // Wrap actions after dispatch creation (mimics connectDebugLog behaviour).
+    const calls: string[] = [];
+    const originalIncrement = store.actions.increment;
+    const originalDouble = store.actions.nested.double;
+    store.actions.increment = () => {
+      calls.push('increment');
+      originalIncrement();
+    };
+    store.actions.nested.double = () => {
+      calls.push('nested.double');
+      originalDouble();
+    };
+
+    dispatch('increment');
+    dispatch('nested.double');
+    expect(calls).toEqual(['increment', 'nested.double']);
+    expect(store.getSnapshot().count).toBe(2);
+  });
 });
 
 test.describe('createBoundActions', () => {

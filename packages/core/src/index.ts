@@ -48,7 +48,7 @@ export { createDerivedStore } from './create-derived-store';
 export type { DerivedStore, DerivedStoreOptions } from './create-derived-store';
 
 export { createStoreDispatch } from './create-store-dispatch';
-export type { DispatchOptions, LeafPaths, StoreDispatch } from './create-store-dispatch';
+export type { DispatchOptions, LeafAt, LeafPaths, StoreDispatch } from './create-store-dispatch';
 
 export { createBoundActions } from './create-bound-actions';
 

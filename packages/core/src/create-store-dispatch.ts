@@ -9,7 +9,7 @@ type Depth = [never, 0, 1, 2, 3];
 type AnyFn = (...args: any[]) => any;
 
 /** Resolves the leaf function type at a dot-notation path within an object. */
-type LeafAt<T, Path extends string> = Path extends `${infer Head}.${infer Tail}`
+export type LeafAt<T, Path extends string> = Path extends `${infer Head}.${infer Tail}`
   ? Head extends keyof T
     ? LeafAt<T[Head], Tail>
     : never
@@ -101,20 +101,43 @@ export type StoreDispatch<
 
 // ── Runtime leaf flattening ───────────────────────────────────────────────────
 
-function flattenLeaves(
+/**
+ * Walks `obj` and records the segments of each leaf-function path.
+ * Stored paths (not function references) are resolved against `store.actions`
+ * at dispatch time so that wrappers installed after construction — e.g.
+ * `connectDebugLog` — are always invoked.
+ */
+function flattenLeafPaths(
   obj: Record<string, unknown>,
-  prefix: string,
-  out: Map<string, (...args: unknown[]) => unknown>
+  prefix: readonly string[],
+  out: Map<string, readonly string[]>
 ): void {
   for (const key of Object.keys(obj)) {
     const value = obj[key];
-    const path = prefix ? `${prefix}.${key}` : key;
+    const segments = [...prefix, key];
     if (typeof value === 'function') {
-      out.set(path, value as (...args: unknown[]) => unknown);
+      out.set(segments.join('.'), segments);
     } else if (value !== null && typeof value === 'object' && !Array.isArray(value)) {
-      flattenLeaves(value as Record<string, unknown>, path, out);
+      flattenLeafPaths(value as Record<string, unknown>, segments, out);
     }
   }
+}
+
+function resolveLeaf(
+  actions: Record<string, unknown>,
+  segments: readonly string[]
+): (...args: unknown[]) => unknown {
+  let current: unknown = actions;
+  for (const segment of segments) {
+    if (current === null || typeof current !== 'object') {
+      throw new Error(`dispatch: path "${segments.join('.')}" no longer resolves on store.actions`);
+    }
+    current = (current as Record<string, unknown>)[segment];
+  }
+  if (typeof current !== 'function') {
+    throw new Error(`dispatch: path "${segments.join('.')}" is not a function on store.actions`);
+  }
+  return current as (...args: unknown[]) => unknown;
 }
 
 // ── Factory ──────────────────────────────────────────────────────────────────
@@ -156,24 +179,25 @@ export function createStoreDispatch<TSnapshot, TMethods extends object, TContext
     readonly domain?: readonly string[] | true | undefined;
   }
 ): StoreDispatch<TMethods> {
-  const leaves = new Map<string, (...args: unknown[]) => unknown>();
-  flattenLeaves(store.actions as unknown as Record<string, unknown>, '', leaves);
+  const leafPaths = new Map<string, readonly string[]>();
+  flattenLeafPaths(store.actions as unknown as Record<string, unknown>, [], leafPaths);
 
   const allowed: Set<string> | null =
     options === undefined
       ? null
       : options.domain === undefined || options.domain === true
-        ? new Set(leaves.keys())
+        ? new Set(leafPaths.keys())
         : new Set(options.domain);
 
   return function dispatch(action: string, ...args: unknown[]): unknown {
     if (allowed !== null && !allowed.has(action)) {
       throw new Error(`dispatch: action "${action}" is not in the allowed set`);
     }
-    const fn = leaves.get(action);
-    if (fn === undefined) {
+    const segments = leafPaths.get(action);
+    if (segments === undefined) {
       throw new Error(`dispatch: unknown action "${action}"`);
     }
+    const fn = resolveLeaf(store.actions as unknown as Record<string, unknown>, segments);
     return fn(...args);
   } as StoreDispatch<TMethods>;
 }

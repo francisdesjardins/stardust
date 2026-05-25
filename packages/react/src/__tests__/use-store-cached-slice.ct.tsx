@@ -3,6 +3,7 @@ import {
   AutoRefreshHarness,
   MultiSubscriberHarness,
   SelectorHarness,
+  UnregisteredSliceHarness,
 } from './use-store-cached-slice/harnesses.story';
 
 test.describe('useStoreCachedSlice', () => {
@@ -58,6 +59,18 @@ test.describe('useStoreCachedSlice', () => {
       const component = await mount(<SelectorHarness />);
       // onExpire returns 'hello'; selector uppercases it.
       await expect(component.getByTestId('upper')).toHaveText('HELLO');
+    });
+  });
+
+  test.describe('unregistered slice', () => {
+    test('throws a clear error when no Cached instance is registered for the path', async ({
+      mount,
+    }) => {
+      const component = await mount(<UnregisteredSliceHarness />);
+      // The error boundary surfaces the hook's thrown Error message.
+      await expect(component).toContainText(
+        'useStoreCachedSlice: no Cached instance registered for path "data"'
+      );
     });
   });
 });

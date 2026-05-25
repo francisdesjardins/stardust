@@ -235,8 +235,16 @@ export function PeekingStar() {
   return (
     <Box
       key={boxKey}
-      aria-hidden
+      role="button"
+      tabIndex={0}
+      aria-label="Dismiss star"
       onClick={handleClick}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          handleClick();
+        }
+      }}
       onAnimationEnd={(e) => {
         // Guard against bubbled events from children (StardustStar may animate internally)
         const expected = flung ? flingAnimName : animName;

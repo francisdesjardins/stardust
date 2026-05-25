@@ -465,15 +465,15 @@ Cache a slice of the store — root or nested — with observable cache status. 
 
 **Methods**
 
-| Method                             | Description                                                                                                                                                                                         |
-| ---------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `get()`                            | Returns the current `CachedState<TValue>`.                                                                                                                                                          |
-| `set(data, expiresAt?)`            | Writes `cachedFresh(data, expiresAt)`. Skips the store write when equal (via `equals`) and no `expiresAt` is given; always rewrites when `expiresAt` is set to reset the TTL.                       |
-| `expire()`                         | Manually transitions `fresh → expired`. No-op if not in `'fresh'` state.                                                                                                                            |
-| `refresh(fetcher, options?)`       | Calls `fetcher(current)`, transitions `pending → fresh`. Single-flight: concurrent callers share one execution.                                                                                     |
-| `refreshIfExpired(fetcher, opts?)` | Same as `refresh()` but only runs when status is `'expired'`. Returns `undefined` otherwise.                                                                                                        |
-| `startAutoRefresh({ interval })`   | Arms the auto-refresh cycle. `interval` (ms) is stamped as `expiresAt` on each refreshed value and used as the retry delay after rejection. If already `'expired'`, triggers the fetch immediately. |
-| `stopAutoRefresh()`                | Disables auto-fetch on expire. The `'fresh' → 'expired'` timer keeps firing — expiry stays observable. Call `expire()` explicitly to also cancel the pending timer.                                 |
+| Method                                | Description                                                                                                                                                                                                                                                              |
+| ------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `get()`                               | Returns the current `CachedState<TValue>`.                                                                                                                                                                                                                               |
+| `set(data, expiresAt?)`               | Writes `cachedFresh(data, expiresAt)`. Skips the store write when equal (via `equals`) and no `expiresAt` is given; always rewrites when `expiresAt` is set to reset the TTL.                                                                                            |
+| `expire()`                            | Manually transitions `fresh → expired`. No-op if not in `'fresh'` state.                                                                                                                                                                                                 |
+| `refresh(fetcher, options?)`          | Calls `fetcher(current)`, transitions `pending → fresh`. Single-flight: concurrent callers share one execution.                                                                                                                                                          |
+| `refreshIfExpired(fetcher, opts?)`    | Same as `refresh()` but only runs when status is `'expired'`. Returns `undefined` otherwise.                                                                                                                                                                             |
+| `startAutoRefresh({ expiresAfter? })` | Arms the auto-refresh cycle. `expiresAfter` (ms) is stamped as `expiresAt` on each refreshed value and used as the retry delay after rejection; falls back to the constructor-level `expiresAfter` when omitted. If already `'expired'`, triggers the fetch immediately. |
+| `stopAutoRefresh()`                   | Disables auto-fetch on expire. The `'fresh' → 'expired'` timer keeps firing — expiry stays observable. Call `expire()` explicitly to also cancel the pending timer.                                                                                                      |
 
 **Constructor options — `CachedOptions`**
 
@@ -484,7 +484,8 @@ Cache a slice of the store — root or nested — with observable cache status. 
 | `keepPreviousData` | `true`                                                             | —           | Keep the current value visible while the refresh is in-flight (`CachedPending.data = previous`). Forbids `placeholder`.                                                              |
 | `placeholder`      | `TValue`                                                           | —           | Written as `CachedPending.data` before the fetch begins when `keepPreviousData` is absent/`false`. Acts as the helper-level default for both `refresh()` and auto-refresh.           |
 | `equals`           | `(a: TValue, b: TValue) => boolean`                                | `Object.is` | Skip the store write when the new value is equal to the current. For object snapshots, prefer `shallowEqual` — every fetch returns a new reference so `Object.is` is always `false`. |
-| `refreshOnExpire`  | `(current: TValue \| undefined, api: StoreApi) => Promise<TValue>` | —           | Called automatically each expiration cycle by `startAutoRefresh({ interval })`. Must return the new value — the helper writes `cachedFresh` and reschedules the timer.               |
+| `onExpire`         | `(current: TValue \| undefined, api: StoreApi) => Promise<TValue>` | —           | Called automatically each expiration cycle by `startAutoRefresh()`. Must return the new value — the helper writes `cachedFresh` and reschedules the timer.                           |
+| `expiresAfter`     | `number`                                                           | —           | Default TTL (ms) used by `startAutoRefresh()` when its own `expiresAfter` is omitted. Stamps `expiresAt = Date.now() + expiresAfter` on each refreshed value.                        |
 
 **Per-call options — `CachedRefreshOptions`** (passed to `refresh()` / `refreshIfExpired()`)
 
@@ -512,20 +513,20 @@ const itemStore = createStore(cachedFresh<Item[]>([]), (api) => ({
   actions: {
     cache: createCachedSlice(api, {
       placeholder: [],
-      refreshOnExpire: async (current, storeApi) => storeApi.getContext().fetchItems(),
+      onExpire: async (current, storeApi) => storeApi.getContext().fetchItems(),
     }),
   },
 }));
 
-// Arm auto-refresh with a 60 s interval (stamps expiresAt on each result)
-itemStore.actions.cache.startAutoRefresh({ interval: TTL });
+// Arm auto-refresh with a 60 s TTL (stamps expiresAt on each result)
+itemStore.actions.cache.startAutoRefresh({ expiresAfter: TTL });
 
 // Sub-slice — profile is a nested CachedState<Profile>
 const appStore = createStore({ profile: cachedFresh({ name: 'Alice' }), version: 1 }, (api) => ({
   actions: {
     profileCache: createCachedSlice(api, 'profile', {
       keepPreviousData: true,
-      refreshOnExpire: async (current, storeApi) => storeApi.getContext().fetchProfile(),
+      onExpire: async (current, storeApi) => storeApi.getContext().fetchProfile(),
     }),
   },
 }));
@@ -539,7 +540,7 @@ if (profileState.status === 'fresh') {
 }
 
 // Arm auto-refresh; stop on cleanup
-appStore.actions.profileCache.startAutoRefresh({ interval: TTL });
+appStore.actions.profileCache.startAutoRefresh({ expiresAfter: TTL });
 // on unmount:
 appStore.actions.profileCache.stopAutoRefresh();
 

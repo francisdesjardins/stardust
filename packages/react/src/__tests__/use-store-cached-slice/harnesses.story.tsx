@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { Component, useState, type ReactNode } from 'react';
 import {
   createCachedSlice,
   createStore,
@@ -142,5 +142,41 @@ export function SelectorHarness() {
     <div>
       <span data-testid="upper">{upper}</span>
     </div>
+  );
+}
+
+// ── Unregistered-slice harness ────────────────────────────────────────────────
+// Store has a CachedState field at runtime but no createCachedSlice call in its
+// builder, so getCachedSliceInstance returns undefined and the hook must throw.
+
+const unregisteredInitial: { data: CachedState<string> } = { data: cachedIdle };
+const unregisteredStore = createStore(unregisteredInitial);
+
+class CaptureError extends Component<{ children: ReactNode }, { message: string | undefined }> {
+  constructor(props: { children: ReactNode }) {
+    super(props);
+    this.state = { message: undefined };
+  }
+  static getDerivedStateFromError(error: unknown): { message: string } {
+    return { message: error instanceof Error ? error.message : String(error) };
+  }
+  override render(): ReactNode {
+    if (this.state.message !== undefined) {
+      return <span data-testid="caught">{this.state.message}</span>;
+    }
+    return this.props.children;
+  }
+}
+
+function UnregisteredSubscriber() {
+  const state = useStoreCachedSlice(unregisteredStore, 'data');
+  return <span>{state.status}</span>;
+}
+
+export function UnregisteredSliceHarness() {
+  return (
+    <CaptureError>
+      <UnregisteredSubscriber />
+    </CaptureError>
   );
 }

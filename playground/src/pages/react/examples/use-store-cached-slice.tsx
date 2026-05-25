@@ -172,7 +172,7 @@ export function UseStoreCachedSliceExample() {
         <Typography variant="caption" color="text.secondary">
           Auto-fetches on mount (idle → expired → onExpire). Refreshes every 10 s. Open the browser
           console with{' '}
-          <code>localStorage.setItem(&apos;stardust:log=api&apos;, &apos;1&apos;)</code> to see
+          <code>localStorage.setItem(&apos;stardust:log&apos;, &apos;store:api&apos;)</code> to see
           debug logs. The typed selector helper also exposes `queryState.data` as
           <code>{queryState.data?.name ?? 'null'}</code>.
         </Typography>
