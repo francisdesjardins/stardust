@@ -377,14 +377,17 @@ export function createStore<
   TContext = never,
 >(
   initialSnapshot: TSnapshot,
-  methodsOrOptions?:
-    | ((api: StoreApi<TSnapshot, TContext>) => { readonly actions: TMethods })
-    | StoreSubscriptionOptions<TSnapshot, TContext>,
+  methodsOrOptions?: unknown,
   options?: StoreSubscriptionOptions<TSnapshot, TContext>
 ): Store<TSnapshot, TMethods, TContext> | ActionlessStore<TSnapshot, TContext> {
-  const methods = typeof methodsOrOptions === 'function' ? methodsOrOptions : undefined;
+  const methods =
+    typeof methodsOrOptions === 'function'
+      ? (methodsOrOptions as (api: StoreApi<TSnapshot, TContext>) => { readonly actions: TMethods })
+      : undefined;
   const resolvedOptions: StoreSubscriptionOptions<TSnapshot, TContext> | undefined =
-    typeof methodsOrOptions === 'function' ? options : methodsOrOptions;
+    typeof methodsOrOptions === 'function'
+      ? options
+      : (methodsOrOptions as StoreSubscriptionOptions<TSnapshot, TContext> | undefined);
   const clone: (value: TSnapshot) => TSnapshot = resolvedOptions?.deepClone ?? structuredClone;
   let resetSnapshot = clone(initialSnapshot);
   const sub = createStoreSubscription(
