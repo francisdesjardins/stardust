@@ -33,32 +33,32 @@ const ARRAY_INITIAL: WithArray = {
 
 group('Store — getByPath / setByPath', () => {
   bench('getByPath("count")', function* () {
-    const store = createStore({ ...FLAT_INITIAL }, () => ({ actions: {} }));
+    const store = createStore({ ...FLAT_INITIAL });
     yield () => store.getByPath('count');
   });
 
   bench('getByPath("user.address.city")', function* () {
-    const store = createStore(structuredClone(NESTED_INITIAL), () => ({ actions: {} }));
+    const store = createStore(structuredClone(NESTED_INITIAL));
     yield () => store.getByPath('user.address.city');
   });
 
   bench('getByPath("phones[0].label")', function* () {
-    const store = createStore(structuredClone(ARRAY_INITIAL), () => ({ actions: {} }));
+    const store = createStore(structuredClone(ARRAY_INITIAL));
     yield () => store.getByPath('phones[0].label');
   });
 
   bench('setByPath("count", 42)', function* () {
-    const store = createStore({ ...FLAT_INITIAL }, () => ({ actions: {} }));
+    const store = createStore({ ...FLAT_INITIAL });
     yield () => store.setByPath('count', 42);
   });
 
   bench('setByPath("user.address.city")', function* () {
-    const store = createStore(structuredClone(NESTED_INITIAL), () => ({ actions: {} }));
+    const store = createStore(structuredClone(NESTED_INITIAL));
     yield () => store.setByPath('user.address.city', 'Vancouver');
   });
 
   bench('setByPath("phones[0].label")', function* () {
-    const store = createStore(structuredClone(ARRAY_INITIAL), () => ({ actions: {} }));
+    const store = createStore(structuredClone(ARRAY_INITIAL));
     yield () => store.setByPath('phones[0].label', 'work');
   });
 });

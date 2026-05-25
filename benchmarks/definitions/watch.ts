@@ -77,7 +77,7 @@ group('watch', () => {
   });
 
   bench('watch subscribe + unsubscribe', function* () {
-    const store = createStore({ count: 0 }, () => ({ actions: {} }));
+    const store = createStore({ count: 0 });
     yield () => {
       const unsub = watch(
         store,

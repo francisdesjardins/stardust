@@ -153,7 +153,7 @@ group('createDerivedStore', () => {
   });
 
   bench('subscribe + unsubscribe', function* () {
-    const counter = createStore({ count: 0 }, () => ({ actions: {} }));
+    const counter = createStore({ count: 0 });
     const derived = createDerivedStore([counter], (c) => c.count);
     yield () => {
       const unsub = derived.subscribe(() => {});

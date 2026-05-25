@@ -53,7 +53,7 @@ group('End-to-end: store + listeners', () => {
   });
 
   bench('setByPath + 10 listeners nested', function* () {
-    const store = createStore(structuredClone(NESTED_INITIAL), () => ({ actions: {} }));
+    const store = createStore(structuredClone(NESTED_INITIAL));
     for (let i = 0; i < 10; i++) {
       store.subscribe(() => {});
     }

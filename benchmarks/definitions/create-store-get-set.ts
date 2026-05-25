@@ -24,7 +24,7 @@ const NESTED_INITIAL: Nested = {
 
 group('createStore — get / set', () => {
   bench('get() flat', function* () {
-    const store = createStore({ ...FLAT_INITIAL }, () => ({ actions: {} }));
+    const store = createStore({ ...FLAT_INITIAL });
     yield () => store.getSnapshot();
   });
 
@@ -65,18 +65,18 @@ group('createStore — get / set', () => {
   });
 
   bench('reset()', function* () {
-    const store = createStore(structuredClone(NESTED_INITIAL), () => ({ actions: {} }));
+    const store = createStore(structuredClone(NESTED_INITIAL));
     yield () => store.reset();
   });
 
   bench('reset(newSnapshot)', function* () {
-    const store = createStore(structuredClone(NESTED_INITIAL), () => ({ actions: {} }));
+    const store = createStore(structuredClone(NESTED_INITIAL));
     const next = structuredClone(NESTED_INITIAL);
     yield () => store.reset(next);
   });
 
   bench('reset(updater fn)', function* () {
-    const store = createStore(structuredClone(NESTED_INITIAL), () => ({ actions: {} }));
+    const store = createStore(structuredClone(NESTED_INITIAL));
     yield () => store.reset((initial) => ({ ...initial, user: { ...initial.user, name: 'Bob' } }));
   });
 });

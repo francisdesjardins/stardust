@@ -14,7 +14,7 @@ const FLAT_INITIAL: Flat = { count: 0, label: 'bench', active: true };
 
 group('batch', () => {
   bench('batch 10× setByPath flat', function* () {
-    const store = createStore({ ...FLAT_INITIAL, a: 0, b: 0, c: 0 }, () => ({ actions: {} }));
+    const store = createStore({ ...FLAT_INITIAL, a: 0, b: 0, c: 0 });
     yield () => {
       store.batch(() => {
         for (let i = 0; i < 10; i++) {
@@ -25,7 +25,7 @@ group('batch', () => {
   });
 
   bench('10× setByPath unbatched + 1 listener', function* () {
-    const store = createStore({ ...FLAT_INITIAL }, () => ({ actions: {} }));
+    const store = createStore({ ...FLAT_INITIAL });
     store.subscribe(() => {});
     yield () => {
       for (let i = 0; i < 10; i++) {
@@ -35,7 +35,7 @@ group('batch', () => {
   });
 
   bench('batch 10× setByPath + 1 listener', function* () {
-    const store = createStore({ ...FLAT_INITIAL }, () => ({ actions: {} }));
+    const store = createStore({ ...FLAT_INITIAL });
     store.subscribe(() => {});
     yield () => {
       store.batch(() => {
@@ -47,7 +47,7 @@ group('batch', () => {
   });
 
   bench('batch 10× setByPath + 10 listeners', function* () {
-    const store = createStore({ ...FLAT_INITIAL }, () => ({ actions: {} }));
+    const store = createStore({ ...FLAT_INITIAL });
     for (let i = 0; i < 10; i++) {
       store.subscribe(() => {});
     }
