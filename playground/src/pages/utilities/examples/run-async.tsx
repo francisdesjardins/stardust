@@ -22,7 +22,9 @@ const fakeLoad = (shouldFail: boolean): Promise<Profile> =>
 
 // ── Store ─────────────────────────────────────────────────────────────────────
 
-const profileStore = createStore({ profile: asyncIdle as AsyncState<Profile> }, ({ update }) => ({
+const initial: { profile: AsyncState<Profile> } = { profile: asyncIdle };
+
+const profileStore = createStore(initial, ({ update }) => ({
   actions: {
     load(shouldFail = false) {
       void runAsync(
