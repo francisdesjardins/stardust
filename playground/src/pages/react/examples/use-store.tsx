@@ -10,27 +10,28 @@ const initialSnapshot = { todos: [] as Todo[], nextId: 1 };
 
 const todosOps = createArrayMethods<Todo>({ id: 0, text: '', done: false });
 const todoStore = createStore(initialSnapshot, (api) => {
-  const { batch, get, setByPath } = api;
+  const { batch, get, setByPath, reset } = api;
 
   const todos = todosOps.mount(api, 'todos');
 
   return {
-    actions: {
-      todos: {
-        add(text: string) {
-          batch(() => {
-            const snapshot = get();
-            todos.add({ text, done: false, id: snapshot.nextId });
-            setByPath('nextId', snapshot.nextId + 1);
-          });
-        },
-        toggle(id: number) {
-          todos.update(
-            (t) => t.id === id,
-            (s) => ({ done: !s.done })
-          );
-        },
+    todos: {
+      add(text: string) {
+        batch(() => {
+          const snapshot = get();
+          todos.add({ text, done: false, id: snapshot.nextId });
+          setByPath('nextId', snapshot.nextId + 1);
+        });
       },
+      toggle(id: number) {
+        todos.update(
+          (t) => t.id === id,
+          (s) => ({ done: !s.done })
+        );
+      },
+    },
+    reset() {
+      reset();
     },
   };
 });
@@ -52,7 +53,7 @@ export function UseStoreExample() {
             variant="outlined"
             size="small"
             onClick={() => {
-              todoStore.actions.todos.add(p);
+              todoStore.todos.add(p);
             }}
           >
             + {p}
@@ -79,7 +80,7 @@ export function UseStoreExample() {
             variant={t.done ? 'filled' : 'outlined'}
             color={t.done ? 'primary' : 'default'}
             onClick={() => {
-              todoStore.actions.todos.toggle(t.id);
+              todoStore.todos.toggle(t.id);
             }}
           />
         ))}

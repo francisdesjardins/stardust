@@ -24,18 +24,19 @@ const fakeLoad = (shouldFail: boolean): Promise<Profile> =>
 
 const initial: { profile: AsyncState<Profile> } = { profile: asyncIdle };
 
-const profileStore = createStore(initial, ({ update }) => ({
-  actions: {
-    load(shouldFail = false) {
-      void runAsync(
-        () => fakeLoad(shouldFail),
-        (state) => {
-          update((d) => {
-            d.profile = state;
-          });
-        }
-      );
-    },
+const profileStore = createStore(initial, ({ update, reset }) => ({
+  load(shouldFail = false) {
+    void runAsync(
+      () => fakeLoad(shouldFail),
+      (state) => {
+        update((d) => {
+          d.profile = state;
+        });
+      }
+    );
+  },
+  reset() {
+    reset();
   },
 }));
 
@@ -58,7 +59,7 @@ export function RunAsyncExample() {
           size="small"
           disabled={profile.status === 'pending'}
           onClick={() => {
-            profileStore.actions.load(false);
+            profileStore.load(false);
           }}
         >
           Load
@@ -69,7 +70,7 @@ export function RunAsyncExample() {
           color="error"
           disabled={profile.status === 'pending'}
           onClick={() => {
-            profileStore.actions.load(true);
+            profileStore.load(true);
           }}
         >
           Load (fail)

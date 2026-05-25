@@ -12,14 +12,13 @@ import { createStoreContext } from '@stardust/react';
 const DomainResetCtx = createStoreContext(
   (initial: { count: number }) =>
     createStore(initial, ({ set, get }) => ({
-      actions: {
-        increment() {
-          set({ count: get().count + 1 });
-        },
-        reset() {
-          set({ count: 0 });
-        },
+      increment() {
+        set({ count: get().count + 1 });
       },
+      reset() {
+        set({ count: 0 });
+      },
+      
     })),
   { name: 'DomainReset' }
 );
@@ -30,7 +29,7 @@ function DomainResetInner() {
   return (
     <div>
       <span data-testid="count">{count}</span>
-      <button onClick={store.actions.reset}>Reset</button>
+      <button onClick={store.reset}>Reset</button>
     </div>
   );
 }

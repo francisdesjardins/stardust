@@ -10,14 +10,13 @@ function makeStore() {
   return createStore<State, { setX(n: number): void; setUnrelated(s: string): void }>(
     { x: 0, y: 0, unrelated: 'a' },
     ({ setByPath }) => ({
-      actions: {
-        setX(n: number) {
-          setByPath('x', n);
-        },
-        setUnrelated(s: string) {
-          setByPath('unrelated', s);
-        },
+      setX(n: number) {
+        setByPath('x', n);
       },
+      setUnrelated(s: string) {
+        setByPath('unrelated', s);
+      },
+      
     })
   );
 }
@@ -50,14 +49,14 @@ export function EqualsHarness() {
       <span data-testid="unrelated">{unrelated}</span>
       <button
         onClick={() => {
-          equalsStore.actions.setX(slice.x + 1);
+          equalsStore.setX(slice.x + 1);
         }}
       >
         Increment X
       </button>
       <button
         onClick={() => {
-          equalsStore.actions.setUnrelated('changed');
+          equalsStore.setUnrelated('changed');
         }}
       >
         Change Unrelated
@@ -80,10 +79,10 @@ export function EqualsRenderTrackHarness() {
     <RenderTracker
       x={slice.x}
       onIncrementX={() => {
-        equalsRenderTrackStore.actions.setX(slice.x + 1);
+        equalsRenderTrackStore.setX(slice.x + 1);
       }}
       onChangeUnrelated={() => {
-        equalsRenderTrackStore.actions.setUnrelated('changed');
+        equalsRenderTrackStore.setUnrelated('changed');
       }}
     />
   );

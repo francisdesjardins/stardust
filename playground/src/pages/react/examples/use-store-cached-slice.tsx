@@ -39,23 +39,22 @@ const apiStore = createStore(initialSnapshot, (api) => {
   });
 
   return {
-    actions: {
-      forceRefresh: async () => {
-        await cached.refresh(async (current) => {
-          await new Promise((resolve) => setTimeout(resolve, 500));
-          const id = (current?.id ?? 0) + 1;
-          return { id, name: `User ${String(id)}`, email: `user${String(id)}@example.com` };
-        });
-      },
-      expire: () => {
-        api.run('example:expire', () => {
-          cached.expire();
-        });
-      },
-      reset: () => {
-        api.setByPath('data.cached', cachedIdle);
-      },
+    forceRefresh: async () => {
+      await cached.refresh(async (current) => {
+        await new Promise((resolve) => setTimeout(resolve, 500));
+        const id = (current?.id ?? 0) + 1;
+        return { id, name: `User ${String(id)}`, email: `user${String(id)}@example.com` };
+      });
     },
+    expire: () => {
+      api.run('example:expire', () => {
+        cached.expire();
+      });
+    },
+    reset: () => {
+      api.setByPath('data.cached', cachedIdle);
+    },
+    
   };
 });
 
@@ -141,7 +140,7 @@ export function UseStoreCachedSliceExample() {
             size="small"
             disabled={cache.status === 'pending'}
             onClick={() => {
-              void apiStore.actions.forceRefresh();
+              void apiStore.forceRefresh();
             }}
           >
             Force Refresh
@@ -151,7 +150,7 @@ export function UseStoreCachedSliceExample() {
             size="small"
             disabled={cache.status !== 'fresh'}
             onClick={() => {
-              apiStore.actions.expire();
+              apiStore.expire();
             }}
           >
             Expire
@@ -162,7 +161,7 @@ export function UseStoreCachedSliceExample() {
             color="error"
             disabled={cache.status === 'idle'}
             onClick={() => {
-              apiStore.actions.reset();
+              apiStore.reset();
             }}
           >
             Reset

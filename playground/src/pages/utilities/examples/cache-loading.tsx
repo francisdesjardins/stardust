@@ -19,15 +19,13 @@ const sleep = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
 
 // Two independent stores — one per loading strategy so both are observable simultaneously.
 const storePlaceholder = createStore(cachedFresh(initial), (api) => ({
-  actions: {
-    cache: createCachedSlice(api),
-  },
+  cache: createCachedSlice(api),
+  
 }));
 
 const storeKeepPrev = createStore(cachedFresh(initial), (api) => ({
-  actions: {
-    cache: createCachedSlice(api),
-  },
+  cache: createCachedSlice(api),
+  
 }));
 
 connectDebugLog(storePlaceholder, { name: 'cache-loading:placeholder' });
@@ -46,7 +44,7 @@ export function CacheLoadingExample() {
   const dataB = getCachedData(stateB) ?? initial;
 
   async function refreshA() {
-    await storePlaceholder.actions.cache.refresh(
+    await storePlaceholder.cache.refresh(
       async (prev) => {
         await sleep(1_200);
         return nextProfile(prev);
@@ -56,7 +54,7 @@ export function CacheLoadingExample() {
   }
 
   async function refreshB() {
-    await storeKeepPrev.actions.cache.refresh(
+    await storeKeepPrev.cache.refresh(
       async (prev) => {
         await sleep(1_200);
         return nextProfile(prev);

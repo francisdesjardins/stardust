@@ -4,11 +4,10 @@ import { createStore, shallowEqual, watch } from '..';
 test.describe('watch', () => {
   test('bare callback fires with (next, prev) on mutation', () => {
     const store = createStore({ count: 0 }, ({ set }) => ({
-      actions: {
-        setCount(n: number) {
-          set({ count: n });
-        },
+      setCount(n: number) {
+        set({ count: n });
       },
+      
     }));
 
     const calls: Array<[{ count: number }, { count: number }]> = [];
@@ -16,8 +15,8 @@ test.describe('watch', () => {
       calls.push([next, prev]);
     });
 
-    store.actions.setCount(1);
-    store.actions.setCount(2);
+    store.setCount(1);
+    store.setCount(2);
 
     expect(calls.length).toBe(2);
     expect(calls[0]).toEqual([{ count: 1 }, { count: 0 }]);
@@ -26,14 +25,13 @@ test.describe('watch', () => {
 
   test('selector fires only when the selected slice changes', () => {
     const store = createStore({ count: 0, label: 'a' }, ({ set }) => ({
-      actions: {
-        setCount(n: number) {
-          set({ count: n, label: 'a' });
-        },
-        setLabel(l: string) {
-          set({ count: 0, label: l });
-        },
+      setCount(n: number) {
+        set({ count: n, label: 'a' });
       },
+      setLabel(l: string) {
+        set({ count: 0, label: l });
+      },
+      
     }));
 
     const calls: number[] = [];
@@ -45,27 +43,26 @@ test.describe('watch', () => {
       }
     );
 
-    store.actions.setLabel('b'); // label changes, count stays 0 — no callback
-    store.actions.setCount(5); // count changes — callback fires
+    store.setLabel('b'); // label changes, count stays 0 — no callback
+    store.setCount(5); // count changes — callback fires
 
     expect(calls).toEqual([5]);
   });
 
   test('equals option suppresses spurious callbacks', () => {
     const store = createStore({ x: 1, y: 2 }, ({ update }) => ({
-      actions: {
-        touch() {
-          update(() => {
-            // no-op but update() clones, producing a new object ref
-          });
-        },
-        move(x: number, y: number) {
-          update((d) => {
-            d.x = x;
-            d.y = y;
-          });
-        },
+      touch() {
+        update(() => {
+          // no-op but update() clones, producing a new object ref
+        });
       },
+      move(x: number, y: number) {
+        update((d) => {
+          d.x = x;
+          d.y = y;
+        });
+      },
+      
     }));
 
     const calls: Array<{ x: number; y: number }> = [];
@@ -78,8 +75,8 @@ test.describe('watch', () => {
       { equals: shallowEqual }
     );
 
-    store.actions.touch(); // same values, shallowEqual → suppressed
-    store.actions.move(10, 20); // different values → fires
+    store.touch(); // same values, shallowEqual → suppressed
+    store.move(10, 20); // different values → fires
 
     expect(calls.length).toBe(1);
     expect(calls[0]).toEqual({ x: 10, y: 20 });
@@ -87,11 +84,10 @@ test.describe('watch', () => {
 
   test('returned unsubscribe stops future callbacks', () => {
     const store = createStore({ count: 0 }, ({ set }) => ({
-      actions: {
-        setCount(n: number) {
-          set({ count: n });
-        },
+      setCount(n: number) {
+        set({ count: n });
       },
+      
     }));
 
     const calls: number[] = [];
@@ -103,15 +99,15 @@ test.describe('watch', () => {
       }
     );
 
-    store.actions.setCount(1);
+    store.setCount(1);
     unsub();
-    store.actions.setCount(2); // should not fire
+    store.setCount(2); // should not fire
 
     expect(calls).toEqual([1]);
   });
 
   test('does not fire before the first mutation', () => {
-    const store = createStore({ count: 0 }, () => ({ actions: {} }));
+    const store = createStore({ count: 0 });
 
     const calls: number[] = [];
     watch(

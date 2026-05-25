@@ -6,14 +6,13 @@ import { render } from 'solid-js/web';
 import { SolidCounter } from './solid-counter.solid';
 
 const sharedStore = createStore({ count: 0 }, ({ set, get }) => ({
-  actions: {
-    increment() {
-      set({ count: get().count + 1 });
-    },
-    decrement() {
-      set({ count: get().count - 1 });
-    },
+  increment() {
+    set({ count: get().count + 1 });
   },
+  decrement() {
+    set({ count: get().count - 1 });
+  },
+  
 }));
 
 connectDebugLog(sharedStore, { name: 'shared-counter' });
@@ -55,7 +54,7 @@ export function SolidCounterWrapper() {
           variant="outlined"
           size="small"
           onClick={() => {
-            sharedStore.actions.decrement();
+            sharedStore.decrement();
           }}
         >
           −
@@ -67,7 +66,7 @@ export function SolidCounterWrapper() {
           variant="outlined"
           size="small"
           onClick={() => {
-            sharedStore.actions.increment();
+            sharedStore.increment();
           }}
         >
           +

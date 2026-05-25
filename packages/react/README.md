@@ -57,7 +57,7 @@ const user = useStore(store, (s) => ({ ...s.user }), shallowEqual);
 Selector functions receive the snapshot **and** the full store, so domain methods are accessible without closing over the store:
 
 ```tsx
-const total = useStore(pricingStore, (s, store) => store.actions.computeTotal());
+const total = useStore(pricingStore, (s, store) => store.computeTotal());
 ```
 
 ### `useStoreCachedSlice(store, path, { select?, equals? })`

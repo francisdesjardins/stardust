@@ -66,11 +66,15 @@ Powered by [mitata](https://github.com/evanwashere/mitata). Results written to `
 
 ### Core primitives (`packages/core/src/`)
 
-`createStore()` produces a snapshot object + domain methods. The low-level plumbing (`subscribe` / `getSnapshot` / `emit` / `notify`) lives in `createStoreSubscription()`, which both `createStore` and `createDerivedStore` build on.
+`createStore()` returns one of two store kinds depending on whether a builder is provided. The low-level plumbing (`subscribe` / `getSnapshot` / `emit` / `notify`) lives in `createStoreSubscription()`, which both `createStore` and `createDerivedStore` build on.
 
-**Builder shape**: the factory callback must return `{ readonly actions: TMethods }`. Domain methods live at `store.actions.*`; built-ins (`set`, `update`, `reset`, `getSnapshot`, `getByPath`, `setByPath`, `batch`, `setContext`, `run`) remain flat on the store root.
+**`GenericStore`** — `createStore(initial)` (no builder). Exposes all built-ins (`set`, `update`, `setByPath`, `batch`, `reset`, `run`) directly at the store root, plus `subscribe`, `getSnapshot`, `listenerCount`, `getByPath`, `setContext`. Use for shared state cells (e.g. React context) where userland mutates directly.
 
-**Sibling method dispatch**: to call one domain method from another, assign all methods to a local `const self` inside the `actions` object and return it. TypeScript infers the full type; the forward reference is safe because methods are only ever invoked after construction:
+**`DomainStore`** — `createStore(initial, builder)`. The builder returns the domain methods **directly** (no `{ actions: ... }` wrapper). Methods are merged at the store root: `store.todos.add(...)` instead of `store.actions.todos.add(...)`. Mutation built-ins (`set`, `update`, `setByPath`, `batch`, `reset`, `run`) live **only** in the `api` parameter of the builder — they are not exposed on the public store, so every mutation flows through a named domain method. Only `subscribe`, `getSnapshot`, `listenerCount`, `getByPath`, `setContext` survive at the root alongside the domain methods.
+
+**Reserved keys on `DomainStore`** — userland method names cannot collide with the five technical keys (`subscribe`, `getSnapshot`, `listenerCount`, `getByPath`, `setContext`). The TypeScript signature enforces this and `createStore` also throws at construction for a defensive runtime check.
+
+**Sibling method dispatch**: to call one domain method from another, assign all methods to a local `const self` and return it directly. TypeScript infers the full type; the forward reference is safe because methods are only ever invoked after construction:
 
 ```ts
 createStore(init, ({ update }) => {
@@ -85,9 +89,38 @@ createStore(init, ({ update }) => {
       self.increment();
     },
   };
-  return { actions: self };
+  return self;
 });
 ```
+
+**Forwarding built-ins to userland**: mutation built-ins (`update`, `set`, `setByPath`, `batch`, `reset`, `run`) live only in the `api` parameter — they are not exposed on the public store. When userland wants external callers to be able to mutate without writing a wrapper-per-field, forward the built-in **explicitly** as a domain method:
+
+```ts
+// Userland chooses which built-ins to expose. Strong types are preserved
+// because `api.setByPath` is generic over the snapshot path type.
+const store = createStore(init, (api) => ({
+  setByPath: api.setByPath, // exposes typed path setter publicly
+  update: api.update, // exposes draft updater publicly
+  computeTotal() {
+    /* ... */
+  }, // named domain method alongside
+}));
+
+store.setByPath('user.name', 'Alice'); // typed + works
+store.update((d) => {
+  d.count += 1;
+}); // works
+```
+
+**Tradeoff**: a forwarded built-in logs under its generic name (`update`, `setByPath`) — less semantic granularity than a named domain method (`loadProfile`, `addToCart`) but no anemic wrapper code. Choose per built-in:
+
+- Need flexibility + generic surface (form builders, settings panels) → forward `api.setByPath` or `api.update`.
+- Want named actions in `connectDebugLog` output → write a named domain method that calls the built-in internally.
+- Both → both, in the same builder.
+
+The privacy default still holds: a built-in that is **not** forwarded is not callable externally — it's truly closure-private at runtime.
+
+**Internal discovery** — `createStore` attaches the domain methods reference to the store via a non-enumerable `DOMAIN_METHODS` symbol. Helpers (`createBoundActions`, `createStoreDispatch`, `connectDebugLog`) read this symbol to find the domain tree. The store root mirrors each top-level domain key as a getter/setter pair that delegates to the same slot, so wrappers installed after construction (e.g. by `connectDebugLog`) are visible at call time.
 
 Key relationships:
 
@@ -105,9 +138,9 @@ Key relationships:
   - `startAutoRefresh({ expiresAfter? })` sets `autoRefreshEnabled = true`, stores the recurring TTL (falling back to the constructor-level `expiresAfter`), and arms the cycle: it stamps `expiresAt = Date.now() + expiresAfter` on each refreshed value so subsequent cycles continue automatically. If the state is already `'expired'`, `onExpire` is triggered immediately. If the state is `'fresh'` with no `expiresAt`, the first expiry is scheduled after `expiresAfter` ms. `stopAutoRefresh()` sets `autoRefreshEnabled = false` — the fresh→expired timer continues to fire (expiry remains observable), but no fetch is triggered.
   - `keepPreviousData` and `placeholder` are mutually exclusive — enforced at the TypeScript level via a discriminated union on both `CachedOptions` and `CachedRefreshOptions`.
   - `onExpire` receives `(current: TValue | undefined, api)` and must return `Promise<TValue>`.
-- **`createStoreDispatch(store, options?)`** — function-based dispatch for string-path actions. Flattens nested domain methods into dot-notation paths (e.g. `'todos.add'`) and returns a function that routes calls by path: `dispatch('todos.add', text)`. Use the `domain` option to restrict which actions are callable — runtime error if a disallowed action is attempted. Useful for Redux-like patterns.
-- **`createBoundActions(store, options?)`** — object-shaped dispatch (alternative to `createStoreDispatch`). Returns an object mirroring the structure of `store.actions`, allowing method calls via property access: `actions.todos.add(text)` instead of `dispatch('todos.add', text)`. Supports the same `domain` option for restricting callable methods. Useful in React contexts where object method syntax is more ergonomic.
-- **`store.run(actionName, fn)`** — built-in that executes a mutation within a named action scope. Used by external code (watch callbacks, event handlers) to annotate mutations so `connectDebugLog` logs them under the given name instead of flagging an untracked mutation. When called inside a domain method the outer action name takes precedence.
+- **`createStoreDispatch(store, options?)`** — function-based dispatch for string-path actions. Reads the domain methods via the `DOMAIN_METHODS` symbol on the store, flattens them into dot-notation paths (e.g. `'todos.add'`) and returns a function that routes calls by path: `dispatch('todos.add', text)`. Use the `domain` option to restrict which actions are callable — runtime error if a disallowed action is attempted. Requires a `DomainStore`.
+- **`createBoundActions(store, options?)`** — object-shaped dispatch (alternative to `createStoreDispatch`). Returns an object mirroring the structure of the store's domain methods, allowing method calls via property access: `actions.todos.add(text)` instead of `dispatch('todos.add', text)`. Supports the same `domain` option for restricting callable methods. Requires a `DomainStore`.
+- **`api.run(actionName, fn)`** — available on the builder `api` for executing a mutation within a named action scope. When `connectDebugLog` is attached to a generic store, the action name appears in the log; on a domain store the wrapping happens at the domain-method boundary instead.
 - **`batch(fn)`** — increments a depth counter; listeners are deferred until depth returns to zero.
 
 All mutations short-circuit notification when `equals(prev, next)` returns `true` (default `Object.is`).
@@ -122,7 +155,7 @@ All mutations short-circuit notification when `equals(prev, next)` returns `true
 - Context is injected via `setContext()` before the `useSyncExternalStore` subscribe call, so store methods receive it synchronously from the first render.
 - Selector functions receive `(snapshot, store)` — the full store (domain methods included) is the second argument. `SnapshotOf<TStore>` extracts the snapshot type so TypeScript can infer it without a separate `TSnapshot` type param in the overloads.
 
-`createStoreContext()` wraps a factory in React Context. Each `Provider` mount creates a fresh store instance (via `useState` lazy initializer); the store is garbage-collected on unmount. An optional `onUnmount` hook handles explicit teardown of non-GC resources (timers, sockets). Default is `null` — do not pass `store.reset()` here as it resolves to any user-defined domain method of that name, not the built-in baseline restore.
+`createStoreContext()` wraps a factory in React Context. Each `Provider` mount creates a fresh store instance (via `useState` lazy initializer); the store is garbage-collected on unmount. An optional `onUnmount` hook handles explicit teardown of non-GC resources (timers, sockets). Default is `null` — the built-in `reset` is not exposed on a `DomainStore`, so define a domain `reset()` method if you need to teardown via reset.
 
 `useSuspenseStore()` implements the React Suspense protocol: throws a `Promise` while idle/pending, throws an `Error` when rejected, returns `T` when fulfilled. A `WeakMap` caches pending promises to avoid creating a new one per render.
 

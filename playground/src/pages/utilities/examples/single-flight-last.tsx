@@ -30,43 +30,44 @@ const searchStore = createStore(
     totalAborted: 0,
     totalResolved: 0,
   },
-  ({ update }) => ({
-    actions: {
-      setQuery(query: string) {
-        update((d) => {
-          const trimStart =
-            d.requests.length >= MAX_VISIBLE ? d.requests.length - MAX_VISIBLE + 1 : 0;
-          d.query = query;
-          d.results = [];
-          d.pending = true;
-          d.totalFired += 1;
-          d.totalAborted += 1;
-          d.requests = [...d.requests.slice(trimStart), { query, status: 'aborted' }];
-        });
+  ({ update, reset }) => ({
+    reset() {
+      reset();
+    },
+    setQuery(query: string) {
+      update((d) => {
+        const trimStart =
+          d.requests.length >= MAX_VISIBLE ? d.requests.length - MAX_VISIBLE + 1 : 0;
+        d.query = query;
+        d.results = [];
+        d.pending = true;
+        d.totalFired += 1;
+        d.totalAborted += 1;
+        d.requests = [...d.requests.slice(trimStart), { query, status: 'aborted' }];
+      });
 
-        void searchFlight(async (signal) => {
-          let results: string[];
-          try {
-            results = await fakeSearch(query, signal);
-          } catch (err) {
-            if (err instanceof Error && err.name !== 'AbortError') {
-              update((d) => {
-                d.pending = false;
-              });
-            }
-            return;
+      void searchFlight(async (signal) => {
+        let results: string[];
+        try {
+          results = await fakeSearch(query, signal);
+        } catch (err) {
+          if (err instanceof Error && err.name !== 'AbortError') {
+            update((d) => {
+              d.pending = false;
+            });
           }
+          return;
+        }
 
-          update((d) => {
-            d.results = results;
-            d.pending = false;
-            d.totalAborted -= 1;
-            d.totalResolved += 1;
-            const entry = d.requests.findLast((r) => r.query === query && r.status === 'aborted');
-            if (entry) entry.status = 'resolved';
-          });
+        update((d) => {
+          d.results = results;
+          d.pending = false;
+          d.totalAborted -= 1;
+          d.totalResolved += 1;
+          const entry = d.requests.findLast((r) => r.query === query && r.status === 'aborted');
+          if (entry) entry.status = 'resolved';
         });
-      },
+      });
     },
   })
 );
@@ -84,7 +85,7 @@ export function SingleFlightLastExample() {
         value={query}
         placeholder="type quickly to see aborts…"
         onChange={(e) => {
-          searchStore.actions.setQuery(e.target.value);
+          searchStore.setQuery(e.target.value);
         }}
         slotProps={{ input: { sx: { fontFamily: 'monospace' } } }}
       />

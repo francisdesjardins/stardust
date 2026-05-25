@@ -33,12 +33,11 @@ const store = createStore(
     lastVisit: new Date().toLocaleTimeString(),
   },
   (api) => ({
-    actions: {
-      profileCache: createCachedSlice(api, 'profile', {
-        keepPreviousData: true,
-        onExpire: fetchNextProfile,
-      }),
-    },
+    profileCache: createCachedSlice(api, 'profile', {
+      keepPreviousData: true,
+      onExpire: fetchNextProfile,
+    }),
+    
   })
 );
 
@@ -51,12 +50,12 @@ export function CacheNestedExample() {
 
   function startAuto() {
     setAutoRunning(true);
-    store.actions.profileCache.startAutoRefresh({ expiresAfter: EXPIRES_AFTER });
+    store.profileCache.startAutoRefresh({ expiresAfter: EXPIRES_AFTER });
   }
 
   function stopAuto() {
     setAutoRunning(false);
-    store.actions.profileCache.stopAutoRefresh();
+    store.profileCache.stopAutoRefresh();
   }
 
   return (
@@ -83,7 +82,7 @@ export function CacheNestedExample() {
           <Button
             variant="outlined"
             size="small"
-            onClick={() => void store.actions.profileCache.refresh(fetchNextProfile)}
+            onClick={() => void store.profileCache.refresh(fetchNextProfile)}
           >
             Refresh profile
           </Button>
@@ -92,7 +91,7 @@ export function CacheNestedExample() {
             size="small"
             color="warning"
             onClick={() => {
-              store.actions.profileCache.expire();
+              store.profileCache.expire();
             }}
           >
             Expire now

@@ -23,9 +23,9 @@ function idleAs<T>(): CachedState<T> {
 test.describe('createCachedSlice - root snapshot', () => {
   test('get() reads CachedState and set() writes cachedFresh', () => {
     const store = createStore(idleAs<{ count: number }>(), (api) => ({
-      actions: { cache: createCachedSlice(api, { keepPreviousData: true }) },
+      cache: createCachedSlice(api, { keepPreviousData: true }),
     }));
-    const cache = store.actions.cache;
+    const cache = store.cache;
 
     expect(cache.get()).toEqual(cachedIdle);
 
@@ -36,9 +36,9 @@ test.describe('createCachedSlice - root snapshot', () => {
 
   test('refresh() transitions through pending → fresh when keepPreviousData is true', async () => {
     const store = createStore(cachedFresh({ value: 'old' }), (api) => ({
-      actions: { cache: createCachedSlice(api, { keepPreviousData: true }) },
+      cache: createCachedSlice(api, { keepPreviousData: true }),
     }));
-    const cache = store.actions.cache;
+    const cache = store.cache;
 
     let resolveFetch: ((value: { value: string }) => void) | undefined;
     const promise = cache.refresh(
@@ -60,9 +60,9 @@ test.describe('createCachedSlice - root snapshot', () => {
 
   test('expire marks the cache expired and refreshIfExpired only fetches when expired', async () => {
     const store = createStore(cachedFresh({ value: 'old' }, Date.now() + 50), (api) => ({
-      actions: { cache: createCachedSlice(api) },
+      cache: createCachedSlice(api),
     }));
-    const cache = store.actions.cache;
+    const cache = store.cache;
 
     expect(cache.get().status).toBe('fresh');
 
@@ -93,16 +93,14 @@ test.describe('createCachedSlice - root snapshot', () => {
   test('expire auto-refresh does not fire at construction — timer starts only after startAutoRefresh()', async () => {
     let autoRefreshCount = 0;
     const store = createStore(cachedFresh({ value: 'old' }, Date.now() + 50), (api) => ({
-      actions: {
-        cache: createCachedSlice(api, {
-          onExpire: async () => {
-            autoRefreshCount += 1;
-            return Promise.resolve({ value: 'new' });
-          },
-        }),
-      },
+      cache: createCachedSlice(api, {
+        onExpire: async () => {
+          autoRefreshCount += 1;
+          return Promise.resolve({ value: 'new' });
+        },
+      }),
     }));
-    const cache = store.actions.cache;
+    const cache = store.cache;
 
     // Do NOT call startAutoRefresh() — auto-fetch must not fire.
     // Expiry timer DOES fire (to write cachedExpired) but no fetch happens.
@@ -116,16 +114,14 @@ test.describe('createCachedSlice - root snapshot', () => {
   test('stopAutoRefresh() keeps the expiry timer alive — cache still transitions to expired', async () => {
     let autoRefreshCount = 0;
     const store = createStore(cachedFresh({ value: 'old' }, Date.now() + 50), (api) => ({
-      actions: {
-        cache: createCachedSlice(api, {
-          onExpire: async () => {
-            autoRefreshCount += 1;
-            return Promise.resolve({ value: 'refreshed' });
-          },
-        }),
-      },
+      cache: createCachedSlice(api, {
+        onExpire: async () => {
+          autoRefreshCount += 1;
+          return Promise.resolve({ value: 'refreshed' });
+        },
+      }),
     }));
-    const cache = store.actions.cache;
+    const cache = store.cache;
 
     // Simulate disabling auto-refresh on mount (e.g. feature toggle off)
     cache.stopAutoRefresh();
@@ -147,16 +143,14 @@ test.describe('createCachedSlice - root snapshot', () => {
   test('startAutoRefresh() when already expired immediately triggers the fetch', async () => {
     let autoRefreshCount = 0;
     const store = createStore(cachedFresh({ value: 'old' }, Date.now() + 50), (api) => ({
-      actions: {
-        cache: createCachedSlice(api, {
-          onExpire: async () => {
-            autoRefreshCount += 1;
-            return Promise.resolve({ value: 'new' });
-          },
-        }),
-      },
+      cache: createCachedSlice(api, {
+        onExpire: async () => {
+          autoRefreshCount += 1;
+          return Promise.resolve({ value: 'new' });
+        },
+      }),
     }));
-    const cache = store.actions.cache;
+    const cache = store.cache;
 
     // Wait for cache to expire without auto-refresh armed
     await new Promise((resolve) => setTimeout(resolve, 100));
@@ -174,17 +168,15 @@ test.describe('createCachedSlice - root snapshot', () => {
   test('startAutoRefresh() when idle immediately triggers the fetch', async () => {
     let autoRefreshCount = 0;
     const store = createStore(idleAs<{ value: string }>(), (api) => ({
-      actions: {
-        cache: createCachedSlice(api, {
-          onExpire: async () => {
-            autoRefreshCount += 1;
-            return Promise.resolve({ value: 'new' });
-          },
-          expiresAfter: 50,
-        }),
-      },
+      cache: createCachedSlice(api, {
+        onExpire: async () => {
+          autoRefreshCount += 1;
+          return Promise.resolve({ value: 'new' });
+        },
+        expiresAfter: 50,
+      }),
     }));
-    const cache = store.actions.cache;
+    const cache = store.cache;
 
     expect(cache.get().status).toBe('idle');
 
@@ -200,20 +192,18 @@ test.describe('createCachedSlice - root snapshot', () => {
     let autoRefreshCount = 0;
     let firstRefresh = true;
     const store = createStore(cachedFresh({ value: 'old' }, Date.now() + 50), (api) => ({
-      actions: {
-        cache: createCachedSlice(api, {
-          onExpire: async (current) => {
-            autoRefreshCount += 1;
-            if (firstRefresh) {
-              expect(current).toEqual({ value: 'old' });
-              firstRefresh = false;
-            }
-            return Promise.resolve({ value: 'new' });
-          },
-        }),
-      },
+      cache: createCachedSlice(api, {
+        onExpire: async (current) => {
+          autoRefreshCount += 1;
+          if (firstRefresh) {
+            expect(current).toEqual({ value: 'old' });
+            firstRefresh = false;
+          }
+          return Promise.resolve({ value: 'new' });
+        },
+      }),
     }));
-    const cache = store.actions.cache;
+    const cache = store.cache;
 
     cache.startAutoRefresh({ expiresAfter: 50 });
 
@@ -227,17 +217,15 @@ test.describe('createCachedSlice - root snapshot', () => {
   test('expire auto-refresh commits helper-level placeholder when keepPreviousData is false', async () => {
     const states: CachedState<{ value: string }>[] = [];
     const store = createStore(cachedFresh({ value: 'old' }, Date.now() + 100), (api) => ({
-      actions: {
-        cache: createCachedSlice(api, {
-          placeholder: { value: 'loading' },
-          onExpire: async () => {
-            await new Promise((resolve) => setTimeout(resolve, 30));
-            return { value: 'new' };
-          },
-        }),
-      },
+      cache: createCachedSlice(api, {
+        placeholder: { value: 'loading' },
+        onExpire: async () => {
+          await new Promise((resolve) => setTimeout(resolve, 30));
+          return { value: 'new' };
+        },
+      }),
     }));
-    const cache = store.actions.cache;
+    const cache = store.cache;
     store.subscribe(() => {
       states.push(store.getSnapshot());
     });
@@ -254,9 +242,9 @@ test.describe('createCachedSlice - root snapshot', () => {
 
   test('refresh() writes cachedPending with undefined data when keepPreviousData is false', async () => {
     const store = createStore(cachedFresh({ value: 'old' }), (api) => ({
-      actions: { cache: createCachedSlice(api) },
+      cache: createCachedSlice(api),
     }));
-    const cache = store.actions.cache;
+    const cache = store.cache;
 
     let resolveFetch: ((value: { value: string }) => void) | undefined;
     const promise = cache.refresh(
@@ -276,9 +264,9 @@ test.describe('createCachedSlice - root snapshot', () => {
 
   test('refresh() writes placeholder into CachedPending.data when provided', async () => {
     const store = createStore(cachedFresh({ value: 'old' }), (api) => ({
-      actions: { cache: createCachedSlice(api) },
+      cache: createCachedSlice(api),
     }));
-    const cache = store.actions.cache;
+    const cache = store.cache;
 
     let resolveFetch: ((value: { value: string }) => void) | undefined;
     const promise = cache.refresh(
@@ -299,9 +287,9 @@ test.describe('createCachedSlice - root snapshot', () => {
 
   test('refresh() falls back to helper-level placeholder when no per-call options are provided', async () => {
     const store = createStore(cachedFresh({ value: 'old' }), (api) => ({
-      actions: { cache: createCachedSlice(api, { placeholder: { value: 'loading' } }) },
+      cache: createCachedSlice(api, { placeholder: { value: 'loading' } }),
     }));
-    const cache = store.actions.cache;
+    const cache = store.cache;
 
     let resolveFetch: ((value: { value: string }) => void) | undefined;
     const promise = cache.refresh(
@@ -323,9 +311,9 @@ test.describe('createCachedSlice - root snapshot', () => {
   test('refresh() deduplicates concurrent calls — fetcher runs only once', async () => {
     let fetchCount = 0;
     const store = createStore(cachedFresh({ value: 'old' }), (api) => ({
-      actions: { cache: createCachedSlice(api) },
+      cache: createCachedSlice(api),
     }));
-    const cache = store.actions.cache;
+    const cache = store.cache;
 
     let resolveFetch: ((value: { value: string }) => void) | undefined;
     const fetcher = () =>
@@ -348,9 +336,9 @@ test.describe('createCachedSlice - root snapshot', () => {
 
   test('refresh() transitions to cachedRejected when the fetcher throws', async () => {
     const store = createStore(cachedFresh({ value: 'old' }), (api) => ({
-      actions: { cache: createCachedSlice(api) },
+      cache: createCachedSlice(api),
     }));
-    const cache = store.actions.cache;
+    const cache = store.cache;
 
     const boom = new Error('boom');
     await expect(cache.refresh(async () => Promise.reject(boom))).rejects.toThrow('boom');
@@ -365,14 +353,12 @@ test.describe('createCachedSlice - root snapshot', () => {
 
   test('set() uses custom equals and skips redundant fresh writes', () => {
     const store = createStore(cachedFresh({ count: 0, version: 1 }), (api) => ({
-      actions: {
-        cache: createCachedSlice(api, {
-          keepPreviousData: true,
-          equals: (a, b) => a.count === b.count,
-        }),
-      },
+      cache: createCachedSlice(api, {
+        keepPreviousData: true,
+        equals: (a, b) => a.count === b.count,
+      }),
     }));
-    const cache = store.actions.cache;
+    const cache = store.cache;
     let notifications = 0;
     store.subscribe(() => {
       notifications++;
@@ -390,9 +376,9 @@ test.describe('createCachedSlice - root snapshot', () => {
 
   test('expire() manually transitions from fresh to expired', () => {
     const store = createStore(cachedFresh({ value: 'data' }), (api) => ({
-      actions: { cache: createCachedSlice(api) },
+      cache: createCachedSlice(api),
     }));
-    const cache = store.actions.cache;
+    const cache = store.cache;
 
     expect(cache.get().status).toBe('fresh');
     cache.expire();
@@ -402,11 +388,9 @@ test.describe('createCachedSlice - root snapshot', () => {
 
   test('initial cachedFresh with expiresAt auto-expires and notifies without expire option', async () => {
     const store = createStore(cachedFresh({ value: 'data' }, Date.now() + 50), (api) => ({
-      actions: {
-        cache: createCachedSlice(api), // no expire option
-      },
+      cache: createCachedSlice(api), // no expire option
     }));
-    const cache = store.actions.cache;
+    const cache = store.cache;
 
     const states: string[] = [];
     store.subscribe(() => {
@@ -425,17 +409,15 @@ test.describe('createCachedSlice - root snapshot', () => {
     let autoRefreshCount = 0;
     const store = createStore(cachedFresh({ value: 'old' }), (api) => ({
       // No expiresAt on initial state — startAutoRefresh interval drives the first expiry
-      actions: {
-        cache: createCachedSlice(api, {
-          keepPreviousData: true,
-          onExpire: async () => {
-            autoRefreshCount += 1;
-            return Promise.resolve({ value: 'new' });
-          },
-        }),
-      },
+      cache: createCachedSlice(api, {
+        keepPreviousData: true,
+        onExpire: async () => {
+          autoRefreshCount += 1;
+          return Promise.resolve({ value: 'new' });
+        },
+      }),
     }));
-    const cache = store.actions.cache;
+    const cache = store.cache;
 
     cache.startAutoRefresh({ expiresAfter: 50 });
     await new Promise((resolve) => setTimeout(resolve, 150));
@@ -447,9 +429,9 @@ test.describe('createCachedSlice - root snapshot', () => {
 
   test('set() with expiresAt stamps TTL — without expiresAt stays fresh indefinitely', async () => {
     const store = createStore(cachedFresh({ value: 'data' }), (api) => ({
-      actions: { cache: createCachedSlice(api) },
+      cache: createCachedSlice(api),
     }));
-    const cache = store.actions.cache;
+    const cache = store.cache;
 
     // Write with a 50ms TTL
     cache.set({ value: 'timed' }, Date.now() + 50);
@@ -466,9 +448,9 @@ test.describe('createCachedSlice - root snapshot', () => {
 
   test('refresh() with expiresAt stamps TTL on the result', async () => {
     const store = createStore(cachedFresh({ value: 'old' }), (api) => ({
-      actions: { cache: createCachedSlice(api) },
+      cache: createCachedSlice(api),
     }));
-    const cache = store.actions.cache;
+    const cache = store.cache;
 
     await cache.refresh(async () => Promise.resolve({ value: 'new' }), {
       expiresAt: Date.now() + 50,
@@ -482,48 +464,48 @@ test.describe('createCachedSlice - root snapshot', () => {
   test('expire() is a no-op on non-fresh states', async () => {
     // idle
     const idleStore = createStore(idleAs<{ v: number }>(), (api) => ({
-      actions: { cache: createCachedSlice(api) },
+      cache: createCachedSlice(api),
     }));
-    idleStore.actions.cache.expire();
-    expect(idleStore.actions.cache.get().status).toBe('idle');
+    idleStore.cache.expire();
+    expect(idleStore.cache.get().status).toBe('idle');
 
     // pending
     let resolvePending: ((v: { v: number }) => void) | undefined;
     const pendingStore = createStore(idleAs<{ v: number }>(), (api) => ({
-      actions: { cache: createCachedSlice(api) },
+      cache: createCachedSlice(api),
     }));
-    const pendingPromise = pendingStore.actions.cache.refresh(
+    const pendingPromise = pendingStore.cache.refresh(
       () =>
         new Promise((r) => {
           resolvePending = r;
         })
     );
-    expect(pendingStore.actions.cache.get().status).toBe('pending');
-    pendingStore.actions.cache.expire();
-    expect(pendingStore.actions.cache.get().status).toBe('pending');
+    expect(pendingStore.cache.get().status).toBe('pending');
+    pendingStore.cache.expire();
+    expect(pendingStore.cache.get().status).toBe('pending');
     resolvePending?.({ v: 1 });
     await pendingPromise;
 
     // rejected
     const rejectedStore = createStore(idleAs<{ v: number }>(), (api) => ({
-      actions: { cache: createCachedSlice(api) },
+      cache: createCachedSlice(api),
     }));
     await expect(
-      rejectedStore.actions.cache.refresh(async () => Promise.reject(new Error('boom')))
+      rejectedStore.cache.refresh(async () => Promise.reject(new Error('boom')))
     ).rejects.toThrow();
-    expect(rejectedStore.actions.cache.get().status).toBe('rejected');
-    rejectedStore.actions.cache.expire();
-    expect(rejectedStore.actions.cache.get().status).toBe('rejected');
+    expect(rejectedStore.cache.get().status).toBe('rejected');
+    rejectedStore.cache.expire();
+    expect(rejectedStore.cache.get().status).toBe('rejected');
   });
 
   test('refresh() called while already pending shares the in-flight promise — fetcher runs once', async () => {
     let fetchCount = 0;
     const store = createStore(idleAs<{ v: number }>(), (api) => ({
-      actions: { cache: createCachedSlice(api) },
+      cache: createCachedSlice(api),
     }));
 
     let resolveFetch: ((value: { v: number }) => void) | undefined;
-    const p1 = store.actions.cache.refresh(
+    const p1 = store.cache.refresh(
       () =>
         new Promise((resolve) => {
           fetchCount += 1;
@@ -532,8 +514,8 @@ test.describe('createCachedSlice - root snapshot', () => {
     );
 
     // State is now pending — call refresh() again with a different fetcher
-    expect(store.actions.cache.get().status).toBe('pending');
-    const p2 = store.actions.cache.refresh(() => {
+    expect(store.cache.get().status).toBe('pending');
+    const p2 = store.cache.refresh(() => {
       fetchCount += 1;
       return Promise.resolve({ v: 99 });
     });
@@ -544,16 +526,14 @@ test.describe('createCachedSlice - root snapshot', () => {
     expect(fetchCount).toBe(1);
     expect(r1).toEqual({ v: 1 });
     expect(r2).toEqual({ v: 1 });
-    expect(store.actions.cache.get()).toMatchObject({ status: 'fresh', data: { v: 1 } });
+    expect(store.cache.get()).toMatchObject({ status: 'fresh', data: { v: 1 } });
   });
 
   test('set() without expire option clears expiresAt — subsequent writes stay fresh indefinitely', async () => {
     const store = createStore(cachedFresh({ value: 'data' }, Date.now() + 50), (api) => ({
-      actions: {
-        cache: createCachedSlice(api), // no expire option
-      },
+      cache: createCachedSlice(api), // no expire option
     }));
-    const cache = store.actions.cache;
+    const cache = store.cache;
 
     // Overwrite before the timer fires — new write has no expiresAt
     cache.set({ value: 'updated' });
@@ -571,9 +551,9 @@ test.describe('createCachedSlice - root snapshot', () => {
 test.describe('createCachedSlice - sub-slice', () => {
   test('get() returns CachedState and set() writes cachedFresh to the slice path', () => {
     const store = createStore({ profile: idleAs<{ name: string }>(), version: 1 }, (api) => ({
-      actions: { cache: createCachedSlice(api, 'profile', { keepPreviousData: true }) },
+      cache: createCachedSlice(api, 'profile', { keepPreviousData: true }),
     }));
-    const cache = store.actions.cache;
+    const cache = store.cache;
 
     expect(cache.get()).toEqual(cachedIdle);
 
@@ -585,9 +565,9 @@ test.describe('createCachedSlice - sub-slice', () => {
 
   test('refresh() updates the selected slice after async fetch', async () => {
     const store = createStore({ profile: cachedFresh({ name: 'Alice' }), version: 1 }, (api) => ({
-      actions: { cache: createCachedSlice(api, 'profile') },
+      cache: createCachedSlice(api, 'profile'),
     }));
-    const cache = store.actions.cache;
+    const cache = store.cache;
 
     let resolveFetch: ((value: { name: string }) => void) | undefined;
     const promise = cache.refresh(
@@ -614,15 +594,13 @@ test.describe('createCachedSlice - sub-slice', () => {
     const store = createStore(
       { profile: cachedFresh({ name: 'Alice', status: 'ready' }), version: 1 },
       (api) => ({
-        actions: {
-          cache: createCachedSlice(api, 'profile', {
-            keepPreviousData: true,
-            equals: (a, b) => a.name === b.name,
-          }),
-        },
+        cache: createCachedSlice(api, 'profile', {
+          keepPreviousData: true,
+          equals: (a, b) => a.name === b.name,
+        }),
       })
     );
-    const cache = store.actions.cache;
+    const cache = store.cache;
     let notifications = 0;
     store.subscribe(() => {
       notifications++;
@@ -646,9 +624,9 @@ test.describe('createCachedSlice - sub-slice', () => {
 
   test('expire() on sub-slice transitions only that slice to expired', () => {
     const store = createStore({ profile: cachedFresh({ name: 'Alice' }), version: 1 }, (api) => ({
-      actions: { cache: createCachedSlice(api, 'profile') },
+      cache: createCachedSlice(api, 'profile'),
     }));
-    const cache = store.actions.cache;
+    const cache = store.cache;
 
     cache.expire();
 
@@ -660,10 +638,10 @@ test.describe('createCachedSlice - sub-slice', () => {
     const store = createStore(
       { profile: cachedFresh({ name: 'Alice' }, Date.now() + 50), version: 1 },
       (api) => ({
-        actions: { cache: createCachedSlice(api, 'profile') }, // no expire option
+        cache: createCachedSlice(api, 'profile'), // no expire option
       })
     );
-    const cache = store.actions.cache;
+    const cache = store.cache;
 
     const states: string[] = [];
     store.subscribe(() => {
@@ -682,17 +660,15 @@ test.describe('createCachedSlice - sub-slice', () => {
   test('startAutoRefresh() on sub-slice fires onExpire and writes only to slice path — rest of snapshot untouched', async () => {
     let fetchCount = 0;
     const store = createStore({ profile: idleAs<{ name: string }>(), version: 1 }, (api) => ({
-      actions: {
-        cache: createCachedSlice(api, 'profile', {
-          expiresAfter: 50,
-          onExpire: () => {
-            fetchCount += 1;
-            return Promise.resolve({ name: 'Auto' });
-          },
-        }),
-      },
+      cache: createCachedSlice(api, 'profile', {
+        expiresAfter: 50,
+        onExpire: () => {
+          fetchCount += 1;
+          return Promise.resolve({ name: 'Auto' });
+        },
+      }),
     }));
-    const cache = store.actions.cache;
+    const cache = store.cache;
 
     cache.startAutoRefresh();
     await new Promise((resolve) => setTimeout(resolve, 80));
@@ -707,9 +683,9 @@ test.describe('createCachedSlice - sub-slice', () => {
   test('refresh() on sub-slice deduplicates three concurrent callers — fetcher runs once', async () => {
     let fetchCount = 0;
     const store = createStore({ profile: idleAs<{ name: string }>(), version: 1 }, (api) => ({
-      actions: { cache: createCachedSlice(api, 'profile') },
+      cache: createCachedSlice(api, 'profile'),
     }));
-    const cache = store.actions.cache;
+    const cache = store.cache;
 
     let resolveFetch: ((value: { name: string }) => void) | undefined;
     const fetcher = () =>

@@ -24,17 +24,18 @@ const selInitial: SelectorInitialSnapshot = { data: cachedIdle };
 // Each onExpire reads the current count and returns 'v<n>' — after reset
 // the counter starts at 0 again and the first fetch returns 'v1'.
 const arStore = createStore(arInitial, (api) => ({
-  actions: {
-    cached: createCachedSlice(api, 'data', {
-      expiresAfter: 60_000, // long TTL — only the first fetch matters per test
-      onExpire: (_cur, storeApi) => {
-        const next = storeApi.get().fetchCount + 1;
-        storeApi.update((d) => {
-          d.fetchCount = next;
-        });
-        return `v${String(next)}`;
-      },
-    }),
+  cached: createCachedSlice(api, 'data', {
+    expiresAfter: 60_000, // long TTL — only the first fetch matters per test
+    onExpire: (_cur, storeApi) => {
+      const next = storeApi.get().fetchCount + 1;
+      storeApi.update((d) => {
+        d.fetchCount = next;
+      });
+      return `v${String(next)}`;
+    },
+  }),
+  reset() {
+    api.reset();
   },
 }));
 
@@ -71,18 +72,16 @@ export function AutoRefreshHarness() {
 // ── Multi-subscriber harness ──────────────────────────────────────────────────
 
 const msStore = createStore(msInitial, (api) => ({
-  actions: {
-    cached: createCachedSlice(api, 'data', {
-      expiresAfter: 60_000,
-      onExpire: (_cur, storeApi) => {
-        const next = storeApi.get().fetchCount + 1;
-        storeApi.update((d) => {
-          d.fetchCount = next;
-        });
-        return `v${String(next)}`;
-      },
-    }),
-  },
+  cached: createCachedSlice(api, 'data', {
+    expiresAfter: 60_000,
+    onExpire: (_cur, storeApi) => {
+      const next = storeApi.get().fetchCount + 1;
+      storeApi.update((d) => {
+        d.fetchCount = next;
+      });
+      return `v${String(next)}`;
+    },
+  }),
 }));
 
 function MsSubscriber({ id }: { id: string }) {
@@ -120,12 +119,10 @@ export function MultiSubscriberHarness() {
 // ── Selector harness ──────────────────────────────────────────────────────────
 
 const selStore = createStore(selInitial, (api) => ({
-  actions: {
-    cached: createCachedSlice(api, 'data', {
-      expiresAfter: 60_000,
-      onExpire: () => 'hello',
-    }),
-  },
+  cached: createCachedSlice(api, 'data', {
+    expiresAfter: 60_000,
+    onExpire: () => 'hello',
+  }),
 }));
 
 // Defined at module level so React Compiler does not recreate the function each render.

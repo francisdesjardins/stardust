@@ -1,4 +1,5 @@
-import type { Store } from './create-store';
+import type { DomainStore } from './create-store';
+import { DOMAIN_METHODS } from './create-store';
 
 // ── Type-level leaf-path extraction ──────────────────────────────────────────
 
@@ -79,7 +80,7 @@ type ResolveDomain<TMethods extends object, TDomain> = TDomain extends true
 
 /**
  * A dispatch function that routes a dot-notation leaf path to the corresponding
- * action in `store.actions`, forwarding arguments and return values.
+ * domain method on the store, forwarding arguments and return values.
  *
  * Nested actions are addressed with dot-notation: `'todos.add'`.
  * Only leaf functions are dispatchable — intermediate objects are not.
@@ -103,9 +104,9 @@ export type StoreDispatch<
 
 /**
  * Walks `obj` and records the segments of each leaf-function path.
- * Stored paths (not function references) are resolved against `store.actions`
- * at dispatch time so that wrappers installed after construction — e.g.
- * `connectDebugLog` — are always invoked.
+ * Stored paths (not function references) are resolved against the store's
+ * domain methods at dispatch time so that wrappers installed after
+ * construction — e.g. `connectDebugLog` — are always invoked.
  */
 function flattenLeafPaths(
   obj: Record<string, unknown>,
@@ -124,30 +125,44 @@ function flattenLeafPaths(
 }
 
 function resolveLeaf(
-  actions: Record<string, unknown>,
+  methods: Record<string, unknown>,
   segments: readonly string[]
 ): (...args: unknown[]) => unknown {
-  let current: unknown = actions;
+  let current: unknown = methods;
   for (const segment of segments) {
     if (current === null || typeof current !== 'object') {
-      throw new Error(`dispatch: path "${segments.join('.')}" no longer resolves on store.actions`);
+      throw new Error(
+        `dispatch: path "${segments.join('.')}" no longer resolves on the store's domain methods`
+      );
     }
     current = (current as Record<string, unknown>)[segment];
   }
   if (typeof current !== 'function') {
-    throw new Error(`dispatch: path "${segments.join('.')}" is not a function on store.actions`);
+    throw new Error(
+      `dispatch: path "${segments.join('.')}" is not a function on the store's domain methods`
+    );
   }
   return current as (...args: unknown[]) => unknown;
+}
+
+function readDomainMethods(store: object): Record<string, unknown> {
+  const domain = (store as Record<symbol, unknown>)[DOMAIN_METHODS];
+  if (domain === undefined) {
+    throw new Error(
+      'createStoreDispatch: store has no domain methods. Pass a store created with createStore(initial, builder).'
+    );
+  }
+  return domain as Record<string, unknown>;
 }
 
 // ── Factory ──────────────────────────────────────────────────────────────────
 
 /**
- * Creates a dispatch function for a Stardust store.
+ * Creates a dispatch function for a Stardust domain store.
  *
- * Actions in `store.actions` are addressed by dot-notation leaf path.
- * Nested action objects are flattened at construction time — dispatch is O(1).
- * By default all leaf actions are reachable. Use the `domain` option to restrict.
+ * Domain methods are addressed by dot-notation leaf path. Nested method
+ * objects are flattened at construction time — dispatch is O(1). By default
+ * all leaf actions are reachable. Use the `domain` option to restrict.
  *
  * @example <caption>All-actions dispatch</caption>
  * const dispatch = createStoreDispatch(store);
@@ -160,7 +175,7 @@ function resolveLeaf(
  * dispatch('increment'); // ❌ type error + runtime throw
  */
 export function createStoreDispatch<TSnapshot, TMethods extends object, TContext = never>(
-  store: Store<TSnapshot, TMethods, TContext>
+  store: DomainStore<TSnapshot, TMethods, TContext>
 ): StoreDispatch<TMethods>;
 
 export function createStoreDispatch<
@@ -169,18 +184,20 @@ export function createStoreDispatch<
   TContext,
   const TDomain extends readonly LeafPaths<TMethods>[] | true = true,
 >(
-  store: Store<TSnapshot, TMethods, TContext>,
+  store: DomainStore<TSnapshot, TMethods, TContext>,
   options: DispatchOptions<TMethods, TDomain>
 ): StoreDispatch<TMethods, Extract<ResolveDomain<TMethods, TDomain>, LeafPaths<TMethods>>>;
 
 export function createStoreDispatch<TSnapshot, TMethods extends object, TContext = never>(
-  store: Store<TSnapshot, TMethods, TContext>,
+  store: DomainStore<TSnapshot, TMethods, TContext>,
   options?: {
     readonly domain?: readonly string[] | true | undefined;
   }
 ): StoreDispatch<TMethods> {
+  const domainMethods = readDomainMethods(store);
+
   const leafPaths = new Map<string, readonly string[]>();
-  flattenLeafPaths(store.actions as unknown as Record<string, unknown>, [], leafPaths);
+  flattenLeafPaths(domainMethods, [], leafPaths);
 
   const allowed: Set<string> | null =
     options === undefined
@@ -197,7 +214,7 @@ export function createStoreDispatch<TSnapshot, TMethods extends object, TContext
     if (segments === undefined) {
       throw new Error(`dispatch: unknown action "${action}"`);
     }
-    const fn = resolveLeaf(store.actions as unknown as Record<string, unknown>, segments);
+    const fn = resolveLeaf(domainMethods, segments);
     return fn(...args);
   } as StoreDispatch<TMethods>;
 }

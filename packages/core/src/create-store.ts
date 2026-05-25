@@ -220,44 +220,53 @@ export type StoreApi<TSnapshot, TContext = never> = {
 };
 
 /**
- * Stardust store instance: snapshot contract, core methods, and domain API.
+ * Reserved keys that a domain methods builder cannot use as method names.
+ * These are the public store properties that survive on a `DomainStore`
+ * regardless of the userland-defined methods.
+ */
+export type ReservedStoreKey =
+  | 'subscribe'
+  | 'getSnapshot'
+  | 'listenerCount'
+  | 'getByPath'
+  | 'setContext';
+
+/** Runtime mirror of {@link ReservedStoreKey} used to validate builder return values. */
+const RESERVED_STORE_KEYS: ReadonlySet<string> = new Set<ReservedStoreKey>([
+  'subscribe',
+  'getSnapshot',
+  'listenerCount',
+  'getByPath',
+  'setContext',
+]);
+
+/**
+ * Internal symbol carrying the reference to the domain methods object on a
+ * `DomainStore`. Used by helpers (`createBoundActions`, `createStoreDispatch`,
+ * `connectDebugLog`) to discover the domain method tree without relying on a
+ * specific top-level key. Not part of the public API.
  *
- * Combines the minimal subscription contract (`subscribe`, `getSnapshot`,
- * `listenerCount`) with mutation methods (`set`, `update`, `setByPath`, etc.),
- * context binding, and all domain-specific methods under `store.actions`.
+ * @internal
+ */
+export const DOMAIN_METHODS: unique symbol = Symbol('stardust.domainMethods');
+
+/**
+ * Stardust generic store: snapshot contract + all built-in mutation helpers
+ * at the root. Returned by `createStore(initialSnapshot)` (no builder).
  *
- * - Use `setContext(ctx)` to inject a context object (e.g. API client) for use in store methods.
- * - All core methods are documented in {@link StoreApi}.
- * - Domain methods live under `store.actions`.
+ * Use the generic store when you need a plain reactive cell — typically for
+ * shared state injected through React context or component-local scratch
+ * state where userland mutates directly via `set`/`update`/`setByPath`.
  *
  * @template TSnapshot - The shape of the store's snapshot (POJO state).
- * @template TMethods - The domain methods returned from your builder's `actions` key.
  * @template TContext - Optional context type (see {@link MaybeContext}).
  *
- * @example <caption>Counter store with domain methods</caption>
- * const counter = createStore({ count: 0 }, ({ update }) => ({
- *   actions: {
- *     increment() { update(d => { d.count += 1; }); },
- *     decrement() { update(d => { d.count -= 1; }); },
- *   },
- * }));
- *
- * counter.actions.increment();
- * counter.actions.decrement();
- *
- * @example <caption>Injecting context (API client)</caption>
- * type Ctx = { api: ApiClient };
- * const store = createStore<State, Methods, Ctx>(initial, (api) => ({
- *   actions: {
- *     async load() {
- *       const data = await api.getContext().api.fetch();
- *       api.set({ ...api.get(), data });
- *     },
- *   },
- * }));
- * store.setContext({ api: myApiClient });
+ * @example
+ * const counter = createStore({ count: 0 });
+ * counter.update(d => { d.count += 1; });
+ * counter.setByPath('count', 42);
  */
-export type Store<TSnapshot, TMethods, TContext = never> = {
+export type GenericStore<TSnapshot, TContext = never> = {
   /** Subscribe to snapshot changes. Returns an unsubscribe function. */
   readonly subscribe: (listener: () => void) => () => void;
   /** Get the current snapshot (POJO state). */
@@ -287,18 +296,80 @@ export type Store<TSnapshot, TMethods, TContext = never> = {
   readonly run: (actionName: string, fn: () => void) => void;
   /** Inject a context object for use in store methods. */
   readonly setContext: (ctx: UnwrapContext<TContext>) => void;
-  /** Domain methods returned from the builder. */
-  readonly actions: TMethods;
 };
 
 /**
- * A store created without an actions builder — exposes built-ins only.
- * `store.actions` is not present on this type.
+ * Stardust domain store: subscription contract + read-only helpers + every
+ * domain method returned by the builder, merged at the root.
+ *
+ * Mutations (`set`, `update`, `setByPath`, `batch`, `reset`, `run`) are
+ * **not** exposed on a domain store — they are accessible only through the
+ * `api` parameter of the builder. This guarantees that every mutation is
+ * triggered by a named domain method, which gives `connectDebugLog` precise
+ * action attribution and removes the possibility of untracked external
+ * mutations.
+ *
+ * The builder must not return an object whose keys collide with
+ * {@link ReservedStoreKey} (`subscribe`, `getSnapshot`, `listenerCount`,
+ * `getByPath`, `setContext`) — a runtime error is thrown at construction if
+ * it does, and the TypeScript signature prevents it at compile time.
+ *
+ * @template TSnapshot - The shape of the store's snapshot (POJO state).
+ * @template TMethods - The domain methods returned from your builder.
+ * @template TContext - Optional context type (see {@link MaybeContext}).
+ *
+ * @example <caption>Counter store with domain methods</caption>
+ * const counter = createStore({ count: 0 }, ({ update }) => ({
+ *   increment() { update(d => { d.count += 1; }); },
+ *   decrement() { update(d => { d.count -= 1; }); },
+ * }));
+ *
+ * counter.increment();
+ * counter.decrement();
+ *
+ * @example <caption>Nested namespaces</caption>
+ * const app = createStore(initial, ({ update }) => ({
+ *   todos: {
+ *     add(text) { update(d => { d.items.push({ text }); }); },
+ *     clear() { update(d => { d.items = []; }); },
+ *   },
+ *   async sync() {  ...  },
+ * }));
+ *
+ * app.todos.add('Buy milk');
+ * await app.sync();
+ *
+ * @example <caption>Injecting context (API client)</caption>
+ * type Ctx = { api: ApiClient };
+ * const store = createStore<State, Methods, Ctx>(initial, (api) => ({
+ *   async load() {
+ *     const data = await api.getContext().api.fetch();
+ *     api.set({ ...api.get(), data });
+ *   },
+ * }));
+ * store.setContext({ api: myApiClient });
  */
-export type ActionlessStore<TSnapshot, TContext = never> = Omit<
-  Store<TSnapshot, Record<never, never>, TContext>,
-  'actions'
->;
+export type DomainStore<TSnapshot, TMethods, TContext = never> = {
+  /** Subscribe to snapshot changes. Returns an unsubscribe function. */
+  readonly subscribe: (listener: () => void) => () => void;
+  /** Get the current snapshot (POJO state). */
+  readonly getSnapshot: () => TSnapshot;
+  /** Number of active listeners. `0` means no component, hook, or watcher is currently subscribed. */
+  readonly listenerCount: number;
+  /** Get a value at a typed path (dot/bracket notation). */
+  readonly getByPath: <P extends PathsOf<TSnapshot>>(path: P) => ValueAtPath<TSnapshot, P>;
+  /** Inject a context object for use in store methods. */
+  readonly setContext: (ctx: UnwrapContext<TContext>) => void;
+} & Omit<TMethods, ReservedStoreKey>;
+
+/**
+ * Compile-time constraint applied to the builder's return value. Forces a type
+ * error if any reserved key (`subscribe`, `getSnapshot`, etc.) appears in the
+ * userland methods object.
+ */
+type ValidDomainMethods<TMethods> = TMethods & {
+  readonly [K in ReservedStoreKey]?: never;
+};
 
 /**
  * Creates a domain-specific store backed by `createStoreSubscription`.
@@ -356,21 +427,21 @@ export type ActionlessStore<TSnapshot, TContext = never> = Omit<
  *
  * @example
  * const counter = createStore({ count: 0 }, ({ update }) => ({
- *   actions: {
- *     increment() { update(draft => { draft.count += 1; }); },
- *     decrement() { update(draft => { draft.count -= 1; }); },
- *   },
+ *   increment() { update(draft => { draft.count += 1; }); },
+ *   decrement() { update(draft => { draft.count -= 1; }); },
  * }));
+ *
+ * counter.increment();
  */
 export function createStore<TSnapshot, TContext = never>(
   initialSnapshot: TSnapshot,
   options?: StoreSubscriptionOptions<TSnapshot, TContext>
-): ActionlessStore<TSnapshot, TContext>;
+): GenericStore<TSnapshot, TContext>;
 export function createStore<TSnapshot, TMethods extends Record<string, unknown>, TContext = never>(
   initialSnapshot: TSnapshot,
-  methods: (api: StoreApi<TSnapshot, TContext>) => { readonly actions: TMethods },
+  methods: (api: StoreApi<TSnapshot, TContext>) => ValidDomainMethods<TMethods>,
   options?: StoreSubscriptionOptions<TSnapshot, TContext>
-): Store<TSnapshot, TMethods, TContext>;
+): DomainStore<TSnapshot, TMethods, TContext>;
 export function createStore<
   TSnapshot,
   TMethods extends Record<string, unknown> = Record<never, never>,
@@ -379,10 +450,10 @@ export function createStore<
   initialSnapshot: TSnapshot,
   methodsOrOptions?: unknown,
   options?: StoreSubscriptionOptions<TSnapshot, TContext>
-): Store<TSnapshot, TMethods, TContext> | ActionlessStore<TSnapshot, TContext> {
+): DomainStore<TSnapshot, TMethods, TContext> | GenericStore<TSnapshot, TContext> {
   const methods =
     typeof methodsOrOptions === 'function'
-      ? (methodsOrOptions as (api: StoreApi<TSnapshot, TContext>) => { readonly actions: TMethods })
+      ? (methodsOrOptions as (api: StoreApi<TSnapshot, TContext>) => TMethods)
       : undefined;
   const resolvedOptions: StoreSubscriptionOptions<TSnapshot, TContext> | undefined =
     typeof methodsOrOptions === 'function'
@@ -492,16 +563,86 @@ export function createStore<
     commit(resolved);
   }
 
-  // ── Store object ─────────────────────────────────────────────────────────
-  // Built before the api so domain methods can call through it. Any wrapper
-  // applied to store.update / store.set from outside (e.g. connectDebugLog)
-  // is therefore visible to domain methods — including async continuations.
-
   function run(_actionName: string, fn: () => void): void {
     fn();
   }
 
-  const store = {
+  function setContext(ctx: UnwrapContext<TContext>): void {
+    contextCell.value = ctx as TContext | undefined;
+  }
+
+  // ── Domain path ──────────────────────────────────────────────────────────
+  // When a builder is provided, mutations live only in the `api` closure
+  // (not on the public store object). This makes mutations truly private at
+  // runtime, prevents userland name collisions with built-in mutations, and
+  // funnels every state change through a named domain method.
+
+  if (methods) {
+    const store: Record<string | symbol, unknown> = {
+      subscribe: sub.subscribe,
+      getSnapshot: sub.getSnapshot,
+      get listenerCount(): number {
+        return sub.listenerCount;
+      },
+      getByPath,
+      setContext,
+    };
+
+    const api: StoreApi<TSnapshot, TContext> = {
+      get: sub.getSnapshot,
+      set,
+      update,
+      getByPath,
+      setByPath,
+      batch,
+      reset,
+      run: (actionName, fn) => {
+        run(actionName, fn);
+      },
+      getContext,
+    };
+
+    const domain = methods(api) as Record<string, unknown>;
+
+    Object.defineProperty(store, DOMAIN_METHODS, {
+      value: domain,
+      enumerable: false,
+      writable: false,
+      configurable: false,
+    });
+
+    // Mirror each domain key onto the store root as a delegating getter/setter
+    // pair, so that wrappers later installed on `domain[key]` (e.g. by
+    // connectDebugLog) are picked up at call time, and external code that
+    // replaces `store[key]` writes through to the same underlying slot.
+    // Reserved built-in names are rejected.
+    for (const key of Object.keys(domain)) {
+      if (RESERVED_STORE_KEYS.has(key)) {
+        throw new Error(
+          `createStore: domain method "${key}" conflicts with a reserved store property. Reserved keys are: ${[...RESERVED_STORE_KEYS].join(', ')}.`
+        );
+      }
+      Object.defineProperty(store, key, {
+        get(): unknown {
+          return domain[key];
+        },
+        set(value: unknown): void {
+          domain[key] = value;
+        },
+        enumerable: true,
+        configurable: true,
+      });
+    }
+
+    return store as DomainStore<TSnapshot, TMethods, TContext>;
+  }
+
+  // ── Generic path ─────────────────────────────────────────────────────────
+  // Without a builder, all built-ins live at the root. External code can
+  // mutate directly via store.set/update/setByPath. `connectDebugLog`
+  // wraps these methods to attribute each mutation to a tracked action.
+
+  const store: GenericStore<TSnapshot, TContext> = {
     subscribe: sub.subscribe,
     getSnapshot: sub.getSnapshot,
     get listenerCount(): number {
@@ -514,40 +655,8 @@ export function createStore<
     batch,
     reset,
     run,
-    setContext(ctx: UnwrapContext<TContext>): void {
-      contextCell.value = ctx as TContext | undefined;
-    },
-  } as Store<TSnapshot, TMethods, TContext>;
-
-  // ── Forwarding api ────────────────────────────────────────────────────────
-  // Domain methods receive this api. Each method forwards through `store` so
-  // external wrappers on store.update / store.set are picked up at call time.
-
-  const api: StoreApi<TSnapshot, TContext> = {
-    get: sub.getSnapshot,
-    set: (next) => {
-      store.set(next);
-    },
-    update: (recipe) => {
-      store.update(recipe);
-    },
-    getByPath: (path) => store.getByPath(path),
-    setByPath: (path, value) => {
-      store.setByPath(path, value);
-    },
-    batch: (fn) => {
-      store.batch(fn);
-    },
-    reset,
-    run: (actionName, fn) => {
-      store.run(actionName, fn);
-    },
-    getContext,
+    setContext,
   };
-
-  if (methods) {
-    (store as unknown as { actions: TMethods }).actions = methods(api).actions;
-  }
 
   return store;
 }

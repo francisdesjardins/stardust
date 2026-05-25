@@ -7,27 +7,28 @@ import { ExampleLayout } from '@/entities/example';
 
 type Todo = { id: number; text: string; done: boolean };
 
-const todoStore = createStore({ todos: [] as Todo[], nextId: 1 }, ({ update }) => ({
-  actions: {
-    todos: {
-      add(text: string) {
-        update((d) => {
-          d.todos.push({ id: d.nextId, text, done: false });
-          d.nextId += 1;
-        });
-      },
-      toggle(id: number) {
-        update((d) => {
-          const item = d.todos.find((t) => t.id === id);
-          if (item) item.done = !item.done;
-        });
-      },
-      remove(id: number) {
-        update((d) => {
-          d.todos = d.todos.filter((t) => t.id !== id);
-        });
-      },
+const todoStore = createStore({ todos: [] as Todo[], nextId: 1 }, ({ update, reset }) => ({
+  todos: {
+    add(text: string) {
+      update((d) => {
+        d.todos.push({ id: d.nextId, text, done: false });
+        d.nextId += 1;
+      });
     },
+    toggle(id: number) {
+      update((d) => {
+        const item = d.todos.find((t) => t.id === id);
+        if (item) item.done = !item.done;
+      });
+    },
+    remove(id: number) {
+      update((d) => {
+        d.todos = d.todos.filter((t) => t.id !== id);
+      });
+    },
+  },
+  reset() {
+    reset();
   },
 }));
 

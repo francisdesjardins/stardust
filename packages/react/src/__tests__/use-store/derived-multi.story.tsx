@@ -2,23 +2,21 @@ import { createDerivedStore, createStore, shallowEqual } from '@stardust/core';
 import { useStore } from '@stardust/react';
 
 const countStore = createStore({ count: 0 }, ({ update }) => ({
-  actions: {
-    increment() {
-      update((d) => {
-        d.count += 1;
-      });
-    },
+  increment() {
+    update((d) => {
+      d.count += 1;
+    });
   },
+  
 }));
 
 const labelStore = createStore({ label: 'hello' }, ({ update }) => ({
-  actions: {
-    setLabel(v: string) {
-      update((d) => {
-        d.label = v;
-      });
-    },
+  setLabel(v: string) {
+    update((d) => {
+      d.label = v;
+    });
   },
+  
 }));
 
 const summaryStore = createDerivedStore(
@@ -38,14 +36,14 @@ export function DerivedMultiHarness() {
       <span data-testid="summary">{text}</span>
       <button
         onClick={() => {
-          countStore.actions.increment();
+          countStore.increment();
         }}
       >
         Increment
       </button>
       <button
         onClick={() => {
-          labelStore.actions.setLabel('world');
+          labelStore.setLabel('world');
         }}
       >
         Set Label

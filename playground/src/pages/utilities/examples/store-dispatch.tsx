@@ -7,17 +7,16 @@ import { ExampleLayout } from '@/entities/example';
 type Action = 'increment' | 'decrement' | 'reset';
 
 const counterStore = createStore({ count: 0 }, ({ set, get }) => ({
-  actions: {
-    increment() {
-      set({ count: get().count + 1 });
-    },
-    decrement() {
-      set({ count: get().count - 1 });
-    },
-    reset() {
-      set({ count: 0 });
-    },
+  increment() {
+    set({ count: get().count + 1 });
   },
+  decrement() {
+    set({ count: get().count - 1 });
+  },
+  reset() {
+    set({ count: 0 });
+  },
+  
 }));
 
 connectDebugLog(counterStore, { name: 'counter' });

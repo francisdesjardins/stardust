@@ -16,7 +16,7 @@ const counterStore = createStore({ count: 0 }, ({ set, get }) => {
     },
   };
 
-  return { actions: self };
+  return self;
 });
 
 connectDebugLog(counterStore, { name: 'counter' });
@@ -30,7 +30,7 @@ export function CreateStoreExample() {
         variant="outlined"
         size="small"
         onClick={() => {
-          counterStore.actions.decrement();
+          counterStore.decrement();
         }}
       >
         −
@@ -39,7 +39,7 @@ export function CreateStoreExample() {
         variant="outlined"
         size="small"
         onClick={() => {
-          counterStore.actions.reset();
+          counterStore.reset();
         }}
       >
         Reset
@@ -48,7 +48,7 @@ export function CreateStoreExample() {
         variant="outlined"
         size="small"
         onClick={() => {
-          counterStore.actions.increment();
+          counterStore.increment();
         }}
       >
         +

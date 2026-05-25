@@ -29,8 +29,10 @@ export type { ConnectDebugLogOptions, DiffResult } from './connect-debug-log';
 
 export { createStore, createStoreSubscription } from './create-store';
 export type {
+  DomainStore,
+  GenericStore,
   MaybeContext,
-  Store,
+  ReservedStoreKey,
   StoreApi,
   StoreContract,
   StoreSelector,

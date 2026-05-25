@@ -7,9 +7,8 @@ const phoneOps = createArrayMethods<Phone>({ number: '', label: 'mobile' });
 
 function makeStore(initial: Phone[] = []) {
   return createStore({ phones: initial }, (api) => ({
-    actions: {
-      phones: phoneOps.mount(api, 'phones'),
-    },
+    phones: phoneOps.mount(api, 'phones'),
+    
   }));
 }
 
@@ -18,13 +17,13 @@ test.describe('createArrayMethods', () => {
 
   test('add() appends a default item', () => {
     const store = makeStore();
-    store.actions.phones.add();
+    store.phones.add();
     expect(store.getSnapshot().phones).toEqual([{ number: '', label: 'mobile' }]);
   });
 
   test('add(overrides) merges overrides onto defaults', () => {
     const store = makeStore();
-    store.actions.phones.add({ number: '5141234567' });
+    store.phones.add({ number: '5141234567' });
     expect(store.getSnapshot().phones).toEqual([{ number: '5141234567', label: 'mobile' }]);
   });
 
@@ -32,13 +31,12 @@ test.describe('createArrayMethods', () => {
     type NestedItem = { meta: { tag: string } };
     const nestedOps = createArrayMethods<NestedItem>({ meta: { tag: 'default' } });
     const nested = createStore({ items: [] as NestedItem[] }, (api) => ({
-      actions: {
-        items: nestedOps.mount(api, 'items'),
-      },
+      items: nestedOps.mount(api, 'items'),
+      
     }));
-    nested.actions.items.add();
-    nested.actions.items.add();
-    nested.actions.items.set(0, { meta: { tag: 'changed' } });
+    nested.items.add();
+    nested.items.add();
+    nested.items.set(0, { meta: { tag: 'changed' } });
     const snap = nested.getSnapshot();
     expect(snap.items[0]?.meta.tag).toBe('changed');
     expect(snap.items[1]?.meta.tag).toBe('default');
@@ -50,7 +48,7 @@ test.describe('createArrayMethods', () => {
     store.subscribe(() => {
       calls++;
     });
-    store.actions.phones.add();
+    store.phones.add();
     expect(calls).toBe(1);
   });
 
@@ -62,7 +60,7 @@ test.describe('createArrayMethods', () => {
       { number: '222', label: 'work' },
       { number: '333', label: 'mobile' },
     ]);
-    store.actions.phones.remove(1);
+    store.phones.remove(1);
     expect(store.getSnapshot().phones).toEqual([
       { number: '111', label: 'home' },
       { number: '333', label: 'mobile' },
@@ -71,13 +69,13 @@ test.describe('createArrayMethods', () => {
 
   test('remove() is a no-op for out-of-bounds index', () => {
     const store = makeStore([{ number: '111', label: 'home' }]);
-    store.actions.phones.remove(5);
+    store.phones.remove(5);
     expect(store.getSnapshot().phones).toHaveLength(1);
   });
 
   test('remove() is a no-op for negative index', () => {
     const store = makeStore([{ number: '111', label: 'home' }]);
-    store.actions.phones.remove(-1);
+    store.phones.remove(-1);
     expect(store.getSnapshot().phones).toHaveLength(1);
   });
 
@@ -85,32 +83,32 @@ test.describe('createArrayMethods', () => {
 
   test('set() updates a single property on the item', () => {
     const store = makeStore([{ number: '', label: 'mobile' }]);
-    store.actions.phones.set(0, { number: '5141234567' });
+    store.phones.set(0, { number: '5141234567' });
     expect(store.getSnapshot().phones[0]?.number).toBe('5141234567');
   });
 
   test('set() preserves other properties', () => {
     const store = makeStore([{ number: '111', label: 'home' }]);
-    store.actions.phones.set(0, { number: '222' });
+    store.phones.set(0, { number: '222' });
     expect(store.getSnapshot().phones[0]).toEqual({ number: '222', label: 'home' });
   });
 
   test('set() patches multiple properties at once', () => {
     const store = makeStore([{ number: '111', label: 'home' }]);
-    store.actions.phones.set(0, { number: '222', label: 'work' });
+    store.phones.set(0, { number: '222', label: 'work' });
     expect(store.getSnapshot().phones[0]).toEqual({ number: '222', label: 'work' });
   });
 
   test('set() is a no-op for out-of-bounds index', () => {
     const store = makeStore([]);
-    store.actions.phones.set(5, { number: 'x' });
+    store.phones.set(5, { number: 'x' });
     expect(store.getSnapshot().phones).toHaveLength(0);
   });
 
   test('set() does not mutate the previous snapshot', () => {
     const store = makeStore([{ number: '111', label: 'home' }]);
     const before = store.getSnapshot();
-    store.actions.phones.set(0, { number: '222' });
+    store.phones.set(0, { number: '222' });
     expect(before.phones[0]?.number).toBe('111');
   });
 
@@ -122,7 +120,7 @@ test.describe('createArrayMethods', () => {
       { number: 'b', label: '2' },
       { number: 'c', label: '3' },
     ]);
-    store.actions.phones.move(0, 2);
+    store.phones.move(0, 2);
     expect(store.getSnapshot().phones.map((p) => p.number)).toEqual(['b', 'c', 'a']);
   });
 
@@ -132,7 +130,7 @@ test.describe('createArrayMethods', () => {
       { number: 'b', label: '2' },
       { number: 'c', label: '3' },
     ]);
-    store.actions.phones.move(2, 0);
+    store.phones.move(2, 0);
     expect(store.getSnapshot().phones.map((p) => p.number)).toEqual(['c', 'a', 'b']);
   });
 
@@ -142,13 +140,13 @@ test.describe('createArrayMethods', () => {
     store.subscribe(() => {
       calls++;
     });
-    store.actions.phones.move(0, 0);
+    store.phones.move(0, 0);
     expect(calls).toBe(0);
   });
 
   test('move() is a no-op for out-of-bounds indices', () => {
     const store = makeStore([{ number: 'a', label: '1' }]);
-    store.actions.phones.move(0, 5);
+    store.phones.move(0, 5);
     expect(store.getSnapshot().phones).toHaveLength(1);
   });
 
@@ -157,7 +155,7 @@ test.describe('createArrayMethods', () => {
   test('add() does not mutate the previous snapshot', () => {
     const store = makeStore([{ number: '111', label: 'home' }]);
     const before = store.getSnapshot();
-    store.actions.phones.add({ number: '222' });
+    store.phones.add({ number: '222' });
     expect(before.phones).toHaveLength(1);
     expect(store.getSnapshot().phones).toHaveLength(2);
   });
@@ -168,7 +166,7 @@ test.describe('createArrayMethods', () => {
       { number: '222', label: 'work' },
     ]);
     const before = store.getSnapshot();
-    store.actions.phones.remove(0);
+    store.phones.remove(0);
     expect(before.phones).toHaveLength(2);
     expect(before.phones[0]?.number).toBe('111');
   });
@@ -180,7 +178,7 @@ test.describe('createArrayMethods', () => {
       { number: 'c', label: '3' },
     ]);
     const before = store.getSnapshot();
-    store.actions.phones.move(0, 2);
+    store.phones.move(0, 2);
     expect(before.phones.map((p) => p.number)).toEqual(['a', 'b', 'c']);
   });
 
@@ -190,7 +188,7 @@ test.describe('createArrayMethods', () => {
       { number: '222', label: 'work' },
     ]);
     const before = store.getSnapshot();
-    store.actions.phones.set(0, { number: '999' });
+    store.phones.set(0, { number: '999' });
     const after = store.getSnapshot();
     expect(after.phones[0]).not.toBe(before.phones[0]); // changed item
     expect(after.phones[1]).toBe(before.phones[1]); // unchanged item keeps identity
@@ -202,7 +200,7 @@ test.describe('createArrayMethods', () => {
       { number: '222', label: 'work' },
     ]);
     const before = store.getSnapshot();
-    store.actions.phones.setByPath(0, 'number', '999');
+    store.phones.setByPath(0, 'number', '999');
     const after = store.getSnapshot();
     expect(after.phones[0]).not.toBe(before.phones[0]);
     expect(after.phones[1]).toBe(before.phones[1]);
@@ -212,26 +210,26 @@ test.describe('createArrayMethods', () => {
 
   test('setByPath() updates a top-level property via typed path', () => {
     const store = makeStore([{ number: '111', label: 'home' }]);
-    store.actions.phones.setByPath(0, 'number', '222');
+    store.phones.setByPath(0, 'number', '222');
     expect(store.getSnapshot().phones[0]?.number).toBe('222');
   });
 
   test('setByPath() preserves other properties', () => {
     const store = makeStore([{ number: '111', label: 'home' }]);
-    store.actions.phones.setByPath(0, 'label', 'work');
+    store.phones.setByPath(0, 'label', 'work');
     expect(store.getSnapshot().phones[0]).toEqual({ number: '111', label: 'work' });
   });
 
   test('setByPath() is a no-op for out-of-bounds index', () => {
     const store = makeStore([]);
-    store.actions.phones.setByPath(5, 'number', 'x');
+    store.phones.setByPath(5, 'number', 'x');
     expect(store.getSnapshot().phones).toHaveLength(0);
   });
 
   test('setByPath() does not mutate the previous snapshot', () => {
     const store = makeStore([{ number: '111', label: 'home' }]);
     const before = store.getSnapshot();
-    store.actions.phones.setByPath(0, 'number', '222');
+    store.phones.setByPath(0, 'number', '222');
     expect(before.phones[0]?.number).toBe('111');
   });
 
@@ -239,12 +237,11 @@ test.describe('createArrayMethods', () => {
     type Item = { meta: { tag: string; count: number } };
     const itemOps = createArrayMethods<Item>({ meta: { tag: '', count: 0 } });
     const nested = createStore({ items: [] as Item[] }, (api) => ({
-      actions: {
-        items: itemOps.mount(api, 'items'),
-      },
+      items: itemOps.mount(api, 'items'),
+      
     }));
-    nested.actions.items.add({ meta: { tag: 'hello', count: 1 } });
-    nested.actions.items.setByPath(0, 'meta.tag', 'updated');
+    nested.items.add({ meta: { tag: 'hello', count: 1 } });
+    nested.items.setByPath(0, 'meta.tag', 'updated');
     const snap = nested.getSnapshot();
     expect(snap.items[0]?.meta.tag).toBe('updated');
     expect(snap.items[0]?.meta.count).toBe(1);
@@ -254,7 +251,7 @@ test.describe('createArrayMethods', () => {
       { number: '111', label: 'home' },
       { number: '222', label: 'work' },
     ]);
-    store.actions.phones.update((phone) => phone.label === 'work', { number: '999' });
+    store.phones.update((phone) => phone.label === 'work', { number: '999' });
     expect(store.getSnapshot().phones).toEqual([
       { number: '111', label: 'home' },
       { number: '999', label: 'work' },
@@ -267,7 +264,7 @@ test.describe('createArrayMethods', () => {
       { number: '222', label: 'work' },
     ]);
     const before = store.getSnapshot();
-    store.actions.phones.update((phone) => phone.label === 'work', { number: '999' });
+    store.phones.update((phone) => phone.label === 'work', { number: '999' });
     const after = store.getSnapshot();
     expect(after.phones[0]).toBe(before.phones[0]);
     expect(after.phones[1]).not.toBe(before.phones[1]);
@@ -278,7 +275,7 @@ test.describe('createArrayMethods', () => {
       { number: '111', label: 'home' },
       { number: '222', label: 'work' },
     ]);
-    store.actions.phones.update(
+    store.phones.update(
       (phone) => phone.label === 'work',
       (phone) => ({ number: phone.number + '0' })
     );
@@ -293,7 +290,7 @@ test.describe('createArrayMethods', () => {
       calls++;
     });
 
-    store.actions.phones.update((phone) => phone.label === 'work', { number: '999' });
+    store.phones.update((phone) => phone.label === 'work', { number: '999' });
 
     expect(store.getSnapshot()).toBe(before);
     expect(calls).toBe(0);
@@ -305,7 +302,7 @@ test.describe('createArrayMethods', () => {
       { number: '111', label: 'home' },
       { number: '222', label: 'work' },
     ]);
-    store.actions.phones.upsert({ number: '999', label: 'work' }, function (item) {
+    store.phones.upsert({ number: '999', label: 'work' }, function (item) {
       return item.label === this.label;
     });
     expect(store.getSnapshot().phones).toEqual([
@@ -316,7 +313,7 @@ test.describe('createArrayMethods', () => {
 
   test('upsert() appends when no match', () => {
     const store = makeStore([{ number: '111', label: 'home' }]);
-    store.actions.phones.upsert({ number: '222', label: 'work' }, function (item) {
+    store.phones.upsert({ number: '222', label: 'work' }, function (item) {
       return item.label === this.label;
     });
     expect(store.getSnapshot().phones).toEqual([
@@ -334,7 +331,7 @@ test.describe('createArrayMethods', () => {
     store.subscribe(() => {
       notifications++;
     });
-    store.actions.phones.upsert(
+    store.phones.upsert(
       [
         { number: '999', label: 'home' },
         { number: '333', label: 'mobile' },
@@ -357,7 +354,7 @@ test.describe('createArrayMethods', () => {
       { number: '222', label: 'work' },
     ]);
     const before = store.getSnapshot();
-    store.actions.phones.upsert({ number: '999', label: 'work' }, function (item) {
+    store.phones.upsert({ number: '999', label: 'work' }, function (item) {
       return item.label === this.label;
     });
     const after = store.getSnapshot();
@@ -368,7 +365,7 @@ test.describe('createArrayMethods', () => {
   test('upsert() does not mutate the previous snapshot', () => {
     const store = makeStore([{ number: '111', label: 'home' }]);
     const before = store.getSnapshot();
-    store.actions.phones.upsert({ number: '999', label: 'home' }, function (item) {
+    store.phones.upsert({ number: '999', label: 'home' }, function (item) {
       return item.label === this.label;
     });
     expect(before.phones[0]?.number).toBe('111');

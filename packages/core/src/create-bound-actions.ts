@@ -1,4 +1,5 @@
-import type { Store } from './create-store';
+import type { DomainStore } from './create-store';
+import { DOMAIN_METHODS } from './create-store';
 import type { DispatchOptions, LeafPaths } from './create-store-dispatch';
 
 // ── Type-level filtering ──────────────────────────────────────────────────
@@ -33,11 +34,11 @@ type BoundActionsReturn<
     : TMethods;
 
 /**
- * Creates an object-shaped dispatch for a Stardust store.
+ * Creates an object-shaped dispatch for a Stardust domain store.
  *
- * Returns an object mirroring the structure of `store.actions`, allowing
- * method calls via property access: `actions.fn1.fn2(value)` instead of
- * string paths. Useful for Redux-like patterns in React contexts.
+ * Returns an object mirroring the structure of the store's domain methods,
+ * allowing method calls via property access: `actions.fn1.fn2(value)`
+ * instead of string paths. Useful for Redux-like patterns in React contexts.
  *
  * By default all actions are reachable. Use the `domain` option to restrict
  * to specific leaf paths — attempts to call non-whitelisted methods throw
@@ -55,7 +56,7 @@ type BoundActionsReturn<
  * actions.increment();     // ❌ throws at runtime
  */
 export function createBoundActions<TSnapshot, TMethods extends object, TContext = never>(
-  store: Store<TSnapshot, TMethods, TContext>
+  store: DomainStore<TSnapshot, TMethods, TContext>
 ): TMethods;
 
 export function createBoundActions<
@@ -64,26 +65,38 @@ export function createBoundActions<
   TContext,
   const TDomain extends readonly LeafPaths<TMethods>[] | true = true,
 >(
-  store: Store<TSnapshot, TMethods, TContext>,
+  store: DomainStore<TSnapshot, TMethods, TContext>,
   options: DispatchOptions<TMethods, TDomain>
 ): BoundActionsReturn<TMethods, TDomain>;
 
 export function createBoundActions<TSnapshot, TMethods extends object, TContext = never>(
-  store: Store<TSnapshot, TMethods, TContext>,
+  store: DomainStore<TSnapshot, TMethods, TContext>,
   options?: {
     readonly domain?: readonly string[] | true | undefined;
   }
 ): TMethods {
-  // Build the set of allowed leaf paths
-  const allowed = buildAllowedSet(store.actions as Record<string, unknown>, options?.domain);
+  const domainMethods = readDomainMethods(store);
 
-  // No domain restriction: return actions directly
+  // Build the set of allowed leaf paths
+  const allowed = buildAllowedSet(domainMethods, options?.domain);
+
+  // No domain restriction: return domain methods directly
   if (allowed === null) {
-    return store.actions;
+    return domainMethods as TMethods;
   }
 
   // With domain restriction: wrap with proxy to guard access
-  return createGuardedProxy(store.actions as Record<string, unknown>, '', allowed) as TMethods;
+  return createGuardedProxy(domainMethods, '', allowed) as TMethods;
+}
+
+function readDomainMethods(store: object): Record<string, unknown> {
+  const domain = (store as Record<symbol, unknown>)[DOMAIN_METHODS];
+  if (domain === undefined) {
+    throw new Error(
+      'createBoundActions: store has no domain methods. Pass a store created with createStore(initial, builder).'
+    );
+  }
+  return domain as Record<string, unknown>;
 }
 
 function buildAllowedSet(

@@ -5,14 +5,13 @@ import { useEffect, useState } from 'react';
 import { ExampleLayout } from '@/entities/example';
 
 const temperatureStore = createStore({ celsius: 20 }, ({ set, get }) => ({
-  actions: {
-    increase() {
-      set({ celsius: get().celsius + 5 });
-    },
-    decrease() {
-      set({ celsius: get().celsius - 5 });
-    },
+  increase() {
+    set({ celsius: get().celsius + 5 });
   },
+  decrease() {
+    set({ celsius: get().celsius - 5 });
+  },
+  
 }));
 
 connectDebugLog(temperatureStore, { name: 'temperature' });
@@ -36,7 +35,7 @@ export function WatchExample() {
         variant="outlined"
         size="small"
         onClick={() => {
-          temperatureStore.actions.decrease();
+          temperatureStore.decrease();
         }}
       >
         −5°C
@@ -45,7 +44,7 @@ export function WatchExample() {
         variant="outlined"
         size="small"
         onClick={() => {
-          temperatureStore.actions.increase();
+          temperatureStore.increase();
         }}
       >
         +5°C

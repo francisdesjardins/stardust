@@ -1,24 +1,17 @@
 import { createLogger } from './utils/logger';
-import type { PathsOf, ValueAtPath } from './path-utils';
+import { DOMAIN_METHODS } from './create-store';
 
 // ── Store contract ───────────────────────────────────────────────────────────
 // Minimal interface — avoids the setContext contravariance issue.
+// Accepts both `GenericStore` (mutations at root) and `DomainStore` (domain
+// methods accessed via the DOMAIN_METHODS symbol). Each kind is detected at
+// runtime and instrumented differently.
 
 /** @internal */
 type DebugLogCompatibleStore<TSnapshot> = {
   readonly subscribe: (listener: () => void) => () => void;
   readonly getSnapshot: () => TSnapshot;
   readonly listenerCount: number;
-  readonly set: (next: TSnapshot | ((prev: TSnapshot) => TSnapshot)) => void;
-  readonly update: (recipe: (draft: TSnapshot) => void) => void;
-  readonly setByPath: <P extends PathsOf<TSnapshot>>(
-    path: P,
-    value: ValueAtPath<TSnapshot, P>
-  ) => void;
-  readonly batch: (fn: () => void) => void;
-  readonly reset: (next?: TSnapshot | ((initial: TSnapshot) => TSnapshot)) => void;
-  readonly run: (actionName: string, fn: () => void) => void;
-  readonly actions: Record<string, unknown>;
 };
 
 // ── Options ──────────────────────────────────────────────────────────────────
@@ -255,56 +248,94 @@ export function connectDebugLog<TSnapshot>(
     });
   }
 
-  // ── Wrap built-in mutation methods ─────────────────────────────────────────
+  // ── Discover domain methods (if any) ───────────────────────────────────────
+  // A DomainStore stores its methods object under the DOMAIN_METHODS symbol.
+  // A GenericStore has no such slot — instrument its built-in mutations instead.
 
-  const originalSet = store.set;
-  const originalUpdate = store.update;
-  const originalSetByPath = store.setByPath;
-  const originalBatch = store.batch;
-  const originalReset = store.reset;
-  const originalRun = store.run;
+  const domainMethods = (store as Record<symbol, unknown>)[DOMAIN_METHODS] as
+    | Record<string, unknown>
+    | undefined;
 
-  const mutableStore = store as Record<string, unknown>;
+  // ── Wrap built-in mutation methods (GenericStore only) ─────────────────────
 
-  function wrapBatch(fn: typeof originalBatch): typeof originalBatch {
-    return new Proxy<typeof originalBatch>(fn, {
-      apply(
-        target: typeof originalBatch,
-        thisArg: unknown,
-        args: Parameters<typeof originalBatch>
-      ) {
-        if (trackingDepth > 0) {
-          Reflect.apply(target, thisArg, args);
+  type GenericMutationStore<T> = {
+    set: (next: T | ((prev: T) => T)) => void;
+    update: (recipe: (draft: T) => void) => void;
+    setByPath: (path: string, value: unknown) => void;
+    batch: (fn: () => void) => void;
+    reset: (next?: T | ((initial: T) => T)) => void;
+    run: (actionName: string, fn: () => void) => void;
+  };
+
+  type BuiltInOriginals<T> = {
+    readonly set: GenericMutationStore<T>['set'];
+    readonly update: GenericMutationStore<T>['update'];
+    readonly setByPath: GenericMutationStore<T>['setByPath'];
+    readonly batch: GenericMutationStore<T>['batch'];
+    readonly reset: GenericMutationStore<T>['reset'];
+    readonly run: GenericMutationStore<T>['run'];
+  };
+
+  let builtInOriginals: BuiltInOriginals<TSnapshot> | undefined;
+
+  if (domainMethods === undefined) {
+    const mutableStore = store as unknown as GenericMutationStore<TSnapshot> &
+      Record<string, unknown>;
+    const originalSet = mutableStore.set;
+    const originalUpdate = mutableStore.update;
+    const originalSetByPath = mutableStore.setByPath;
+    const originalBatch = mutableStore.batch;
+    const originalReset = mutableStore.reset;
+    const originalRun = mutableStore.run;
+
+    builtInOriginals = {
+      set: originalSet,
+      update: originalUpdate,
+      setByPath: originalSetByPath,
+      batch: originalBatch,
+      reset: originalReset,
+      run: originalRun,
+    };
+
+    const wrapBatch = (fn: typeof originalBatch): typeof originalBatch =>
+      new Proxy<typeof originalBatch>(fn, {
+        apply(
+          target: typeof originalBatch,
+          thisArg: unknown,
+          args: Parameters<typeof originalBatch>
+        ) {
+          if (trackingDepth > 0) {
+            Reflect.apply(target, thisArg, args);
+            return;
+          }
+          inBatch = true;
+          batchActions = [];
+          prevSnapshot = store.getSnapshot();
+          startTime = performance.now();
+          currentActionId = undefined;
+          currentActionSubId = 0;
+          Reflect.apply(target, thisArg, [
+            () => {
+              args[0]();
+              inBatch = false;
+              currentAction = `batch(${batchActions.join(', ')})`;
+              batchActions = [];
+            },
+          ]);
           return;
-        }
-        inBatch = true;
-        batchActions = [];
-        prevSnapshot = store.getSnapshot();
-        startTime = performance.now();
-        currentActionId = undefined;
-        currentActionSubId = 0;
-        Reflect.apply(target, thisArg, [
-          () => {
-            args[0]();
-            inBatch = false;
-            currentAction = `batch(${batchActions.join(', ')})`;
-            batchActions = [];
-          },
-        ]);
-        return;
-      },
-    });
-  }
+        },
+      });
 
-  mutableStore['set'] = wrapBuiltIn<typeof originalSet>(originalSet, () => 'set');
-  mutableStore['update'] = wrapBuiltIn<typeof originalUpdate>(originalUpdate, () => 'update');
-  mutableStore['setByPath'] = wrapBuiltIn<typeof originalSetByPath>(
-    originalSetByPath,
-    (args) => `setByPath(${args[0]})`
-  );
-  mutableStore['reset'] = wrapBuiltIn<typeof originalReset>(originalReset, () => 'reset');
-  mutableStore['batch'] = wrapBatch(originalBatch);
-  mutableStore['run'] = wrapBuiltIn<typeof originalRun>(originalRun, (args) => args[0]);
+    mutableStore['set'] = wrapBuiltIn<typeof originalSet>(originalSet, () => 'set');
+    mutableStore['update'] = wrapBuiltIn<typeof originalUpdate>(originalUpdate, () => 'update');
+    mutableStore['setByPath'] = wrapBuiltIn<typeof originalSetByPath>(
+      originalSetByPath,
+      (args) => `setByPath(${args[0]})`
+    );
+    mutableStore['reset'] = wrapBuiltIn<typeof originalReset>(originalReset, () => 'reset');
+    mutableStore['batch'] = wrapBatch(originalBatch);
+    mutableStore['run'] = wrapBuiltIn<typeof originalRun>(originalRun, (args) => args[0]);
+  }
 
   // ── Wrap domain methods ────────────────────────────────────────────────────
 
@@ -329,7 +360,9 @@ export function connectDebugLog<TSnapshot>(
     }
   }
 
-  wrapMethods(store.actions, '');
+  if (domainMethods !== undefined) {
+    wrapMethods(domainMethods, '');
+  }
 
   // ── Store subscription → logger ────────────────────────────────────────────
 
@@ -385,12 +418,15 @@ export function connectDebugLog<TSnapshot>(
   return function disconnect(): void {
     unsubscribeStore();
 
-    mutableStore['set'] = originalSet;
-    mutableStore['update'] = originalUpdate;
-    mutableStore['setByPath'] = originalSetByPath;
-    mutableStore['batch'] = originalBatch;
-    mutableStore['reset'] = originalReset;
-    mutableStore['run'] = originalRun;
+    if (builtInOriginals) {
+      const mutableStore = store as Record<string, unknown>;
+      mutableStore['set'] = builtInOriginals.set;
+      mutableStore['update'] = builtInOriginals.update;
+      mutableStore['setByPath'] = builtInOriginals.setByPath;
+      mutableStore['batch'] = builtInOriginals.batch;
+      mutableStore['reset'] = builtInOriginals.reset;
+      mutableStore['run'] = builtInOriginals.run;
+    }
 
     for (const entry of originals) {
       entry.owner[entry.key] = entry.fn;

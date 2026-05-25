@@ -5,14 +5,13 @@ import { ExampleLayout } from '@/entities/example';
 
 const CounterCtx = createStoreContext((initial: { label: string; count: number }) => {
   const store = createStore(initial, ({ set, get }) => ({
-    actions: {
-      increment() {
-        set({ ...get(), count: get().count + 1 });
-      },
-      reset() {
-        set({ ...get(), count: 0 });
-      },
+    increment() {
+      set({ ...get(), count: get().count + 1 });
     },
+    reset() {
+      set({ ...get(), count: 0 });
+    },
+    
   }));
   connectDebugLog(store, { name: `counter:${initial.label}` });
   return store;
@@ -31,7 +30,7 @@ function Counter({ title }: { title: string }) {
           variant="outlined"
           size="small"
           onClick={() => {
-            store.actions.increment();
+            store.increment();
           }}
         >
           +
@@ -41,7 +40,7 @@ function Counter({ title }: { title: string }) {
           size="small"
           color="error"
           onClick={() => {
-            store.actions.reset();
+            store.reset();
           }}
         >
           Reset

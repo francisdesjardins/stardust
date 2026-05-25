@@ -5,30 +5,28 @@ import { createDerivedStore, createStore, shallowEqual } from '..';
 
 function makeCounter(initial = 0) {
   return createStore({ count: initial }, ({ update }) => ({
-    actions: {
-      increment() {
-        update((d) => {
-          d.count += 1;
-        });
-      },
-      set(n: number) {
-        update((d) => {
-          d.count = n;
-        });
-      },
+    increment() {
+      update((d) => {
+        d.count += 1;
+      });
     },
+    set(n: number) {
+      update((d) => {
+        d.count = n;
+      });
+    },
+    
   }));
 }
 
 function makeLabel(initial = '') {
   return createStore({ label: initial }, ({ update }) => ({
-    actions: {
-      setLabel(v: string) {
-        update((d) => {
-          d.label = v;
-        });
-      },
+    setLabel(v: string) {
+      update((d) => {
+        d.label = v;
+      });
     },
+    
   }));
 }
 
@@ -63,10 +61,10 @@ test.describe('createDerivedStore', () => {
         /* noop */
       });
 
-      counter.actions.increment();
+      counter.increment();
       expect(derived.getSnapshot()).toBe(2);
 
-      counter.actions.increment();
+      counter.increment();
       expect(derived.getSnapshot()).toBe(4);
 
       unsub();
@@ -81,10 +79,10 @@ test.describe('createDerivedStore', () => {
         callCount++;
       });
 
-      counter.actions.increment();
+      counter.increment();
       expect(callCount).toBe(1);
 
-      counter.actions.increment();
+      counter.increment();
       expect(callCount).toBe(2);
 
       unsub();
@@ -103,11 +101,11 @@ test.describe('createDerivedStore', () => {
         callCount++;
       });
 
-      counter.actions.increment();
+      counter.increment();
       expect(derived.getSnapshot()).toBe('a:1');
       expect(callCount).toBe(1);
 
-      label.actions.setLabel('b');
+      label.setLabel('b');
       expect(derived.getSnapshot()).toBe('b:1');
       expect(callCount).toBe(2);
 
@@ -131,7 +129,7 @@ test.describe('createDerivedStore', () => {
       });
 
       // Changing label triggers recompute, new object ref → Object.is → notify
-      label.actions.setLabel('y');
+      label.setLabel('y');
       expect(callCount).toBe(1);
       expect(derived.getSnapshot()).toEqual({ doubled: 0 });
 
@@ -149,7 +147,7 @@ test.describe('createDerivedStore', () => {
       });
 
       // Changing label triggers recompute, but result is still 0 → Object.is → skip
-      label.actions.setLabel('y');
+      label.setLabel('y');
       expect(callCount).toBe(0);
 
       unsub();
@@ -164,7 +162,7 @@ test.describe('createDerivedStore', () => {
         callCount++;
       });
 
-      counter.actions.increment();
+      counter.increment();
       expect(callCount).toBe(1);
       expect(derived.getSnapshot()).toEqual({ doubled: 2 });
 
@@ -187,7 +185,7 @@ test.describe('createDerivedStore', () => {
       });
 
       // Changing label triggers recompute, but doubled stays 0 → shallowEqual → no notify
-      label.actions.setLabel('y');
+      label.setLabel('y');
       expect(callCount).toBe(0);
       expect(derived.getSnapshot()).toEqual({ doubled: 0 });
 
@@ -206,12 +204,12 @@ test.describe('createDerivedStore', () => {
       });
 
       // 0 → 1: isPositive changes false → true → notify
-      counter.actions.increment();
+      counter.increment();
       expect(callCount).toBe(1);
       expect(derived.getSnapshot()).toBe(true);
 
       // 1 → 2: isPositive stays true → Object.is(true, true) → skip
-      counter.actions.increment();
+      counter.increment();
       expect(callCount).toBe(1);
 
       unsub();
@@ -226,8 +224,8 @@ test.describe('createDerivedStore', () => {
         callCount++;
       });
 
-      counter.actions.increment();
-      counter.actions.increment();
+      counter.increment();
+      counter.increment();
       expect(callCount).toBe(2);
 
       unsub();
@@ -240,7 +238,7 @@ test.describe('createDerivedStore', () => {
       const derived = createDerivedStore([counter], (c) => c.count * 2);
 
       // Mutate source — no listeners on derived, so derived should not track
-      counter.actions.increment();
+      counter.increment();
       // getSnapshot still returns eagerly computed initial value
       expect(derived.getSnapshot()).toBe(0);
     });
@@ -249,7 +247,7 @@ test.describe('createDerivedStore', () => {
       const counter = makeCounter(0);
       const derived = createDerivedStore([counter], (c) => c.count * 2);
 
-      counter.actions.increment(); // derived is not listening yet
+      counter.increment(); // derived is not listening yet
 
       // On subscribe, it recomputes to catch up
       const unsub = derived.subscribe(() => {
@@ -271,17 +269,17 @@ test.describe('createDerivedStore', () => {
         /* noop */
       });
 
-      counter.actions.increment();
+      counter.increment();
       expect(derived.getSnapshot()).toBe(2);
 
       unsub1();
       // Still one listener — should keep tracking
-      counter.actions.increment();
+      counter.increment();
       expect(derived.getSnapshot()).toBe(4);
 
       unsub2();
       // No listeners — stops tracking. Mutations are missed.
-      counter.actions.increment();
+      counter.increment();
       expect(derived.getSnapshot()).toBe(4); // stale — not tracking
     });
 
@@ -292,13 +290,13 @@ test.describe('createDerivedStore', () => {
       const unsub1 = derived.subscribe(() => {
         /* noop */
       });
-      counter.actions.increment();
+      counter.increment();
       expect(derived.getSnapshot()).toBe(2);
       unsub1();
 
       // Mutate while disconnected
-      counter.actions.increment();
-      counter.actions.increment();
+      counter.increment();
+      counter.increment();
 
       // Re-subscribe — should catch up
       const unsub2 = derived.subscribe(() => {
@@ -343,7 +341,7 @@ test.describe('createDerivedStore', () => {
 
     test('listenerCount > 0 correlates with lazy source subscription being active', () => {
       let sourceListenerCount = 0;
-      const source = createStore({ value: 1 }, () => ({ actions: {} }));
+      const source = createStore({ value: 1 });
       // Wrap source in a proxy that counts active subscriptions without mutating readonly props
       const trackedSource = {
         getSnapshot: () => source.getSnapshot(),

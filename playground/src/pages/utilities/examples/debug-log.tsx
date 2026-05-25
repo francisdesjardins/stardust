@@ -6,38 +6,36 @@ import { ExampleLayout } from '@/entities/example';
 type LogEntry = { action: string; path: string; from: unknown; to: unknown };
 
 const profileStore = createStore({ name: 'Alice', score: 0, active: true }, ({ set, get }) => ({
-  actions: {
-    rename(name: string) {
-      set({ ...get(), name });
-    },
-    addScore() {
-      set({ ...get(), score: get().score + 10 });
-    },
-    toggle() {
-      set({ ...get(), active: !get().active });
-    },
-    reset() {
-      set({ name: 'Alice', score: 0, active: true });
-    },
+  rename(name: string) {
+    set({ ...get(), name });
   },
+  addScore() {
+    set({ ...get(), score: get().score + 10 });
+  },
+  toggle() {
+    set({ ...get(), active: !get().active });
+  },
+  reset() {
+    set({ name: 'Alice', score: 0, active: true });
+  },
+  
 }));
 
 const logsStore = createStore({ entries: [] as LogEntry[] }, ({ set, get }) => ({
-  actions: {
-    push(action: string, diff: DiffResult) {
-      const next = Object.entries(diff).map(([path, { from, to }]) => ({ action, path, from, to }));
-      set({ entries: [...next, ...get().entries].slice(0, 8) });
-    },
-    clear() {
-      set({ entries: [] });
-    },
+  push(action: string, diff: DiffResult) {
+    const next = Object.entries(diff).map(([path, { from, to }]) => ({ action, path, from, to }));
+    set({ entries: [...next, ...get().entries].slice(0, 8) });
   },
+  clear() {
+    set({ entries: [] });
+  },
+  
 }));
 
 connectDebugLog(profileStore, {
   name: 'profile',
   onLog(action, diff) {
-    logsStore.actions.push(action, diff);
+    logsStore.push(action, diff);
   },
 });
 
@@ -53,7 +51,7 @@ export function DebugLogExample() {
         variant="outlined"
         size="small"
         onClick={() => {
-          profileStore.actions.rename('Bob');
+          profileStore.rename('Bob');
         }}
       >
         Rename → Bob
@@ -62,7 +60,7 @@ export function DebugLogExample() {
         variant="outlined"
         size="small"
         onClick={() => {
-          profileStore.actions.rename('Alice');
+          profileStore.rename('Alice');
         }}
       >
         Rename → Alice
@@ -71,7 +69,7 @@ export function DebugLogExample() {
         variant="outlined"
         size="small"
         onClick={() => {
-          profileStore.actions.addScore();
+          profileStore.addScore();
         }}
       >
         +10 score
@@ -80,7 +78,7 @@ export function DebugLogExample() {
         variant="outlined"
         size="small"
         onClick={() => {
-          profileStore.actions.toggle();
+          profileStore.toggle();
         }}
       >
         Toggle ({state.active ? 'active' : 'inactive'})
@@ -90,8 +88,8 @@ export function DebugLogExample() {
         size="small"
         color="error"
         onClick={() => {
-          profileStore.actions.reset();
-          logsStore.actions.clear();
+          profileStore.reset();
+          logsStore.clear();
         }}
       >
         Reset

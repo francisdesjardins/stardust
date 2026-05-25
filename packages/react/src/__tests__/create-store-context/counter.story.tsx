@@ -4,18 +4,17 @@ import { createStoreContext } from '@stardust/react';
 const CounterCtx = createStoreContext(
   () =>
     createStore({ count: 0 }, ({ update }) => ({
-      actions: {
-        increment() {
-          update((d) => {
-            d.count += 1;
-          });
-        },
-        decrement() {
-          update((d) => {
-            d.count -= 1;
-          });
-        },
+      increment() {
+        update((d) => {
+          d.count += 1;
+        });
       },
+      decrement() {
+        update((d) => {
+          d.count -= 1;
+        });
+      },
+      
     })),
   { name: 'Counter' }
 );
@@ -26,8 +25,8 @@ function CounterInner() {
   return (
     <div>
       <span data-testid="count">{count}</span>
-      <button onClick={store.actions.increment}>Increment</button>
-      <button onClick={store.actions.decrement}>Decrement</button>
+      <button onClick={store.increment}>Increment</button>
+      <button onClick={store.decrement}>Decrement</button>
     </div>
   );
 }

@@ -3,23 +3,21 @@ import { createDerivedStore, createStore, shallowEqual } from '@stardust/core';
 import { useStore } from '@stardust/react';
 
 const counterStore = createStore({ count: 0 }, ({ update }) => ({
-  actions: {
-    increment() {
-      update((d) => {
-        d.count += 1;
-      });
-    },
+  increment() {
+    update((d) => {
+      d.count += 1;
+    });
   },
+  
 }));
 
 const labelStore = createStore({ label: 'x' }, ({ update }) => ({
-  actions: {
-    setLabel(v: string) {
-      update((d) => {
-        d.label = v;
-      });
-    },
+  setLabel(v: string) {
+    update((d) => {
+      d.label = v;
+    });
   },
+  
 }));
 
 // Derive depends on both stores but only reads count — label changes should
@@ -70,14 +68,14 @@ function RenderTracker({
       <button
         onClick={() => {
           // Change label only — should NOT cause derived to re-notify
-          labelStore.actions.setLabel(`label-${String(Date.now())}`);
+          labelStore.setLabel(`label-${String(Date.now())}`);
         }}
       >
         Change Label Only
       </button>
       <button
         onClick={() => {
-          counterStore.actions.increment();
+          counterStore.increment();
         }}
       >
         Increment Counter

@@ -2,21 +2,20 @@ import { createStore } from '@stardust/core';
 import { useStore } from '@stardust/react';
 
 const formStore = createStore({ name: '', email: '', submitted: false }, ({ set, update }) => ({
-  actions: {
-    setField(key: 'name' | 'email', value: string) {
-      update((draft) => {
-        draft[key] = value;
-      });
-    },
-    submit() {
-      update((draft) => {
-        draft.submitted = true;
-      });
-    },
-    reset() {
-      set({ name: '', email: '', submitted: false });
-    },
+  setField(key: 'name' | 'email', value: string) {
+    update((draft) => {
+      draft[key] = value;
+    });
   },
+  submit() {
+    update((draft) => {
+      draft.submitted = true;
+    });
+  },
+  reset() {
+    set({ name: '', email: '', submitted: false });
+  },
+  
 }));
 
 /**
@@ -32,28 +31,28 @@ export function ProduceHarness() {
       <span data-testid="submitted">{String(snap.submitted)}</span>
       <button
         onClick={() => {
-          formStore.actions.setField('name', 'Bob');
+          formStore.setField('name', 'Bob');
         }}
       >
         Set Name Bob
       </button>
       <button
         onClick={() => {
-          formStore.actions.setField('email', 'bob@test.com');
+          formStore.setField('email', 'bob@test.com');
         }}
       >
         Set Email Bob
       </button>
       <button
         onClick={() => {
-          formStore.actions.submit();
+          formStore.submit();
         }}
       >
         Submit
       </button>
       <button
         onClick={() => {
-          formStore.actions.reset();
+          formStore.reset();
         }}
       >
         Reset

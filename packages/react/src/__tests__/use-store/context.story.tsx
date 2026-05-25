@@ -11,11 +11,12 @@ type PricingState = { basePrice: number };
 function makePricingStore() {
   return createStore(
     { basePrice: 100 },
-    ({ get, getContext }: StoreApi<PricingState, PricingCtx>) => ({
-      actions: {
-        getTotal(): number {
-          return get().basePrice * (1 + getContext().taxRate);
-        },
+    ({ get, getContext, setByPath }: StoreApi<PricingState, PricingCtx>) => ({
+      getTotal(): number {
+        return get().basePrice * (1 + getContext().taxRate);
+      },
+      setBase(value: number) {
+        setByPath('basePrice', value);
       },
     })
   );
@@ -32,7 +33,7 @@ export function ContextHarness() {
   // getTotal() is called inside the selector so it runs within useSyncExternalStore's
   // snapshot cycle — the React Compiler cannot memoize it away.
   const { base, total } = useStore(contextStore, {
-    select: (snapshot, store) => ({ base: snapshot.basePrice, total: store.actions.getTotal() }),
+    select: (snapshot, store) => ({ base: snapshot.basePrice, total: store.getTotal() }),
     context: { taxRate: 1 },
     equals: shallowEqual,
   });
@@ -43,7 +44,7 @@ export function ContextHarness() {
       <span data-testid="total">{total}</span>
       <button
         onClick={() => {
-          contextStore.setByPath('basePrice', 200);
+          contextStore.setBase(200);
         }}
       >
         Set 200
@@ -60,7 +61,7 @@ export function ContextWithSelectorHarness() {
   const { base, total } = useStore(selectorContextStore, {
     select: (snapshot, store) => ({
       base: snapshot.basePrice,
-      total: store.actions.getTotal(),
+      total: store.getTotal(),
     }),
     context: { taxRate: 3 },
     equals: shallowEqual,
@@ -72,7 +73,7 @@ export function ContextWithSelectorHarness() {
       <span data-testid="total">{total}</span>
       <button
         onClick={() => {
-          selectorContextStore.setByPath('basePrice', 50);
+          selectorContextStore.setBase(50);
         }}
       >
         Set 50
