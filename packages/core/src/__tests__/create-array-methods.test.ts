@@ -8,7 +8,6 @@ const phoneOps = createArrayMethods<Phone>({ number: '', label: 'mobile' });
 function makeStore(initial: Phone[] = []) {
   return createStore({ phones: initial }, (api) => ({
     phones: phoneOps.mount(api, 'phones'),
-    
   }));
 }
 
@@ -32,7 +31,6 @@ test.describe('createArrayMethods', () => {
     const nestedOps = createArrayMethods<NestedItem>({ meta: { tag: 'default' } });
     const nested = createStore({ items: [] as NestedItem[] }, (api) => ({
       items: nestedOps.mount(api, 'items'),
-      
     }));
     nested.items.add();
     nested.items.add();
@@ -238,7 +236,6 @@ test.describe('createArrayMethods', () => {
     const itemOps = createArrayMethods<Item>({ meta: { tag: '', count: 0 } });
     const nested = createStore({ items: [] as Item[] }, (api) => ({
       items: itemOps.mount(api, 'items'),
-      
     }));
     nested.items.add({ meta: { tag: 'hello', count: 1 } });
     nested.items.setByPath(0, 'meta.tag', 'updated');

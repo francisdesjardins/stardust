@@ -36,7 +36,6 @@ const profileStore = createStore({ profile: initial }, ({ set, get }) => ({
   reset() {
     set({ profile: initial });
   },
-  
 }));
 
 connectDebugLog(profileStore, { name: 'profile' });

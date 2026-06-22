@@ -24,7 +24,6 @@ const profileStore = createStore(initialProfile, ({ set }) => ({
   reset() {
     set({ data: asyncIdle });
   },
-  
 }));
 
 connectDebugLog(profileStore, { name: 'profile' });

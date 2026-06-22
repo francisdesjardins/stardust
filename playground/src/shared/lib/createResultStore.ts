@@ -5,7 +5,6 @@ export function createResultStore(name = 'Result') {
     setResult(result: string | null) {
       set({ result });
     },
-    
   }));
   connectDebugLog(store, { name: name.toLowerCase() });
   return store;

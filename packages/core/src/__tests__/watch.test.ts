@@ -7,7 +7,6 @@ test.describe('watch', () => {
       setCount(n: number) {
         set({ count: n });
       },
-      
     }));
 
     const calls: Array<[{ count: number }, { count: number }]> = [];
@@ -31,7 +30,6 @@ test.describe('watch', () => {
       setLabel(l: string) {
         set({ count: 0, label: l });
       },
-      
     }));
 
     const calls: number[] = [];
@@ -62,7 +60,6 @@ test.describe('watch', () => {
           d.y = y;
         });
       },
-      
     }));
 
     const calls: Array<{ x: number; y: number }> = [];
@@ -87,7 +84,6 @@ test.describe('watch', () => {
       setCount(n: number) {
         set({ count: n });
       },
-      
     }));
 
     const calls: number[] = [];

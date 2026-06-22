@@ -32,10 +32,7 @@ const logStore = createStore({ entries: [] as LogEntry[], loading: false }, ({ s
     } else {
       set({
         loading: false,
-        entries: [{ ok: true, msg: `value = ${String(data.value)}` }, ...get().entries].slice(
-          0,
-          6
-        ),
+        entries: [{ ok: true, msg: `value = ${String(data.value)}` }, ...get().entries].slice(0, 6),
       });
     }
   },
@@ -43,7 +40,6 @@ const logStore = createStore({ entries: [] as LogEntry[], loading: false }, ({ s
     set({ entries: [], loading: false });
     callCount = 0;
   },
-  
 }));
 
 connectDebugLog(logStore, { name: 'log' });

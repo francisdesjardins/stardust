@@ -13,9 +13,7 @@ const cartStore = createStore(
       return get().items.reduce((sum, item) => sum + item.price, 0);
     },
     tax(): number {
-      return (
-        Math.round(get().items.reduce((sum, item) => sum + item.price, 0) * 0.15 * 100) / 100
-      );
+      return Math.round(get().items.reduce((sum, item) => sum + item.price, 0) * 0.15 * 100) / 100;
     },
     total(): number {
       const sub = get().items.reduce((sum, item) => sum + item.price, 0);
@@ -31,7 +29,6 @@ const cartStore = createStore(
         d.items = [];
       });
     },
-    
   })
 );
 

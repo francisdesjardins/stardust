@@ -174,7 +174,6 @@ test('built-in logger group header includes action sub-id', async () => {
         d.status = 'fulfilled';
       });
     },
-    
   }));
 
   const groupArgs: string[] = [];
@@ -320,7 +319,6 @@ test('logs action name + diff on domain method', () => {
         d.count += 1;
       });
     },
-    
   }));
   const calls: Array<{ action: string; diff: DiffResult }> = [];
   const disconnect = connectDebugLog(store, {
@@ -354,7 +352,6 @@ test('async domain method: all subscription fires attributed to the method name'
         d.data = data;
       });
     },
-    
   }));
   const calls: Array<{ action: string }> = [];
   const disconnect = connectDebugLog(store, {
@@ -383,7 +380,6 @@ test('logs nested method name for array methods', () => {
         });
       },
     },
-    
   }));
   const calls: Array<{ action: string }> = [];
   const disconnect = connectDebugLog(store, {
@@ -558,7 +554,6 @@ test('wraps 3-level nested domain objects with full prefix path', () => {
         },
       },
     },
-    
   }));
   const calls: Array<{ action: string }> = [];
   const disconnect = connectDebugLog(store, {
@@ -582,7 +577,6 @@ test('domain method shadowing a built-in name logs the method name, not the inne
     reset() {
       set({ count: 0 });
     },
-    
   }));
 
   const calls: Array<{ action: string }> = [];

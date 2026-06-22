@@ -9,7 +9,6 @@ const InitialCounterCtx = createStoreContext(
           d.count += 1;
         });
       },
-      
     })),
   { name: 'InitialCounter' }
 );

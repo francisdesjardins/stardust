@@ -11,7 +11,6 @@ const CounterCtx = createStoreContext((initial: { label: string; count: number }
     reset() {
       set({ ...get(), count: 0 });
     },
-    
   }));
   connectDebugLog(store, { name: `counter:${initial.label}` });
   return store;

@@ -65,7 +65,7 @@ const slice = useStore(counter, {
 - **React context boundary**: [`createStoreContext`](README.md#createstorestorecontextfactory-options) → isolated per-`Provider` store instances; optional `onUnmount` hook for explicit teardown
 - **Dispatch wrapper**: [`createStoreDispatch`](README.md#createstoredispatchstore-options) → restrict what methods can be called
 - **Debug logging**: [`connectDebugLog`](README.md#connectdebuglogstore-options) → console observer with action sub-ids and snapshot output, no extension needed
-- **Cache helpers**: [`createCachedSlice`](README.md#createcachedsliceapi-options) → refresh root or nested slices; TTL via `expiresAt` on `cachedFresh`, `set`, and `refresh`; `keepPreviousData` and `placeholder` for in-flight UX; `refreshOnExpire` callback for automatic re-fetch; call `startAutoRefresh({ interval })` to arm recurring cycles
+- **Cache helpers**: [`createCachedSlice`](README.md#createcachedsliceapi-options) → refresh root or nested slices; TTL via `expiresAt` on `cachedFresh`, `set`, and `refresh`; `keepPreviousData` and `placeholder` for in-flight UX; `onExpire` callback for automatic re-fetch; call `startAutoRefresh({ expiresAfter })` to arm recurring cycles
 - **Async state shape**: [`AsyncState<T>` / `runAsync`](README.md#async-state) → standard `idle | pending | fulfilled | rejected` union for store snapshots
 - **Safe async**: [`safeAwait`](README.md#safeawaitpromise) → Go-style `[err, result]` tuple, no try/catch
 - **Deduplicate concurrent calls**: [`createSingleFlight`](README.md#createsinglflightcreatesingleflight--safesingleflight) → N callers share one execution

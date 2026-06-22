@@ -15,7 +15,6 @@ function makeCounter(initial = 0) {
         d.count = n;
       });
     },
-    
   }));
 }
 
@@ -26,7 +25,6 @@ function makeLabel(initial = '') {
         d.label = v;
       });
     },
-    
   }));
 }
 

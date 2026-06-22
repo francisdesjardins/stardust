@@ -42,7 +42,6 @@ const configStore = createStore(
       networkHits = 0;
       resetSnapshot();
     },
-    
   })
 );
 

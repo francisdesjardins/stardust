@@ -11,7 +11,6 @@ const temperatureStore = createStore({ celsius: 20 }, ({ set, get }) => ({
   decrease() {
     set({ celsius: get().celsius - 5 });
   },
-  
 }));
 
 connectDebugLog(temperatureStore, { name: 'temperature' });

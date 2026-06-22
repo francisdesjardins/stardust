@@ -11,7 +11,6 @@ const initialItems: Item[] = [];
 const listOps = createArrayMethods(initialItem);
 const listStore = createStore({ items: initialItems }, (api) => ({
   list: listOps.mount(api, 'items'),
-  
 }));
 
 connectDebugLog(listStore, { name: 'list' });

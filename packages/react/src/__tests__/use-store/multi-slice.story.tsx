@@ -15,7 +15,6 @@ const formStore = createStore({ name: '', email: '', submitted: false }, ({ set,
   reset() {
     set({ name: '', email: '', submitted: false });
   },
-  
 }));
 
 /**

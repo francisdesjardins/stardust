@@ -10,7 +10,6 @@ const counterStore = createStore({ count: 0 }, ({ set, update }) => ({
   reset() {
     set({ count: 0 });
   },
-  
 }));
 
 /**

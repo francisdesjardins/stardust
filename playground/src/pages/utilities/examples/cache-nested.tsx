@@ -37,7 +37,6 @@ const store = createStore(
       keepPreviousData: true,
       onExpire: fetchNextProfile,
     }),
-    
   })
 );
 
@@ -108,7 +107,7 @@ export function CacheNestedExample() {
           Only <code>profile</code> is a <code>CachedState&lt;Profile&gt;</code>. The{' '}
           <code>posts</code> and <code>lastVisit</code> fields are plain values — unchanged during a
           profile refresh. With auto-refresh armed, &ldquo;Expire now&rdquo; immediately triggers{' '}
-          <code>refreshOnExpire</code> on the next timer tick — no dead expired state.
+          <code>onExpire</code> on the next timer tick — no dead expired state.
         </Typography>
       </Stack>
     </ExampleLayout>

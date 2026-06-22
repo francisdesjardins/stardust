@@ -54,7 +54,6 @@ const apiStore = createStore(initialSnapshot, (api) => {
     reset: () => {
       api.setByPath('data.cached', cachedIdle);
     },
-    
   };
 });
 

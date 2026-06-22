@@ -8,7 +8,6 @@ const counterStore = createStore({ count: 0 }, ({ update }) => ({
       d.count += 1;
     });
   },
-  
 }));
 
 const labelStore = createStore({ label: 'x' }, ({ update }) => ({
@@ -17,7 +16,6 @@ const labelStore = createStore({ label: 'x' }, ({ update }) => ({
       d.label = v;
     });
   },
-  
 }));
 
 // Derive depends on both stores but only reads count — label changes should

@@ -10,7 +10,6 @@ const PosCtx = createStoreContext(
           d.label = 'nudged';
         });
       },
-      
     })),
   { name: 'Pos' }
 );

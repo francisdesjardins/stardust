@@ -12,7 +12,6 @@ const sharedStore = createStore({ count: 0 }, ({ set, get }) => ({
   decrement() {
     set({ count: get().count - 1 });
   },
-  
 }));
 
 connectDebugLog(sharedStore, { name: 'shared-counter' });

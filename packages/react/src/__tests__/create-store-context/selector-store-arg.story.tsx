@@ -15,7 +15,6 @@ const PricingCtx = createStoreContext(
           d.basePrice = n;
         });
       },
-      
     })),
   { name: 'Pricing' }
 );

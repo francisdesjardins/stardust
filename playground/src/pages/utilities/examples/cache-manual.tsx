@@ -13,8 +13,7 @@ type Profile = { name: string; syncedAt: string };
 
 const initial: Profile = { name: 'Nova', syncedAt: 'never' };
 
-const store = createStore(cachedFresh(initial), (api) => ({ cache: createCachedSlice(api) 
-}));
+const store = createStore(cachedFresh(initial), (api) => ({ cache: createCachedSlice(api) }));
 
 connectDebugLog(store, { name: 'cache-manual' });
 

@@ -23,7 +23,6 @@ const jobStore = createStore({ jobs: [] as Job[] }, ({ set, get }) => ({
     set({ jobs: [] });
     nextId = 1;
   },
-  
 }));
 
 connectDebugLog(jobStore, { name: 'jobs' });

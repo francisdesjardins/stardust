@@ -27,7 +27,6 @@ const store = createStore(cachedFresh(initial, Date.now() + INTERVAL), (api) => 
       return { value: (prev?.value ?? 0) + 1, refreshedAt: new Date().toLocaleTimeString() };
     },
   }),
-  
 }));
 
 connectDebugLog(store, { name: 'cache-ttl' });

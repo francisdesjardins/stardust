@@ -32,7 +32,6 @@ const fulfilledStore = createStore(fulfilledInitial, ({ update }) => ({
       d.user = asyncIdle;
     });
   },
-  
 }));
 
 function UserName() {
@@ -88,7 +87,6 @@ const rejectedStore = createStore(rejectedInitial, ({ update }) => ({
       d.user = asyncIdle;
     });
   },
-  
 }));
 
 function RejectedUserName() {
@@ -143,7 +141,6 @@ const contextStore = createStore<UserState, { fulfill(): void; reset(): void }, 
         d.user = asyncIdle;
       });
     },
-    
   })
 );
 

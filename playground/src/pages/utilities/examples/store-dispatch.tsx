@@ -16,7 +16,6 @@ const counterStore = createStore({ count: 0 }, ({ set, get }) => ({
   reset() {
     set({ count: 0 });
   },
-  
 }));
 
 connectDebugLog(counterStore, { name: 'counter' });

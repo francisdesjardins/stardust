@@ -10,7 +10,6 @@ test.describe('createStore — context', () => {
       compute(): number {
         return getContext().multiplier * 10;
       },
-      
     }));
 
     store.setContext({ multiplier: 3 });
@@ -22,7 +21,6 @@ test.describe('createStore — context', () => {
       readCtx() {
         return getContext();
       },
-      
     }));
 
     expect(store.readCtx()).toBeUndefined();
@@ -33,7 +31,6 @@ test.describe('createStore — context', () => {
       getMultiplier(): number {
         return getContext().multiplier;
       },
-      
     }));
 
     store.setContext({ multiplier: 2 });
@@ -49,7 +46,6 @@ test.describe('createStore — context', () => {
         getMultiplier(): number {
           return getContext().multiplier;
         },
-        
       }));
 
     const storeA = makeStore();
@@ -70,7 +66,6 @@ test.describe('createStore — context', () => {
         getRate(): number | undefined {
           return getContext()?.rate;
         },
-        
       })
     );
 
@@ -89,7 +84,6 @@ test.describe('createStore — context', () => {
           d.count += 1;
         });
       },
-      
     }));
 
     store.increment();

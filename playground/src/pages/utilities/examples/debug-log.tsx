@@ -18,7 +18,6 @@ const profileStore = createStore({ name: 'Alice', score: 0, active: true }, ({ s
   reset() {
     set({ name: 'Alice', score: 0, active: true });
   },
-  
 }));
 
 const logsStore = createStore({ entries: [] as LogEntry[] }, ({ set, get }) => ({
@@ -29,7 +28,6 @@ const logsStore = createStore({ entries: [] as LogEntry[] }, ({ set, get }) => (
   clear() {
     set({ entries: [] });
   },
-  
 }));
 
 connectDebugLog(profileStore, {

@@ -18,7 +18,6 @@ const DomainResetCtx = createStoreContext(
       reset() {
         set({ count: 0 });
       },
-      
     })),
   { name: 'DomainReset' }
 );

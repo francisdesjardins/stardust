@@ -16,7 +16,6 @@ function makeStore() {
       setUnrelated(s: string) {
         setByPath('unrelated', s);
       },
-      
     })
   );
 }

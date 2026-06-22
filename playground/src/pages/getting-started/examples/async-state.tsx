@@ -42,7 +42,6 @@ const userStore = createStore(initialUserState, ({ set, get }) => ({
   reset() {
     set({ userId: 1, asyncUser: asyncIdle });
   },
-  
 }));
 
 connectDebugLog(userStore, { name: 'user' });

@@ -16,7 +16,6 @@ function makePricingStore() {
         d.basePrice = n;
       });
     },
-    
   }));
 }
 

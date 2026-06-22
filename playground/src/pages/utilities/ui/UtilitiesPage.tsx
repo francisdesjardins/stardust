@@ -122,7 +122,7 @@ export const UtilitiesPage = () => (
       <Grid size={{ xs: 12, md: 6 }}>
         <ExampleCard
           title="Nested slice"
-          description="Cache one typed subtree while the rest of the snapshot stays plain. Expiring triggers refreshOnExpire automatically."
+          description="Cache one typed subtree while the rest of the snapshot stays plain. Expiring triggers onExpire automatically."
           codeKey="cache-nested"
         >
           <CacheNestedExample />

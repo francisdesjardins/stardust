@@ -9,7 +9,6 @@ const CounterCtx = createStoreContext(
           d.count += 1;
         });
       },
-      
     })),
   { name: 'TwoProviders' }
 );

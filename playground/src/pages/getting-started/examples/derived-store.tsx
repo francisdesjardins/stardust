@@ -10,7 +10,6 @@ const cartStore = createStore({ items: [] as string[] }, ({ set, get }) => ({
   clearCart() {
     set({ items: [] });
   },
-  
 }));
 
 connectDebugLog(cartStore, { name: 'cart' });

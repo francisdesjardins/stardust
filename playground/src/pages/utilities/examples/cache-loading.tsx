@@ -20,12 +20,10 @@ const sleep = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
 // Two independent stores — one per loading strategy so both are observable simultaneously.
 const storePlaceholder = createStore(cachedFresh(initial), (api) => ({
   cache: createCachedSlice(api),
-  
 }));
 
 const storeKeepPrev = createStore(cachedFresh(initial), (api) => ({
   cache: createCachedSlice(api),
-  
 }));
 
 connectDebugLog(storePlaceholder, { name: 'cache-loading:placeholder' });

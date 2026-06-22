@@ -13,7 +13,6 @@ const PricingContext = createStoreContext(
         getTotal(): number {
           return get().basePrice * (1 + getContext().taxRate);
         },
-        
       })
     ),
   { name: 'Pricing' }

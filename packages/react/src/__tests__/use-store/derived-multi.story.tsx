@@ -7,7 +7,6 @@ const countStore = createStore({ count: 0 }, ({ update }) => ({
       d.count += 1;
     });
   },
-  
 }));
 
 const labelStore = createStore({ label: 'hello' }, ({ update }) => ({
@@ -16,7 +15,6 @@ const labelStore = createStore({ label: 'hello' }, ({ update }) => ({
       d.label = v;
     });
   },
-  
 }));
 
 const summaryStore = createDerivedStore(

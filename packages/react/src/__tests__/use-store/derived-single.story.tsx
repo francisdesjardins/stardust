@@ -8,7 +8,6 @@ const counterStore = createStore({ count: 0 }, ({ update, reset }) => ({
     });
   },
   reset,
-  
 }));
 
 const doubledStore = createDerivedStore([counterStore], (c) => ({ doubled: c.count * 2 }), {
