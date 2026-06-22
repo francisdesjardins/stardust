@@ -13,8 +13,10 @@ import { bench, group } from '../mitata.ts';
 group('createDerivedStore', () => {
   bench('single-source recompute (object)', function* () {
     const counter = createStore({ count: 0 }, ({ set, get }) => ({
-      tick() {
-        set({ count: get().count + 1 });
+      actions: {
+        tick() {
+          set({ count: get().count + 1 });
+        },
       },
     }));
     const derived = createDerivedStore([counter], (c) => ({ doubled: c.count * 2 }), {
@@ -22,7 +24,7 @@ group('createDerivedStore', () => {
     });
     derived.subscribe(() => {});
     yield () => {
-      counter.tick();
+      counter.actions.tick();
       return derived.getSnapshot();
     };
   });
@@ -30,8 +32,10 @@ group('createDerivedStore', () => {
   bench('multi-source (3) recompute', function* () {
     const make = () =>
       createStore({ v: 0 }, ({ set, get }) => ({
-        tick() {
-          set({ v: get().v + 1 });
+        actions: {
+          tick() {
+            set({ v: get().v + 1 });
+          },
         },
       }));
     const a = make();
@@ -44,7 +48,7 @@ group('createDerivedStore', () => {
     let i = 0;
     const stores = [a, b, c];
     yield () => {
-      stores[i % 3].tick();
+      stores[i % 3]?.actions.tick();
       i++;
       return derived.getSnapshot();
     };
@@ -52,13 +56,17 @@ group('createDerivedStore', () => {
 
   bench('shallowEqual skip (no notify)', function* () {
     const counter = createStore({ count: 0 }, ({ set, get }) => ({
-      tick() {
-        set({ count: get().count + 1 });
+      actions: {
+        tick() {
+          set({ count: get().count + 1 });
+        },
       },
     }));
     const label = createStore({ label: 'x' }, ({ set, get }) => ({
-      toggle() {
-        set({ label: get().label === 'x' ? 'y' : 'x' });
+      actions: {
+        toggle() {
+          set({ label: get().label === 'x' ? 'y' : 'x' });
+        },
       },
     }));
     const derived = createDerivedStore([counter, label], (c) => ({ doubled: c.count * 2 }), {
@@ -69,29 +77,33 @@ group('createDerivedStore', () => {
       notifyCount++;
     });
     yield () => {
-      label.toggle();
+      label.actions.toggle();
       return notifyCount;
     };
   });
 
   bench('fan-out: 1 listener (primitive)', function* () {
     const counter = createStore({ count: 0 }, ({ set, get }) => ({
-      tick() {
-        set({ count: get().count + 1 });
+      actions: {
+        tick() {
+          set({ count: get().count + 1 });
+        },
       },
     }));
     const derived = createDerivedStore([counter], (c) => c.count * 2);
     derived.subscribe(() => {});
     yield () => {
-      counter.tick();
+      counter.actions.tick();
       return derived.getSnapshot();
     };
   });
 
   bench('fan-out: 10 listeners', function* () {
     const counter = createStore({ count: 0 }, ({ set, get }) => ({
-      tick() {
-        set({ count: get().count + 1 });
+      actions: {
+        tick() {
+          set({ count: get().count + 1 });
+        },
       },
     }));
     const derived = createDerivedStore([counter], (c) => c.count * 2);
@@ -99,15 +111,17 @@ group('createDerivedStore', () => {
       derived.subscribe(() => {});
     }
     yield () => {
-      counter.tick();
+      counter.actions.tick();
       return derived.getSnapshot();
     };
   });
 
   bench('fan-out: 100 listeners', function* () {
     const counter = createStore({ count: 0 }, ({ set, get }) => ({
-      tick() {
-        set({ count: get().count + 1 });
+      actions: {
+        tick() {
+          set({ count: get().count + 1 });
+        },
       },
     }));
     const derived = createDerivedStore([counter], (c) => c.count * 2);
@@ -115,15 +129,17 @@ group('createDerivedStore', () => {
       derived.subscribe(() => {});
     }
     yield () => {
-      counter.tick();
+      counter.actions.tick();
       return derived.getSnapshot();
     };
   });
 
   bench('fan-out: 1000 listeners', function* () {
     const counter = createStore({ count: 0 }, ({ set, get }) => ({
-      tick() {
-        set({ count: get().count + 1 });
+      actions: {
+        tick() {
+          set({ count: get().count + 1 });
+        },
       },
     }));
     const derived = createDerivedStore([counter], (c) => c.count * 2);
@@ -131,13 +147,13 @@ group('createDerivedStore', () => {
       derived.subscribe(() => {});
     }
     yield () => {
-      counter.tick();
+      counter.actions.tick();
       return derived.getSnapshot();
     };
   });
 
   bench('subscribe + unsubscribe', function* () {
-    const counter = createStore({ count: 0 }, () => ({}));
+    const counter = createStore({ count: 0 });
     const derived = createDerivedStore([counter], (c) => c.count);
     yield () => {
       const unsub = derived.subscribe(() => {});

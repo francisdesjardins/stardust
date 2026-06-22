@@ -22,7 +22,7 @@ const sleep = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
 const store = createStore(cachedFresh(initial, Date.now() + INTERVAL), (api) => ({
   cache: createCachedSlice(api, {
     keepPreviousData: true,
-    refreshOnExpire: async (prev) => {
+    onExpire: async (prev) => {
       await sleep(1_200);
       return { value: (prev?.value ?? 0) + 1, refreshedAt: new Date().toLocaleTimeString() };
     },
@@ -38,7 +38,7 @@ export function CacheTtlExample() {
 
   function startAuto() {
     setAutoRunning(true);
-    store.cache.startAutoRefresh({ interval: INTERVAL });
+    store.cache.startAutoRefresh({ expiresAfter: INTERVAL });
   }
 
   function stopAuto() {

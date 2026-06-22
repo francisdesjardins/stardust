@@ -6,7 +6,7 @@ import { setLogLevel } from '../utils/logger';
 // ── Tests ─────────────────────────────────────────────────────────────────────
 
 test('logs "init" with current snapshot immediately when connected', () => {
-  const store = createStore({ count: 42 }, () => ({}));
+  const store = createStore({ count: 42 });
   const calls: Array<{ action: string; diff: DiffResult }> = [];
   const disconnect = connectDebugLog(store, {
     onLog: (action, diff) => calls.push({ action, diff }),
@@ -40,6 +40,9 @@ test('init fires even when store fires listener immediately on subscribe', () =>
       fn();
     },
     reset() {},
+    run(_name: string, fn: () => void) {
+      fn();
+    },
   };
 
   const calls: Array<{ action: string }> = [];
@@ -86,6 +89,9 @@ test('durationMs reflects elapsed time between trackAction and subscription', ()
       fn();
     },
     reset() {},
+    run(_name: string, fn: () => void) {
+      fn();
+    },
   };
 
   let mockNow = 0;
@@ -115,7 +121,7 @@ test('durationMs reflects elapsed time between trackAction and subscription', ()
 });
 
 test('passes listenerCount through onLog and includes it in built-in logger', () => {
-  const store = createStore({ count: 0 }, () => ({}));
+  const store = createStore({ count: 0 });
   const calls: Array<{ action: string; listenerCount: number }> = [];
   const disconnect = connectDebugLog(store, {
     onLog: (action, _diff, _duration, _actionId, listenerCount) => {
@@ -133,7 +139,7 @@ test('passes listenerCount through onLog and includes it in built-in logger', ()
 });
 
 test('built-in logger group header includes live listener count', () => {
-  const store = createStore({ count: 0 }, () => ({}));
+  const store = createStore({ count: 0 });
   const groupArgs: string[] = [];
   const originalGroupCollapsed = console.groupCollapsed;
   const originalGroupEnd = console.groupEnd;
@@ -192,7 +198,7 @@ test('built-in logger group header includes action sub-id', async () => {
 });
 
 test('does not consume action ids for no-op mutations', () => {
-  const store = createStore({ count: 0 }, () => ({}));
+  const store = createStore({ count: 0 });
   const calls: Array<{ actionId: number; action: string }> = [];
   const disconnect = connectDebugLog(store, {
     onLog: (action, _diff, _duration, actionId) => {
@@ -213,7 +219,7 @@ test('does not consume action ids for no-op mutations', () => {
 });
 
 test('built-in logger group body includes snapshot after diff', () => {
-  const store = createStore({ count: 0 }, () => ({}));
+  const store = createStore({ count: 0 });
   const debugArgs: unknown[] = [];
   const originalDebug = console.debug;
   const originalGroupCollapsed = console.groupCollapsed;
@@ -248,7 +254,7 @@ test('built-in logger group body includes snapshot after diff', () => {
 });
 
 test('logs action name + diff on set', () => {
-  const store = createStore({ count: 0 }, () => ({}));
+  const store = createStore({ count: 0 });
   const calls: Array<{ action: string; diff: DiffResult }> = [];
   const disconnect = connectDebugLog(store, {
     onLog: (action, diff) => {
@@ -267,7 +273,7 @@ test('logs action name + diff on set', () => {
 });
 
 test('logs action name + diff on update', () => {
-  const store = createStore({ count: 0 }, () => ({}));
+  const store = createStore({ count: 0 });
   const calls: Array<{ action: string; diff: DiffResult }> = [];
   const disconnect = connectDebugLog(store, {
     onLog: (action, diff) => {
@@ -288,7 +294,7 @@ test('logs action name + diff on update', () => {
 });
 
 test('logs action name + diff on setByPath', () => {
-  const store = createStore({ count: 0 }, () => ({}));
+  const store = createStore({ count: 0 });
   const calls: Array<{ action: string; diff: DiffResult }> = [];
   const disconnect = connectDebugLog(store, {
     onLog: (action, diff) => {
@@ -391,7 +397,7 @@ test('logs nested method name for array methods', () => {
 });
 
 test('batch logs accumulated action names', () => {
-  const store = createStore({ x: 0, y: 0 }, () => ({}));
+  const store = createStore({ x: 0, y: 0 });
   const calls: Array<{ action: string }> = [];
   const disconnect = connectDebugLog(store, {
     onLog: (action) => {
@@ -414,7 +420,7 @@ test('batch logs accumulated action names', () => {
 });
 
 test('no mutation logs after disconnect', () => {
-  const store = createStore({ count: 0 }, () => ({}));
+  const store = createStore({ count: 0 });
   const mutations: unknown[] = [];
   const disconnect = connectDebugLog(store, {
     onLog: (action) => {
@@ -431,7 +437,7 @@ test('no mutation logs after disconnect', () => {
 });
 
 test('silent when namespace is inactive', () => {
-  const store = createStore({ count: 0 }, () => ({}));
+  const store = createStore({ count: 0 });
   setLogLevel(false);
   const calls: unknown[] = [];
   const original = console.debug;
@@ -447,7 +453,7 @@ test('silent when namespace is inactive', () => {
 });
 
 test('diff uses dotted paths for nested object field changes', () => {
-  const store = createStore({ user: { name: 'Alice' } }, () => ({}));
+  const store = createStore({ user: { name: 'Alice' } });
   const calls: Array<{ diff: DiffResult }> = [];
   const disconnect = connectDebugLog(store, {
     onLog: (action, diff) => {
@@ -493,6 +499,9 @@ test('diff labels root-level change as "(root)" when prev is non-object', () => 
       fn();
     },
     reset() {},
+    run(_name: string, fn: () => void) {
+      fn();
+    },
   };
 
   const calls: Array<{ diff: DiffResult }> = [];
@@ -511,7 +520,7 @@ test('diff labels root-level change as "(root)" when prev is non-object', () => 
 });
 
 test('uses bare "store" logger namespace when no name is given', () => {
-  const store = createStore({ count: 0 }, () => ({}));
+  const store = createStore({ count: 0 });
   setLogLevel('store');
   const groupArgs: unknown[][] = [];
   const originalGroupCollapsed = console.groupCollapsed;
@@ -587,7 +596,7 @@ test('domain method shadowing a built-in name logs the method name, not the inne
 });
 
 test('standalone built-in call logs its own name when not inside a domain method', () => {
-  const store = createStore({ count: 0 }, () => ({}));
+  const store = createStore({ count: 0 });
 
   const calls: Array<{ action: string }> = [];
   const disconnect = connectDebugLog(store, {

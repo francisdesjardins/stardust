@@ -94,7 +94,7 @@ test.describe('createCachedSlice - root snapshot', () => {
     let autoRefreshCount = 0;
     const store = createStore(cachedFresh({ value: 'old' }, Date.now() + 50), (api) => ({
       cache: createCachedSlice(api, {
-        refreshOnExpire: async () => {
+        onExpire: async () => {
           autoRefreshCount += 1;
           return Promise.resolve({ value: 'new' });
         },
@@ -115,7 +115,7 @@ test.describe('createCachedSlice - root snapshot', () => {
     let autoRefreshCount = 0;
     const store = createStore(cachedFresh({ value: 'old' }, Date.now() + 50), (api) => ({
       cache: createCachedSlice(api, {
-        refreshOnExpire: async () => {
+        onExpire: async () => {
           autoRefreshCount += 1;
           return Promise.resolve({ value: 'refreshed' });
         },
@@ -144,7 +144,7 @@ test.describe('createCachedSlice - root snapshot', () => {
     let autoRefreshCount = 0;
     const store = createStore(cachedFresh({ value: 'old' }, Date.now() + 50), (api) => ({
       cache: createCachedSlice(api, {
-        refreshOnExpire: async () => {
+        onExpire: async () => {
           autoRefreshCount += 1;
           return Promise.resolve({ value: 'new' });
         },
@@ -157,11 +157,34 @@ test.describe('createCachedSlice - root snapshot', () => {
     expect(cache.get().status).toBe('expired');
 
     // Now arm auto-refresh — should immediately fetch since already expired
-    cache.startAutoRefresh({ interval: 50 });
+    cache.startAutoRefresh({ expiresAfter: 50 });
     await new Promise((resolve) => setTimeout(resolve, 50));
 
     expect(autoRefreshCount).toBeGreaterThanOrEqual(1);
     expect(cache.get().status).toBe('fresh');
+    cache.stopAutoRefresh();
+  });
+
+  test('startAutoRefresh() when idle immediately triggers the fetch', async () => {
+    let autoRefreshCount = 0;
+    const store = createStore(idleAs<{ value: string }>(), (api) => ({
+      cache: createCachedSlice(api, {
+        onExpire: async () => {
+          autoRefreshCount += 1;
+          return Promise.resolve({ value: 'new' });
+        },
+        expiresAfter: 50,
+      }),
+    }));
+    const cache = store.cache;
+
+    expect(cache.get().status).toBe('idle');
+
+    cache.startAutoRefresh();
+    await new Promise((resolve) => setTimeout(resolve, 50));
+
+    expect(autoRefreshCount).toBeGreaterThanOrEqual(1);
+    expect(cache.get()).toMatchObject({ status: 'fresh', data: { value: 'new' } });
     cache.stopAutoRefresh();
   });
 
@@ -170,7 +193,7 @@ test.describe('createCachedSlice - root snapshot', () => {
     let firstRefresh = true;
     const store = createStore(cachedFresh({ value: 'old' }, Date.now() + 50), (api) => ({
       cache: createCachedSlice(api, {
-        refreshOnExpire: async (current) => {
+        onExpire: async (current) => {
           autoRefreshCount += 1;
           if (firstRefresh) {
             expect(current).toEqual({ value: 'old' });
@@ -182,7 +205,7 @@ test.describe('createCachedSlice - root snapshot', () => {
     }));
     const cache = store.cache;
 
-    cache.startAutoRefresh({ interval: 50 });
+    cache.startAutoRefresh({ expiresAfter: 50 });
 
     await new Promise((resolve) => setTimeout(resolve, 150));
 
@@ -196,7 +219,7 @@ test.describe('createCachedSlice - root snapshot', () => {
     const store = createStore(cachedFresh({ value: 'old' }, Date.now() + 100), (api) => ({
       cache: createCachedSlice(api, {
         placeholder: { value: 'loading' },
-        refreshOnExpire: async () => {
+        onExpire: async () => {
           await new Promise((resolve) => setTimeout(resolve, 30));
           return { value: 'new' };
         },
@@ -207,7 +230,7 @@ test.describe('createCachedSlice - root snapshot', () => {
       states.push(store.getSnapshot());
     });
 
-    cache.startAutoRefresh({ interval: 100 });
+    cache.startAutoRefresh({ expiresAfter: 100 });
     // expire=100ms + fetch=30ms → one full cycle at ~t=130ms; stop at t=200ms before second cycle
     await new Promise((resolve) => setTimeout(resolve, 200));
     cache.stopAutoRefresh();
@@ -387,7 +410,8 @@ test.describe('createCachedSlice - root snapshot', () => {
     const store = createStore(cachedFresh({ value: 'old' }), (api) => ({
       // No expiresAt on initial state — startAutoRefresh interval drives the first expiry
       cache: createCachedSlice(api, {
-        refreshOnExpire: async () => {
+        keepPreviousData: true,
+        onExpire: async () => {
           autoRefreshCount += 1;
           return Promise.resolve({ value: 'new' });
         },
@@ -395,7 +419,7 @@ test.describe('createCachedSlice - root snapshot', () => {
     }));
     const cache = store.cache;
 
-    cache.startAutoRefresh({ interval: 50 });
+    cache.startAutoRefresh({ expiresAfter: 50 });
     await new Promise((resolve) => setTimeout(resolve, 150));
 
     expect(autoRefreshCount).toBeGreaterThanOrEqual(1);
@@ -631,5 +655,56 @@ test.describe('createCachedSlice - sub-slice', () => {
     expect(cache.get().status).toBe('expired');
     expect(states).toContain('expired'); // subscriber was notified
     expect(store.getSnapshot().version).toBe(1); // rest of snapshot unchanged
+  });
+
+  test('startAutoRefresh() on sub-slice fires onExpire and writes only to slice path — rest of snapshot untouched', async () => {
+    let fetchCount = 0;
+    const store = createStore({ profile: idleAs<{ name: string }>(), version: 1 }, (api) => ({
+      cache: createCachedSlice(api, 'profile', {
+        expiresAfter: 50,
+        onExpire: () => {
+          fetchCount += 1;
+          return Promise.resolve({ name: 'Auto' });
+        },
+      }),
+    }));
+    const cache = store.cache;
+
+    cache.startAutoRefresh();
+    await new Promise((resolve) => setTimeout(resolve, 80));
+
+    expect(fetchCount).toBeGreaterThanOrEqual(1);
+    expect(store.getSnapshot().profile).toMatchObject({ status: 'fresh', data: { name: 'Auto' } });
+    // Sibling field must be untouched
+    expect(store.getSnapshot().version).toBe(1);
+    cache.stopAutoRefresh();
+  });
+
+  test('refresh() on sub-slice deduplicates three concurrent callers — fetcher runs once', async () => {
+    let fetchCount = 0;
+    const store = createStore({ profile: idleAs<{ name: string }>(), version: 1 }, (api) => ({
+      cache: createCachedSlice(api, 'profile'),
+    }));
+    const cache = store.cache;
+
+    let resolveFetch: ((value: { name: string }) => void) | undefined;
+    const fetcher = () =>
+      new Promise<{ name: string }>((resolve) => {
+        fetchCount += 1;
+        resolveFetch = resolve;
+      });
+
+    const [p1, p2, p3] = [cache.refresh(fetcher), cache.refresh(fetcher), cache.refresh(fetcher)];
+
+    resolveFetch?.({ name: 'Shared' });
+    const results = await Promise.all([p1, p2, p3]);
+
+    expect(fetchCount).toBe(1);
+    expect(results).toEqual([{ name: 'Shared' }, { name: 'Shared' }, { name: 'Shared' }]);
+    expect(store.getSnapshot().profile).toMatchObject({
+      status: 'fresh',
+      data: { name: 'Shared' },
+    });
+    expect(store.getSnapshot().version).toBe(1);
   });
 });

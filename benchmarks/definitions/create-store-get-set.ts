@@ -24,50 +24,59 @@ const NESTED_INITIAL: Nested = {
 
 group('createStore — get / set', () => {
   bench('get() flat', function* () {
-    const store = createStore({ ...FLAT_INITIAL }, () => ({}));
+    const store = createStore({ ...FLAT_INITIAL });
     yield () => store.getSnapshot();
   });
 
   bench('set() object replacement', function* () {
     const store = createStore({ ...FLAT_INITIAL }, ({ set }) => ({
-      replace() {
-        set({ count: 1, label: 'x', active: false });
+      actions: {
+        replace() {
+          set({ count: 1, label: 'x', active: false });
+        },
       },
     }));
-    yield () => store.replace();
+    yield () => store.actions.replace();
   });
 
   bench('set() updater fn', function* () {
     const store = createStore({ ...FLAT_INITIAL }, ({ set }) => ({
-      increment() {
-        set((prev) => ({ ...prev, count: prev.count + 1 }));
+      actions: {
+        increment() {
+          set((prev) => ({ ...prev, count: prev.count + 1 }));
+        },
       },
     }));
-    yield () => store.increment();
+    yield () => store.actions.increment();
   });
 
   bench('set() nested replacement', function* () {
     const store = createStore(structuredClone(NESTED_INITIAL), ({ set }) => ({
-      replace() {
-        set({ user: { name: 'Bob', address: { city: 'Toronto', zip: 'M5V' } }, scores: [1, 2, 3] });
+      actions: {
+        replace() {
+          set({
+            user: { name: 'Bob', address: { city: 'Toronto', zip: 'M5V' } },
+            scores: [1, 2, 3],
+          });
+        },
       },
     }));
-    yield () => store.replace();
+    yield () => store.actions.replace();
   });
 
   bench('reset()', function* () {
-    const store = createStore(structuredClone(NESTED_INITIAL), () => ({}));
+    const store = createStore(structuredClone(NESTED_INITIAL));
     yield () => store.reset();
   });
 
   bench('reset(newSnapshot)', function* () {
-    const store = createStore(structuredClone(NESTED_INITIAL), () => ({}));
+    const store = createStore(structuredClone(NESTED_INITIAL));
     const next = structuredClone(NESTED_INITIAL);
     yield () => store.reset(next);
   });
 
   bench('reset(updater fn)', function* () {
-    const store = createStore(structuredClone(NESTED_INITIAL), () => ({}));
+    const store = createStore(structuredClone(NESTED_INITIAL));
     yield () => store.reset((initial) => ({ ...initial, user: { ...initial.user, name: 'Bob' } }));
   });
 });

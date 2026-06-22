@@ -339,7 +339,7 @@ test.describe('createDerivedStore', () => {
 
     test('listenerCount > 0 correlates with lazy source subscription being active', () => {
       let sourceListenerCount = 0;
-      const source = createStore({ value: 1 }, () => ({}));
+      const source = createStore({ value: 1 });
       // Wrap source in a proxy that counts active subscriptions without mutating readonly props
       const trackedSource = {
         getSnapshot: () => source.getSnapshot(),

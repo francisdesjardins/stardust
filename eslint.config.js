@@ -1,8 +1,8 @@
 import js from '@eslint/js';
 import prettier from 'eslint-config-prettier';
-import pluginPrettier from 'eslint-plugin-prettier';
 import reactHooks from 'eslint-plugin-react-hooks';
 import reactRefresh from 'eslint-plugin-react-refresh';
+import oxlint from 'eslint-plugin-oxlint';
 import { defineConfig } from 'eslint/config';
 import globals from 'globals';
 import tseslint from 'typescript-eslint';
@@ -28,8 +28,10 @@ const sharedTsRules = {
   '@typescript-eslint/no-floating-promises': 'error',
   '@typescript-eslint/await-thenable': 'error',
   '@typescript-eslint/no-invalid-void-type': 'off',
+  '@typescript-eslint/switch-exhaustiveness-check': 'error',
   eqeqeq: 'error',
   curly: ['error', 'all'],
+  'arrow-parens': ['error', 'always'],
 };
 
 const tsBase = [js.configs.recommended, ...tseslint.configs.strictTypeChecked];
@@ -49,6 +51,7 @@ export default defineConfig(
       '**/dist/**',
       '**/node_modules/**',
       '**/playwright-report/**',
+      '**/playwright/.cache/**',
       '**/test-results/**',
       '**/coverage/**',
       'benchmarks/results/**',
@@ -183,15 +186,12 @@ export default defineConfig(
   },
 
   // -------------------------------------------------------------------------
-  // Prettier
+  // Prettier — disable ESLint rules that conflict with Prettier formatting
   // -------------------------------------------------------------------------
   prettier,
-  {
-    plugins: { prettier: pluginPrettier },
-    rules: {
-      'prettier/prettier': 'error',
-      curly: ['error', 'all'],
-      'arrow-parens': ['error', 'always'],
-    },
-  }
+
+  // -------------------------------------------------------------------------
+  // oxlint — disable ESLint rules already covered by oxlint
+  // -------------------------------------------------------------------------
+  ...oxlint.buildFromOxlintConfigFile('./oxlint.json')
 );

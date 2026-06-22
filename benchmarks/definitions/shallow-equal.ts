@@ -32,7 +32,9 @@ group('shallowEqual', () => {
 
   bench('shallowEqual — equal flat objects (10 keys)', function* () {
     const obj: Record<string, number> = {};
-    for (let i = 0; i < 10; i++) obj[`k${String(i)}`] = i;
+    for (let i = 0; i < 10; i++) {
+      obj[`k${String(i)}`] = i;
+    }
     const a = { ...obj };
     const b = { ...obj };
     yield () => shallowEqual(a, b);

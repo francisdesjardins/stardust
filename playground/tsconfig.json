@@ -15,6 +15,6 @@
     }
   },
   "files": ["../reset.d.ts"],
-  "include": ["src/**/*", "vite.config.ts", "vite-plugin-bench.ts"],
+  "include": ["src/**/*"],
   "exclude": ["node_modules", "dist"]
 }

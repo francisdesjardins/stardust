@@ -1,10 +1,13 @@
 import arrayMethodsSrc from '@/pages/utilities/examples/array-methods.tsx?raw';
 import storeDispatchSrc from '@/pages/utilities/examples/store-dispatch.tsx?raw';
+import boundActionsSrc from '@/pages/utilities/examples/bound-actions.tsx?raw';
+import runAsyncSrc from '@/pages/utilities/examples/run-async.tsx?raw';
 import produceSrc from '@/pages/utilities/examples/produce.tsx?raw';
 import pathUtilsSrc from '@/pages/utilities/examples/path-utils.tsx?raw';
 import safeAwaitSrc from '@/pages/utilities/examples/safe-await.tsx?raw';
 import mutexSrc from '@/pages/utilities/examples/mutex.tsx?raw';
 import singleFlightSrc from '@/pages/utilities/examples/single-flight.tsx?raw';
+import singleFlightLastSrc from '@/pages/utilities/examples/single-flight-last.tsx?raw';
 import debugLogSrc from '@/pages/utilities/examples/debug-log.tsx?raw';
 import cacheManualSrc from '@/pages/utilities/examples/cache-manual.tsx?raw';
 import cacheLoadingSrc from '@/pages/utilities/examples/cache-loading.tsx?raw';
@@ -18,6 +21,7 @@ import useStoreSrc from '@/pages/react/examples/use-store.tsx?raw';
 import useStoreSelectorSrc from '@/pages/react/examples/use-store-selector.tsx?raw';
 import useSuspenseStoreSrc from '@/pages/react/examples/use-suspense-store.tsx?raw';
 import createStoreContextSrc from '@/pages/react/examples/create-store-context.tsx?raw';
+import useStoreCachedSliceSrc from '@/pages/react/examples/use-store-cached-slice.tsx?raw';
 import solidCounterSrc from '@/pages/solid/examples/solid-counter.solid.tsx?raw';
 import solidReactBridgeSrc from '@/pages/solid/examples/SolidCounterWrapper.tsx?raw';
 import sharedStoreSrc from '@/pages/solid/examples/shared-store.tsx?raw';
@@ -34,15 +38,19 @@ export const codeSamples: Record<string, string> = {
   'use-store-selector': useStoreSelectorSrc,
   'use-suspense-store': useSuspenseStoreSrc,
   'create-store-context': createStoreContextSrc,
+  'use-store-cached-slice': useStoreCachedSliceSrc,
 
   // Utilities
   'array-methods': arrayMethodsSrc,
   'store-dispatch': storeDispatchSrc,
+  'bound-actions': boundActionsSrc,
   produce: produceSrc,
   'path-utils': pathUtilsSrc,
   'safe-await': safeAwaitSrc,
   mutex: mutexSrc,
+  'run-async': runAsyncSrc,
   'single-flight': singleFlightSrc,
+  'single-flight-last': singleFlightLastSrc,
   'debug-log': debugLogSrc,
   'cache-manual': cacheManualSrc,
   'cache-loading': cacheLoadingSrc,

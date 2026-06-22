@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useState, type FC, type ReactNode } from 'react';
-import type { Store, StoreContract, UnwrapContext } from '@stardust/core';
+import type { DomainStore, StoreContract, UnwrapContext } from '@stardust/core';
 import type { UseStoreOptions } from './use-store';
 import { useStoreCore } from './use-store';
 
@@ -37,7 +37,10 @@ export type CreateStoreContextOptions<
    * it will shadow the built-in baseline restore and produce unexpected behavior in
    * React StrictMode's double-mount cycle.
    */
-  readonly onUnmount?: ((store: Store<TSnapshot, TMethods, TContext>) => void) | null | undefined;
+  readonly onUnmount?:
+    | ((store: DomainStore<TSnapshot, TMethods, TContext>) => void)
+    | null
+    | undefined;
 };
 
 export type StoreContextResult<
@@ -50,7 +53,7 @@ export type StoreContextResult<
   readonly Provider: FC<ProviderProps<TInitial, TContext>>;
 
   /** Returns the store instance. Use for calling methods or non-reactive reads. */
-  readonly useStoreContext: () => Store<TSnapshot, TMethods, TContext>;
+  readonly useStoreContext: () => DomainStore<TSnapshot, TMethods, TContext>;
 
   /**
    * Subscribes to the store snapshot.
@@ -75,7 +78,7 @@ export type StoreContextResult<
   readonly useSnapshot: {
     (): TSnapshot;
     <TSlice>(
-      selector: (snapshot: TSnapshot, store: Store<TSnapshot, TMethods, TContext>) => TSlice,
+      selector: (snapshot: TSnapshot, store: DomainStore<TSnapshot, TMethods, TContext>) => TSlice,
       equals?: (a: TSlice, b: TSlice) => boolean
     ): TSlice;
   };
@@ -132,12 +135,12 @@ function createStoreContext<
   TContext = never,
   TInitial = void,
 >(
-  factory: (initial: TInitial) => Store<TSnapshot, TMethods, TContext>,
+  factory: (initial: TInitial) => DomainStore<TSnapshot, TMethods, TContext>,
   options?: CreateStoreContextOptions<TSnapshot, TMethods, TContext>
 ): StoreContextResult<TSnapshot, TMethods, TContext, TInitial> {
   const { name = 'StoreContext', onUnmount = null } = options ?? {};
 
-  type S = Store<TSnapshot, TMethods, TContext>;
+  type S = DomainStore<TSnapshot, TMethods, TContext>;
 
   const Context = createContext<S | null>(null);
 
@@ -190,7 +193,7 @@ function createStoreContext<
     equals?: (a: TSlice, b: TSlice) => boolean
   ): TSnapshot | TSlice {
     const store = useStoreContext();
-    // Use useStoreCore (non-overloaded) so Store<TSnapshot, TMethods, TContext>
+    // Use useStoreCore (non-overloaded) so DomainStore<TSnapshot, TMethods, TContext>
     // satisfies StoreContractWithOptionalBind structurally — no cast needed.
     // Context is already injected synchronously in Provider; no need to re-pass it.
     const opts: UseStoreOptions<TSnapshot, TSlice, never, S> = { select: selector, equals };

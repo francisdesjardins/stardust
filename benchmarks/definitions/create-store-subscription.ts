@@ -36,21 +36,27 @@ group('createStoreSubscription', () => {
 
   bench('fan-out: 10 listeners', function* () {
     const sub = createStoreSubscription(0);
-    for (let i = 0; i < 10; i++) sub.subscribe(() => {});
+    for (let i = 0; i < 10; i++) {
+      sub.subscribe(() => {});
+    }
     let v = 0;
     yield () => sub.emit(v++);
   });
 
   bench('fan-out: 100 listeners', function* () {
     const sub = createStoreSubscription(0);
-    for (let i = 0; i < 100; i++) sub.subscribe(() => {});
+    for (let i = 0; i < 100; i++) {
+      sub.subscribe(() => {});
+    }
     let v = 0;
     yield () => sub.emit(v++);
   });
 
   bench('fan-out: 1000 listeners', function* () {
     const sub = createStoreSubscription(0);
-    for (let i = 0; i < 1_000; i++) sub.subscribe(() => {});
+    for (let i = 0; i < 1_000; i++) {
+      sub.subscribe(() => {});
+    }
     let v = 0;
     yield () => sub.emit(v++);
   });

@@ -59,7 +59,7 @@ Creates a store with a POJO snapshot and domain methods.
 ```ts
 createStore<TState, TMethods, TContext = never>(
   initialSnapshot: TState,
-  builder: (api: StoreApi<TState, TContext>) => TMethods,
+  builder: (api: StoreApi<TState, TContext>) => { readonly actions: TMethods },
   options?: StoreSubscriptionOptions<TState, TContext>,
 ): Store<TState, TMethods>
 ```
@@ -99,7 +99,7 @@ const userStore = createStore<UserState, UserMethods, ApiClient>(
 Store methods can be `async` — `await dispatch(...)` and direct calls both return the promise. Three utilities from `@stardust/core` complement async methods well:
 
 - **`safeAwait(promise)`** — Go-style `[err, result]` tuple. Replaces `try/catch` blocks inside methods with inline error checks, keeping the happy path readable.
-- **`safeSingleFlight` / `createSingleFlight()`** — Deduplicates concurrent calls. While a task is in-flight every subsequent call receives the same promise — one network request, one store update, N callers resolved together. Gate clears on settlement so the next call starts fresh.
+- **`safeSingleFlight` / `createSingleFlight()`** — Deduplicates concurrent calls. Two modes: `'first'` (default) — first execution wins, all concurrent callers share its result; `'last'` — each new call supersedes the previous, all waiters receive the last result and the superseded task's `AbortSignal` is aborted. Named aliases: `createFirstFlight` / `createLastFlight`.
 - **`safeMutex` / `createMutex()`** — Serializes concurrent calls. N calls run N times, one at a time in submission order. Use when a method has multi-step side-effects (fetch → state write → cross-store dispatch) that must not interleave.
 
 |                  | `createSingleFlight()`      | `createMutex()`              |
@@ -193,19 +193,59 @@ Use `MaybeContext<T>` when context may arrive asynchronously — `getContext()` 
 
 #### `Store` instance (returned)
 
-| Property                 | Description                                                                         |
-| ------------------------ | ----------------------------------------------------------------------------------- |
-| `subscribe(listener)`    | Adds a listener, returns unsubscribe. Compatible with `useSyncExternalStore`        |
-| `getSnapshot()`          | Returns the current snapshot                                                        |
-| `listenerCount`          | Number of active subscribers. `0` means no component or watcher is subscribed       |
-| `set(next)`              | Same as `StoreApi.set`                                                              |
-| `update(recipe)`         | Same as `StoreApi.update`                                                           |
-| `getByPath(path)`        | Same as `StoreApi.getByPath`                                                        |
-| `setByPath(path, value)` | Same as `StoreApi.setByPath`                                                        |
-| `batch(fn)`              | Same as `StoreApi.batch`                                                            |
-| `reset()`                | Same as `StoreApi.reset`                                                            |
-| `setContext(ctx)`        | Injects the context value. Accepts the unwrapped `TContext` (not `MaybeContext<T>`) |
-| `...methods`             | All domain methods from the builder                                                 |
+**`GenericStore`** (`createStore(initial)` — no builder)
+
+| Property                 | Description                                                                                   |
+| ------------------------ | --------------------------------------------------------------------------------------------- |
+| `subscribe(listener)`    | Adds a listener, returns unsubscribe. Compatible with `useSyncExternalStore`                  |
+| `getSnapshot()`          | Returns the current snapshot                                                                  |
+| `listenerCount`          | Number of active subscribers. `0` means no component or watcher is subscribed                 |
+| `set(next)`              | Same as `StoreApi.set`                                                                        |
+| `update(recipe)`         | Same as `StoreApi.update`                                                                     |
+| `getByPath(path)`        | Same as `StoreApi.getByPath`                                                                  |
+| `setByPath(path, value)` | Same as `StoreApi.setByPath`                                                                  |
+| `batch(fn)`              | Same as `StoreApi.batch`                                                                      |
+| `reset()`                | Same as `StoreApi.reset`                                                                      |
+| `run(name, fn)`          | Execute `fn` under a named action scope (for external mutations tracked by `connectDebugLog`) |
+| `setContext(ctx)`        | Injects the context value. Accepts the unwrapped `TContext` (not `MaybeContext<T>`)           |
+
+**`DomainStore`** (`createStore(initial, builder)`)
+
+| Property              | Description                                                                              |
+| --------------------- | ---------------------------------------------------------------------------------------- |
+| `subscribe(listener)` | Adds a listener, returns unsubscribe                                                     |
+| `getSnapshot()`       | Returns the current snapshot                                                             |
+| `listenerCount`       | Number of active subscribers                                                             |
+| `getByPath(path)`     | Read a typed path on the snapshot                                                        |
+| `setContext(ctx)`     | Injects the context value                                                                |
+| **domain methods**    | Every method returned by the builder, merged at the store root (`store.methodName(...)`) |
+
+Mutation built-ins (`set`, `update`, `setByPath`, `batch`, `reset`, `run`) are **not exposed** on a `DomainStore` — they live only in the `api` parameter of the builder. To expose a mutation to external callers, either write a named domain method (which gives `connectDebugLog` a semantic action name) or **forward the built-in directly**:
+
+```ts
+const store = createStore(init, (api) => ({
+  // Forward the generic built-in — typed path setter usable from anywhere
+  setByPath: api.setByPath,
+  // Named domain method alongside — logs as 'loadProfile' in connectDebugLog
+  async loadProfile(id: string) {
+    const data = await fetchProfile(id);
+    api.update((d) => {
+      d.profile = data;
+    });
+  },
+}));
+
+store.setByPath('theme', 'dark'); // works, fully typed via PathsOf
+await store.loadProfile('u42');
+```
+
+Forwarding preserves type safety (the generic over `PathsOf<TSnapshot>` is kept). Choose per built-in:
+
+- Need flexibility + a generic surface (form builders, settings panels) → forward `api.setByPath` / `api.update`.
+- Want named actions in `connectDebugLog` output → wrap the built-in in a named domain method.
+- Both → both, in the same builder.
+
+A built-in that is **not** forwarded remains closure-private at runtime — external callers cannot reach it.
 
 ---
 
@@ -454,15 +494,15 @@ Cache a slice of the store — root or nested — with observable cache status. 
 
 **Methods**
 
-| Method                             | Description                                                                                                                                                                                         |
-| ---------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `get()`                            | Returns the current `CachedState<TValue>`.                                                                                                                                                          |
-| `set(data, expiresAt?)`            | Writes `cachedFresh(data, expiresAt)`. Skips the store write when equal (via `equals`) and no `expiresAt` is given; always rewrites when `expiresAt` is set to reset the TTL.                       |
-| `expire()`                         | Manually transitions `fresh → expired`. No-op if not in `'fresh'` state.                                                                                                                            |
-| `refresh(fetcher, options?)`       | Calls `fetcher(current)`, transitions `pending → fresh`. Single-flight: concurrent callers share one execution.                                                                                     |
-| `refreshIfExpired(fetcher, opts?)` | Same as `refresh()` but only runs when status is `'expired'`. Returns `undefined` otherwise.                                                                                                        |
-| `startAutoRefresh({ interval })`   | Arms the auto-refresh cycle. `interval` (ms) is stamped as `expiresAt` on each refreshed value and used as the retry delay after rejection. If already `'expired'`, triggers the fetch immediately. |
-| `stopAutoRefresh()`                | Disables auto-fetch on expire. The `'fresh' → 'expired'` timer keeps firing — expiry stays observable. Call `expire()` explicitly to also cancel the pending timer.                                 |
+| Method                                | Description                                                                                                                                                                                                                                                              |
+| ------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `get()`                               | Returns the current `CachedState<TValue>`.                                                                                                                                                                                                                               |
+| `set(data, expiresAt?)`               | Writes `cachedFresh(data, expiresAt)`. Skips the store write when equal (via `equals`) and no `expiresAt` is given; always rewrites when `expiresAt` is set to reset the TTL.                                                                                            |
+| `expire()`                            | Manually transitions `fresh → expired`. No-op if not in `'fresh'` state.                                                                                                                                                                                                 |
+| `refresh(fetcher, options?)`          | Calls `fetcher(current)`, transitions `pending → fresh`. Single-flight: concurrent callers share one execution.                                                                                                                                                          |
+| `refreshIfExpired(fetcher, opts?)`    | Same as `refresh()` but only runs when status is `'expired'`. Returns `undefined` otherwise.                                                                                                                                                                             |
+| `startAutoRefresh({ expiresAfter? })` | Arms the auto-refresh cycle. `expiresAfter` (ms) is stamped as `expiresAt` on each refreshed value and used as the retry delay after rejection; falls back to the constructor-level `expiresAfter` when omitted. If already `'expired'`, triggers the fetch immediately. |
+| `stopAutoRefresh()`                   | Disables auto-fetch on expire. The `'fresh' → 'expired'` timer keeps firing — expiry stays observable. Call `expire()` explicitly to also cancel the pending timer.                                                                                                      |
 
 **Constructor options — `CachedOptions`**
 
@@ -473,7 +513,8 @@ Cache a slice of the store — root or nested — with observable cache status. 
 | `keepPreviousData` | `true`                                                             | —           | Keep the current value visible while the refresh is in-flight (`CachedPending.data = previous`). Forbids `placeholder`.                                                              |
 | `placeholder`      | `TValue`                                                           | —           | Written as `CachedPending.data` before the fetch begins when `keepPreviousData` is absent/`false`. Acts as the helper-level default for both `refresh()` and auto-refresh.           |
 | `equals`           | `(a: TValue, b: TValue) => boolean`                                | `Object.is` | Skip the store write when the new value is equal to the current. For object snapshots, prefer `shallowEqual` — every fetch returns a new reference so `Object.is` is always `false`. |
-| `refreshOnExpire`  | `(current: TValue \| undefined, api: StoreApi) => Promise<TValue>` | —           | Called automatically each expiration cycle by `startAutoRefresh({ interval })`. Must return the new value — the helper writes `cachedFresh` and reschedules the timer.               |
+| `onExpire`         | `(current: TValue \| undefined, api: StoreApi) => Promise<TValue>` | —           | Called automatically each expiration cycle by `startAutoRefresh()`. Must return the new value — the helper writes `cachedFresh` and reschedules the timer.                           |
+| `expiresAfter`     | `number`                                                           | —           | Default TTL (ms) used by `startAutoRefresh()` when its own `expiresAfter` is omitted. Stamps `expiresAt = Date.now() + expiresAfter` on each refreshed value.                        |
 
 **Per-call options — `CachedRefreshOptions`** (passed to `refresh()` / `refreshIfExpired()`)
 
@@ -500,18 +541,18 @@ const TTL = 60_000;
 const itemStore = createStore(cachedFresh<Item[]>([]), (api) => ({
   cache: createCachedSlice(api, {
     placeholder: [],
-    refreshOnExpire: async (current, storeApi) => storeApi.getContext().fetchItems(),
+    onExpire: async (current, storeApi) => storeApi.getContext().fetchItems(),
   }),
 }));
 
-// Arm auto-refresh with a 60 s interval (stamps expiresAt on each result)
-itemStore.cache.startAutoRefresh({ interval: TTL });
+// Arm auto-refresh with a 60 s TTL (stamps expiresAt on each result)
+itemStore.cache.startAutoRefresh({ expiresAfter: TTL });
 
 // Sub-slice — profile is a nested CachedState<Profile>
 const appStore = createStore({ profile: cachedFresh({ name: 'Alice' }), version: 1 }, (api) => ({
   profileCache: createCachedSlice(api, 'profile', {
     keepPreviousData: true,
-    refreshOnExpire: async (current, storeApi) => storeApi.getContext().fetchProfile(),
+    onExpire: async (current, storeApi) => storeApi.getContext().fetchProfile(),
   }),
 }));
 
@@ -524,7 +565,7 @@ if (profileState.status === 'fresh') {
 }
 
 // Arm auto-refresh; stop on cleanup
-appStore.profileCache.startAutoRefresh({ interval: TTL });
+appStore.profileCache.startAutoRefresh({ expiresAfter: TTL });
 // on unmount:
 appStore.profileCache.stopAutoRefresh();
 
@@ -558,14 +599,14 @@ const counter = createStore({ count: 0 }, ({ update }) => ({
 // Domain-only dispatch — built-ins not reachable
 const dispatch = createStoreDispatch(counter);
 dispatch('increment'); // ✅ domain method
-dispatch('set', { count: 0 }); // ❌ type error — builtin
+dispatch('set', { count: 0 }); // ❌ type error — not a domain action
 
-// Opt in the built-in reset
-const withReset = createStoreDispatch(counter, { builtin: ['reset'] });
-withReset('reset'); // ✅
+// Restrict dispatchable actions
+const limited = createStoreDispatch(counter, { domain: ['increment'] });
+limited('increment'); // ✅
 ```
 
-By default, only domain methods are dispatchable. Built-in operations (`set`, `update`, `getByPath`, `setByPath`, `batch`, `reset`) are never reachable unless explicitly listed in `options.builtin`.
+By default, all domain methods on the store are dispatchable. Use the `domain` option to restrict which actions are allowed. Mutation built-ins (`set`, `update`, `setByPath`, `batch`, `reset`, `run`) live only in the builder `api` and are not dispatchable — wrap them in a domain method if you need external access.
 
 ---
 
@@ -582,6 +623,7 @@ const CounterCtx = createStoreContext(
       increment() {
         update((d) => { d.count += 1; });
       },
+
     })),
   { name: 'Counter' },
 );
@@ -699,30 +741,57 @@ function safeAwait<T>(promise: Promise<T>): Promise<SafeAwaitResult<T>>;
 
 ---
 
-### `createSingleFlight()` / `safeSingleFlight`
+### `createSingleFlight()` / `createFirstFlight()` / `createLastFlight()`
 
-Deduplicates concurrent async calls — while a task is in-flight every subsequent call for the same flight shares the same `Promise`. One execution, N callers resolved together. The gate clears on settlement so the next call starts a fresh execution.
+Deduplicates concurrent async calls. Two modes controlled by the `mode` option:
+
+| Mode                | Behaviour                                                                                                                                                                                        |
+| ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `'first'` (default) | First execution wins. All concurrent callers share its promise. Gate clears on settlement.                                                                                                       |
+| `'last'`            | Each new call supersedes the previous. The superseded task's `AbortSignal` is aborted immediately. All concurrent waiters share a single deferred that resolves with the **last** task's result. |
+
+Every task receives an `AbortSignal` as its first argument. Tasks that do not need it can ignore the parameter.
 
 ```ts
-import { createSingleFlight, safeSingleFlight } from '@stardust/core';
+import {
+  createSingleFlight,
+  createFirstFlight,
+  createLastFlight,
+  safeSingleFlight,
+} from '@stardust/core';
 
-// scoped — independent gate per resource
-const loadUser = createSingleFlight();
-const user = await loadUser(() => api.fetchUser(id)); // called once even with 10 concurrent calls
+// 'first' mode (default) — one network request for N concurrent callers
+const loadUser = createFirstFlight();
+const user = await loadUser(() => api.fetchUser(id));
 
-// module-level singleton — shared gate across all callers
-const result = await safeSingleFlight(() => expensiveInit());
+// same, via the generic factory
+const loadConfig = createSingleFlight(); // mode: 'first' by default
+
+// 'last' mode — search-box / autocomplete pattern; cancels the previous fetch
+const searchFlight = createLastFlight();
+const results = await searchFlight((signal) =>
+  fetch(`/api/search?q=${query}`, { signal }).then((r) => r.json())
+);
+
+// module-level singleton (first-wins only — a shared last-wins gate would cause
+// unrelated call sites to cancel each other)
+await safeSingleFlight(() => expensiveInit());
 ```
 
 **When to prefer over `createMutex`**: use single-flight when concurrent callers can share one result (e.g. fetching a resource). Use `createMutex` when each caller must trigger its own side-effect.
 
-**Type**
+**Types**
 
 ```ts
-type SingleFlight = <T>(task: () => Promise<T>) => Promise<T>;
+type SingleFlightTask<T> = (signal: AbortSignal) => Promise<T>;
+type SingleFlightMode = 'first' | 'last';
+type SingleFlightOptions = { mode?: SingleFlightMode };
+type SingleFlight = <T>(task: SingleFlightTask<T>) => Promise<T>;
 
-function createSingleFlight(): SingleFlight;
-const safeSingleFlight: SingleFlight;
+function createSingleFlight(options?: SingleFlightOptions): SingleFlight;
+function createFirstFlight(): SingleFlight;
+function createLastFlight(): SingleFlight;
+const safeSingleFlight: SingleFlight; // first-wins singleton
 ```
 
 ---
@@ -817,19 +886,19 @@ Snapshots must be `structuredClone`-compatible:
 
 ## Module Structure
 
-| File                           | Exports                                                                                                                                                  | Purpose                                                |
-| ------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------ |
-| `create-store.ts`              | `createStore`, `createStoreSubscription`, `StoreApi`, `Store`, `StoreSubscriptionOptions`                                                                | Core store factory                                     |
-| `produce.ts`                   | `produce`                                                                                                                                                | `structuredClone`-based draft updater                  |
-| `shallow-equal.ts`             | `shallowEqual`                                                                                                                                           | Shallow equality for `equals` option                   |
-| `watch.ts`                     | `watch`, `WatchOptions`                                                                                                                                  | Non-React store observer                               |
-| `create-derived-store.ts`      | `createDerivedStore`, `DerivedStore`, `DerivedStoreOptions`                                                                                              | Read-only computed store                               |
-| `create-array-methods.ts`      | `createArrayMethods`, `ArrayMethods`, `ArrayMethodsFactory`                                                                                              | Two-stage typed array helper factory                   |
-| `create-store-dispatch.ts`     | `createStoreDispatch`, `StoreDispatch`, `BuiltinDispatchable`, `DispatchableActions`, `DispatchOptions`                                                  | Dispatch wrapper for controlled store access           |
-| `async-state.ts`               | `AsyncState`, `AsyncIdle`, `AsyncPending`, `AsyncFulfilled`, `AsyncRejected`, `asyncIdle`, `asyncPending`, `asyncFulfilled`, `asyncRejected`, `runAsync` | Standard async state shape                             |
-| `connect-debug-log.ts`         | `connectDebugLog`, `ConnectDebugLogOptions`                                                                                                              | Console logger via `stardust:store` namespace          |
-| `path-utils.ts`                | `PathsOf`, `ValueAtPath`, `parsePath`, `copyOnWritePath`                                                                                                 | Path types and structural sharing                      |
-| `safe-await.ts`                | `safeAwait`, `SafeAwaitResult`                                                                                                                           | Go-style `[error, result]` tuple for `Promise`         |
-| `single-flight.ts`             | `createSingleFlight`, `safeSingleFlight`, `SingleFlight`                                                                                                 | Deduplicates concurrent async calls                    |
-| `mutex.ts`                     | `createMutex`, `safeMutex`, `Mutex`                                                                                                                      | Serialises concurrent async calls                      |
-| `react.ts` (`@stardust/react`) | `useStore`, `UseStoreOptions`, `useSuspenseStore`, `createStoreContext`, `CreateStoreContextOptions`, `StoreContextResult`                               | React-specific entry point (keeps core zero-React-dep) |
+| File                           | Exports                                                                                                                                                          | Purpose                                                         |
+| ------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------- |
+| `create-store.ts`              | `createStore`, `createStoreSubscription`, `StoreApi`, `Store`, `StoreSubscriptionOptions`                                                                        | Core store factory                                              |
+| `produce.ts`                   | `produce`                                                                                                                                                        | `structuredClone`-based draft updater                           |
+| `shallow-equal.ts`             | `shallowEqual`                                                                                                                                                   | Shallow equality for `equals` option                            |
+| `watch.ts`                     | `watch`, `WatchOptions`                                                                                                                                          | Non-React store observer                                        |
+| `create-derived-store.ts`      | `createDerivedStore`, `DerivedStore`, `DerivedStoreOptions`                                                                                                      | Read-only computed store                                        |
+| `create-array-methods.ts`      | `createArrayMethods`, `ArrayMethods`, `ArrayMethodsFactory`                                                                                                      | Two-stage typed array helper factory                            |
+| `create-store-dispatch.ts`     | `createStoreDispatch`, `StoreDispatch`, `DispatchOptions`                                                                                                        | Dispatch wrapper for controlled store access                    |
+| `async-state.ts`               | `AsyncState`, `AsyncIdle`, `AsyncPending`, `AsyncFulfilled`, `AsyncRejected`, `asyncIdle`, `asyncPending`, `asyncFulfilled`, `asyncRejected`, `runAsync`         | Standard async state shape                                      |
+| `connect-debug-log.ts`         | `connectDebugLog`, `ConnectDebugLogOptions`                                                                                                                      | Console logger via `stardust:store` namespace                   |
+| `path-utils.ts`                | `PathsOf`, `ValueAtPath`, `parsePath`, `copyOnWritePath`                                                                                                         | Path types and structural sharing                               |
+| `safe-await.ts`                | `safeAwait`, `SafeAwaitResult`                                                                                                                                   | Go-style `[error, result]` tuple for `Promise`                  |
+| `single-flight.ts`             | `createSingleFlight`, `createFirstFlight`, `createLastFlight`, `safeSingleFlight`, `SingleFlight`, `SingleFlightTask`, `SingleFlightMode`, `SingleFlightOptions` | Deduplicates concurrent async calls (`'first'` / `'last'` mode) |
+| `mutex.ts`                     | `createMutex`, `safeMutex`, `Mutex`                                                                                                                              | Serialises concurrent async calls                               |
+| `react.ts` (`@stardust/react`) | `useStore`, `UseStoreOptions`, `useSuspenseStore`, `createStoreContext`, `CreateStoreContextOptions`, `StoreContextResult`                                       | React-specific entry point (keeps core zero-React-dep)          |

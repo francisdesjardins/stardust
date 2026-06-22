@@ -103,7 +103,7 @@ test.describe('watch', () => {
   });
 
   test('does not fire before the first mutation', () => {
-    const store = createStore({ count: 0 }, () => ({}));
+    const store = createStore({ count: 0 });
 
     const calls: number[] = [];
     watch(

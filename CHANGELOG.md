@@ -7,28 +7,51 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+#### `@stardust/core`
+
+- **`createStore` — methods callback is now optional** — `createStore(snapshot)` and `createStore(snapshot, options)` return a `GenericStore<TSnapshot, TContext>` with all built-ins (`set`, `update`, `reset`, `batch`, `getByPath`, `setByPath`, `run`) at the root. Passing a builder returns a `DomainStore` where mutations live only in the `api` parameter.
+- **`createSingleFlight` — `mode` option** — accepts `{ mode: 'first' | 'last' }`. `'first'` (default) preserves existing behaviour. `'last'` makes each new call supersede the previous: the superseded task's `AbortSignal` is aborted immediately, and all concurrent waiters share a single deferred that resolves with the last task's result — useful for search/autocomplete patterns.
+- **`SingleFlightTask<T>`** — task signature is now `(signal: AbortSignal) => Promise<T>`. Callers that do not need the signal can ignore the parameter; existing `() => Promise<T>` thunks remain assignable (TypeScript allows fewer-parameter callbacks).
+- **`createFirstFlight()` / `createLastFlight()`** — named convenience factories for each mode.
+
 ### Changed
 
 #### `@stardust/core`
 
+- **`createStore()` builder signature** — the factory callback now returns the domain methods object **directly** (no `{ actions: ... }` wrapper). Domain methods are merged at the store root and userland chooses the shape (flat, namespaced, mixed): `store.todos.add(text)` instead of `store.actions.todos.add(text)`. Mutation built-ins (`set`, `update`, `setByPath`, `batch`, `reset`, `run`) live **only** in the `api` parameter of the builder — they are not exposed on the public store. The five technical keys `subscribe`, `getSnapshot`, `listenerCount`, `getByPath`, `setContext` remain at the root and cannot be used as domain method names (compile-time error + runtime throw at construction).
+- **New `GenericStore<TSnapshot, TContext>` and `DomainStore<TSnapshot, TMethods, TContext>` exports** — replace the previous `Store<TSnapshot, TMethods, TContext>` and `ActionlessStore<TSnapshot, TContext>` types. The previous `Store` and `ActionlessStore` exports are removed.
+- **`createStoreDispatch()` and `createBoundActions()` discover domain methods via a `DOMAIN_METHODS` symbol** — set internally by `createStore` on the store object. The symbol is not part of the public API. These helpers now require a `DomainStore` (TypeScript error if called with a `GenericStore`).
+- **`createStoreDispatch()` domain restriction** — the `NON_DOMAIN_KEYS` filtering is removed; domain methods are identified by walking the methods tree directly. Built-in exposure options (`canDispatchSet`, etc.) are no longer supported — built-in mutations are not dispatchable on a `DomainStore`. The `domain` option still filters which actions are dispatchable.
+- **`createStoreDispatch()` leaf-path support** — domain methods are flattened at construction time, allowing nested actions to be dispatched via dot-notation (e.g. `dispatch('todos.add', text)` for `store.todos.add(text)`). Leaf **paths** are cached and resolved against the domain tree at dispatch time, so wrappers installed after construction — notably `connectDebugLog` — are always invoked. Type-level `LeafPaths<TMethods>` extracts all leaf function paths; `LeafAt<T, Path>` resolves function types at dot-notation paths for full type safety (both exported from `@stardust/core`).
+- **`connectDebugLog()`** — detects store kind via the `DOMAIN_METHODS` symbol and instruments the appropriate surface: domain methods only on a `DomainStore`, built-in mutations only on a `GenericStore`. Untracked-mutation warnings are no longer reachable on a domain store, since mutations are not publicly accessible.
 - `createCachedSlice` — `stopAutoRefresh()` no longer clears the expiry timer. The `'fresh'` → `'expired'` transition fires and notifies subscribers regardless of auto-refresh state, making expiry fully observable even when automatic re-fetching is disabled. Call `expire()` explicitly if you need to cancel the timer and immediately mark the cache as expired.
-- `createCachedSlice` — `startAutoRefresh()` now immediately triggers the `refreshOnExpire` fetch when the cache is already `'expired'` at call time, instead of being a no-op (previously `scheduleExpiryTimer` returned early for non-`'fresh'` states).
-- `createCachedSlice` — **`expire` option removed** from `CachedOptions`; TTL is now expressed directly on the data via `cachedFresh(data, expiresAt)`, `set(data, expiresAt)`, and `refresh(fetcher, { expiresAt })`. `startAutoRefresh({ interval })` replaces the `expire` option as the source of the recurring TTL for auto-refresh cycles — it stamps `expiresAt = Date.now() + interval` on each refreshed value and drives the first expiry when the initial state has no `expiresAt`. This removes the awkward duplication between the option and the initial `cachedFresh` timestamp.
+- `createCachedSlice` — `startAutoRefresh()` now immediately triggers the `onExpire` fetch when the cache is already `'expired'` at call time, instead of being a no-op (previously `scheduleExpiryTimer` returned early for non-`'fresh'` states).
+- `createCachedSlice` — **`expire` option removed** from `CachedOptions`; TTL is now expressed directly on the data via `cachedFresh(data, expiresAt)`, `set(data, expiresAt)`, and `refresh(fetcher, { expiresAt })`. `startAutoRefresh({ expiresAfter? })` (with optional default `expiresAfter` on `CachedOptions`) replaces the `expire` option as the source of the recurring TTL for auto-refresh cycles — it stamps `expiresAt = Date.now() + expiresAfter` on each refreshed value and drives the first expiry when the initial state has no `expiresAt`. This removes the awkward duplication between the option and the initial `cachedFresh` timestamp.
 - `createCachedSlice` — `set(data)` now accepts an optional second argument `expiresAt?: number`. When omitted, the result has no TTL and stays fresh indefinitely. When provided, the expiry timer is scheduled at that absolute timestamp.
 - `createCachedSlice` — `refresh(fetcher, opts?)` now accepts `expiresAt?: number` in `CachedRefreshOptions`. Stamps the TTL on the `CachedFresh` result.
 - `createCachedSlice` — **breaking redesign**: the managed store field now holds a `CachedState<T>` discriminated union (`CachedIdle | CachedPending<T> | CachedFresh<T> | CachedExpired<T> | CachedRejected<T>`) instead of raw `T`. Cache status is now fully observable via `watch` and `createDerivedStore` — expiry fires into the snapshot. Use `cachedFresh(data)` as the initial store value; it returns `CachedState<T>` (wide union) so TypeScript infers `TSnapshot` correctly.
 - `createCachedSlice` — `set(data)` now always writes `cachedFresh`; the updater-function overload is removed.
 - `createCachedSlice` — `refresh(fetcher)` fetcher signature changed to `(current: TValue | undefined) => Promise<TValue>` (void return is no longer accepted). Transitions snapshot through `cachedPending → cachedFresh` on success, `cachedPending → cachedRejected` on error.
-- `createCachedSlice` — expiry timer is now **scheduled at construction** when the initial state is `'fresh'` and has a non-`undefined` `expiresAt`; on firing, the snapshot transitions to `CachedExpired<T>` (observable). `startAutoRefresh({ interval })` additionally enables automatic re-fetch on expiry.
-- `createCachedSlice` — `stopAutoRefresh()` sets `autoRefreshEnabled = false`, preventing any in-flight `refreshOnExpire` callback from rescheduling after stop.
-- `createCachedSlice` — `refreshOnExpire` now receives `(current: TValue | undefined, api)` and must return `Promise<TValue>` (void pattern removed).
+- `createCachedSlice` — expiry timer is now **scheduled at construction** when the initial state is `'fresh'` and has a non-`undefined` `expiresAt`; on firing, the snapshot transitions to `CachedExpired<T>` (observable). `startAutoRefresh({ expiresAfter? })` additionally enables automatic re-fetch on expiry.
+- `createCachedSlice` — `stopAutoRefresh()` sets `autoRefreshEnabled = false`, preventing any in-flight `onExpire` callback from rescheduling after stop.
+- `createCachedSlice` — `onExpire` now receives `(current: TValue | undefined, api)` and must return `Promise<TValue>` (void pattern removed).
+- `createCachedSlice` — **`refreshOnExpire` renamed to `onExpire`** on `CachedOptions`. Callers must update option name; behaviour is unchanged.
 - `createArrayMethods` — redesigned as a two-stage factory: `createArrayMethods<TItem>(defaults)` returns an `ArrayMethodsFactory` with a `.mount(api, path)` method that binds helpers to a specific store and path; providing `TItem` explicitly prevents TypeScript from narrowing literal defaults (e.g. `asyncIdle`), eliminating the need for `as` casts
 - `connectDebugLog()` — built-in logger now reports `listeners:N` excluding its own internal debug subscription, while `onLog` receives the raw live listener count at notify time.
+
+### Added
+
+#### `@stardust/core`
+
+- **`store.run(actionName, fn)`** — built-in method that executes an untracked mutation within a named action scope. Useful for external code (e.g., `watch` callbacks, event handlers outside domain methods) that needs to mutate the store without triggering an "untracked mutation" warning from `connectDebugLog`. `connectDebugLog` wraps `run()` to set `currentAction` for the duration, ensuring the mutation is logged and tracked. When called inside a domain method, the outer action name takes precedence.
 
 ### Removed
 
 #### `@stardust/core`
 
+- **`BuiltinDispatchable` and `DispatchableActions` type exports** — removed from `createStoreDispatch` as they are no longer relevant; `createStoreDispatch` now only supports domain actions from `store.actions`.
 - `createCachedSlice` — `isExpired()` removed; use `cache.get().status === 'expired'` instead.
 - `createCachedSlice` — `markFresh()` removed; the cache writes `cachedFresh` directly after a successful `refresh()`.
 - `createArrayMethods` — removed `methods` builder (4th param) and `ArrayMethodsApi` type; extend the domain API directly using normal domain methods instead
@@ -71,6 +94,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `useSuspenseStore()` — React Suspense protocol hook; throws `Promise` while pending, throws `Error` on rejection, returns `T` on fulfillment
 - `createStoreContext()` — React Context factory; each `Provider` mount creates an isolated store instance via lazy `useState` initializer
   - `useSnapshot` selector now also receives the store as a second argument `(snapshot, store) => ...`
+- `useStoreCachedSlice()` — hook to subscribe to a cached slice with automatic reference counting for `startAutoRefresh` / `stopAutoRefresh`
+  - Coordinates auto-refresh across multiple components — only the first mount calls `startAutoRefresh()`, only the last unmount calls `stopAutoRefresh()`
+  - Automatically transitions `idle → expired` on mount when auto-refresh is configured, triggering `onExpire` flows
+  - Uses WeakMap to track per-Cached-instance reference counts; maintains a cache of selected values for tearing prevention
+  - Selector functions receive both the full `CachedState<T>` discriminated union and the extracted data (via `getCachedData()`), allowing rich status-aware selections
+  - Throws at hook call time if no `Cached` instance is registered for `(store, path)` — declare it in the store builder via `createCachedSlice(api, path, …)`; ad-hoc construction is not supported
 - React Compiler (`babel-plugin-react-compiler` target `'19'`) applied at build time — no manual `useMemo` / `useCallback` / `React.memo` required
 
 #### `@stardust/solid`
@@ -84,7 +113,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 #### playground
 
 - `cache-loading` — section headers ("placeholder" / "keepPreviousData") were empty; labels restored.
-- `cache-nested` — caption incorrectly claimed `expire()` immediately triggers `refreshOnExpire`; corrected. Added Start/Stop auto-refresh buttons so `refreshOnExpire` is actually exercised in the example.
+- `cache-nested` — caption incorrectly claimed `expire()` immediately triggers `onExpire`; corrected. Added Start/Stop auto-refresh buttons so `onExpire` is actually exercised in the example.
 - Extracted shared `cachedStatusColor` map from all four cache examples into `@/entities/example` to eliminate copy-paste duplication.
 
 #### `@stardust/core` (tests)

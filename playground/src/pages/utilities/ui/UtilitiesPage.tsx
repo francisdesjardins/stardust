@@ -11,7 +11,10 @@ import { MutexExample } from '../examples/mutex';
 import { PathUtilsExample } from '../examples/path-utils';
 import { ProduceExample } from '../examples/produce';
 import { SafeAwaitExample } from '../examples/safe-await';
+import { BoundActionsExample } from '../examples/bound-actions';
+import { RunAsyncExample } from '../examples/run-async';
 import { SingleFlightExample } from '../examples/single-flight';
+import { SingleFlightLastExample } from '../examples/single-flight-last';
 import { StoreDispatchExample } from '../examples/store-dispatch';
 
 const SectionHeader = ({ label }: { label: string }) => (
@@ -49,6 +52,16 @@ export const UtilitiesPage = () => (
           codeKey="store-dispatch"
         >
           <StoreDispatchExample />
+        </ExampleCard>
+      </Grid>
+
+      <Grid size={{ xs: 12, md: 6 }}>
+        <ExampleCard
+          title="createBoundActions"
+          description="Object-shaped dispatch: call nested methods via property access instead of dot-path strings. Domain option restricts the callable set at both the type and runtime level."
+          codeKey="bound-actions"
+        >
+          <BoundActionsExample />
         </ExampleCard>
       </Grid>
 
@@ -109,7 +122,7 @@ export const UtilitiesPage = () => (
       <Grid size={{ xs: 12, md: 6 }}>
         <ExampleCard
           title="Nested slice"
-          description="Cache one typed subtree while the rest of the snapshot stays plain. Expiring triggers refreshOnExpire automatically."
+          description="Cache one typed subtree while the rest of the snapshot stays plain. Expiring triggers onExpire automatically."
           codeKey="cache-nested"
         >
           <CacheNestedExample />
@@ -140,11 +153,31 @@ export const UtilitiesPage = () => (
 
       <Grid size={{ xs: 12, md: 6 }}>
         <ExampleCard
+          title="runAsync"
+          description="Drives an AsyncState&lt;T&gt; field through idle → pending → fulfilled (or rejected). One call — four observable states. Pair with useSuspenseStore to suspend on pending."
+          codeKey="run-async"
+        >
+          <RunAsyncExample />
+        </ExampleCard>
+      </Grid>
+
+      <Grid size={{ xs: 12, md: 6 }}>
+        <ExampleCard
           title="createSingleFlight"
           description="Collapses N concurrent callers into one execution. While a task is in-flight, every subsequent call shares the same promise."
           codeKey="single-flight"
         >
           <SingleFlightExample />
+        </ExampleCard>
+      </Grid>
+
+      <Grid size={{ xs: 12, md: 6 }}>
+        <ExampleCard
+          title="createLastFlight"
+          description="Last-wins mode: each new call supersedes the previous. The in-flight fetch is cancelled via AbortSignal — type quickly to see requests aborted in real time."
+          codeKey="single-flight-last"
+        >
+          <SingleFlightLastExample />
         </ExampleCard>
       </Grid>
 

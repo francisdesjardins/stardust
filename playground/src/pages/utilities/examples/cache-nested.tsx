@@ -16,7 +16,7 @@ const names = ['Nova', 'Aster', 'Lyra', 'Vega'];
 
 const sleep = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
 
-const INTERVAL = 5_000;
+const EXPIRES_AFTER = 5_000;
 
 async function fetchNextProfile(prev: Profile | undefined): Promise<Profile> {
   await sleep(700);
@@ -35,7 +35,7 @@ const store = createStore(
   (api) => ({
     profileCache: createCachedSlice(api, 'profile', {
       keepPreviousData: true,
-      refreshOnExpire: fetchNextProfile,
+      onExpire: fetchNextProfile,
     }),
   })
 );
@@ -49,7 +49,7 @@ export function CacheNestedExample() {
 
   function startAuto() {
     setAutoRunning(true);
-    store.profileCache.startAutoRefresh({ interval: INTERVAL });
+    store.profileCache.startAutoRefresh({ expiresAfter: EXPIRES_AFTER });
   }
 
   function stopAuto() {
@@ -96,7 +96,7 @@ export function CacheNestedExample() {
             Expire now
           </Button>
           <Button variant="outlined" size="small" onClick={startAuto} disabled={autoRunning}>
-            Start auto-refresh ({INTERVAL / 1_000}s)
+            Start auto-refresh ({EXPIRES_AFTER / 1_000}s)
           </Button>
           <Button variant="outlined" size="small" onClick={stopAuto} disabled={!autoRunning}>
             Stop auto-refresh
@@ -107,7 +107,7 @@ export function CacheNestedExample() {
           Only <code>profile</code> is a <code>CachedState&lt;Profile&gt;</code>. The{' '}
           <code>posts</code> and <code>lastVisit</code> fields are plain values — unchanged during a
           profile refresh. With auto-refresh armed, &ldquo;Expire now&rdquo; immediately triggers{' '}
-          <code>refreshOnExpire</code> on the next timer tick — no dead expired state.
+          <code>onExpire</code> on the next timer tick — no dead expired state.
         </Typography>
       </Stack>
     </ExampleLayout>

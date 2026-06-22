@@ -11,9 +11,12 @@ type PricingState = { basePrice: number };
 function makePricingStore() {
   return createStore(
     { basePrice: 100 },
-    ({ get, getContext }: StoreApi<PricingState, PricingCtx>) => ({
+    ({ get, getContext, setByPath }: StoreApi<PricingState, PricingCtx>) => ({
       getTotal(): number {
         return get().basePrice * (1 + getContext().taxRate);
+      },
+      setBase(value: number) {
+        setByPath('basePrice', value);
       },
     })
   );
@@ -41,7 +44,7 @@ export function ContextHarness() {
       <span data-testid="total">{total}</span>
       <button
         onClick={() => {
-          contextStore.setByPath('basePrice', 200);
+          contextStore.setBase(200);
         }}
       >
         Set 200
@@ -70,7 +73,7 @@ export function ContextWithSelectorHarness() {
       <span data-testid="total">{total}</span>
       <button
         onClick={() => {
-          selectorContextStore.setByPath('basePrice', 50);
+          selectorContextStore.setBase(50);
         }}
       >
         Set 50

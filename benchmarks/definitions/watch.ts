@@ -15,8 +15,10 @@ const FLAT_INITIAL: Flat = { count: 0, label: 'bench', active: true };
 group('watch', () => {
   bench('watch full snapshot (no selector)', function* () {
     const store = createStore({ ...FLAT_INITIAL }, ({ set, get }) => ({
-      tick() {
-        set({ ...get(), count: get().count + 1 });
+      actions: {
+        tick() {
+          set({ ...get(), count: get().count + 1 });
+        },
       },
     }));
     let calls = 0;
@@ -24,15 +26,17 @@ group('watch', () => {
       calls++;
     });
     yield () => {
-      store.tick();
+      store.actions.tick();
       return calls;
     };
   });
 
   bench('watch selector — primitive field', function* () {
     const store = createStore({ ...FLAT_INITIAL }, ({ set, get }) => ({
-      tick() {
-        set({ ...get(), count: get().count + 1 });
+      actions: {
+        tick() {
+          set({ ...get(), count: get().count + 1 });
+        },
       },
     }));
     let calls = 0;
@@ -44,15 +48,17 @@ group('watch', () => {
       }
     );
     yield () => {
-      store.tick();
+      store.actions.tick();
       return calls;
     };
   });
 
   bench('watch selector + shallowEqual', function* () {
     const store = createStore({ ...FLAT_INITIAL }, ({ set, get }) => ({
-      tick() {
-        set({ ...get(), count: get().count + 1 });
+      actions: {
+        tick() {
+          set({ ...get(), count: get().count + 1 });
+        },
       },
     }));
     let calls = 0;
@@ -65,13 +71,13 @@ group('watch', () => {
       { equals: shallowEqual }
     );
     yield () => {
-      store.tick();
+      store.actions.tick();
       return calls;
     };
   });
 
   bench('watch subscribe + unsubscribe', function* () {
-    const store = createStore({ count: 0 }, () => ({}));
+    const store = createStore({ count: 0 });
     yield () => {
       const unsub = watch(
         store,
@@ -84,8 +90,10 @@ group('watch', () => {
 
   bench('watch callback suppressed (no change)', function* () {
     const store = createStore({ count: 0, label: 'x' }, ({ set, get }) => ({
-      toggleLabel() {
-        set({ ...get(), label: get().label === 'x' ? 'y' : 'x' });
+      actions: {
+        toggleLabel() {
+          set({ ...get(), label: get().label === 'x' ? 'y' : 'x' });
+        },
       },
     }));
     let calls = 0;
@@ -97,7 +105,7 @@ group('watch', () => {
       }
     );
     yield () => {
-      store.toggleLabel();
+      store.actions.toggleLabel();
       return calls;
     };
   });

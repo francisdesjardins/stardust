@@ -243,7 +243,7 @@ type FuzzSnapshot = { count: number; label: string; items: string[] };
 function makeFuzzStore() {
   return createStore(
     { count: 0, label: '', items: [] as string[] } satisfies FuzzSnapshot,
-    ({ set, update, setByPath }) => ({
+    ({ set, update, setByPath, batch }) => ({
       increment: () => {
         update((d) => {
           d.count += 1;
@@ -262,6 +262,9 @@ function makeFuzzStore() {
       },
       reset: () => {
         set({ count: 0, label: '', items: [] });
+      },
+      batch: (fn: () => void) => {
+        batch(fn);
       },
     })
   );

@@ -1,11 +1,11 @@
 import { useStore } from '@stardust/solid';
-import type { Store } from '@stardust/core';
+import type { DomainStore } from '@stardust/core';
 
 type CountState = { count: number };
-type CountMethods = { increment: () => void; decrement: () => void };
+type CountActions = { increment: () => void; decrement: () => void };
 
 type SolidCounterProps = {
-  store: Store<CountState, CountMethods>;
+  store: DomainStore<CountState, CountActions>;
   label?: string;
 };
 

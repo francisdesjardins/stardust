@@ -1,17 +1,13 @@
 import { createDerivedStore, createStore, shallowEqual } from '@stardust/core';
 import { useStore } from '@stardust/react';
 
-const counterStore = createStore({ count: 0 }, ({ update }) => ({
+const counterStore = createStore({ count: 0 }, ({ update, reset }) => ({
   increment() {
     update((d) => {
       d.count += 1;
     });
   },
-  reset() {
-    update((d) => {
-      d.count = 0;
-    });
-  },
+  reset,
 }));
 
 const doubledStore = createDerivedStore([counterStore], (c) => ({ doubled: c.count * 2 }), {

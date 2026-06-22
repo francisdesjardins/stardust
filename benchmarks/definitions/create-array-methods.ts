@@ -25,90 +25,98 @@ const phoneOps = createArrayMethods<Phone>(PHONE_DEFAULTS);
 group('createArrayMethods', () => {
   bench('arrayMethods.add()', function* () {
     const store = createStore({ phones: [] as Phone[] }, (api) => ({
-      phones: phoneOps.mount(api, 'phones'),
-      clear() {
-        api.set({ phones: [] });
+      actions: {
+        phones: phoneOps.mount(api, 'phones'),
+        clear() {
+          api.set({ phones: [] });
+        },
       },
     }));
     yield () => {
-      store.phones.add({ number: '555' });
-      store.clear();
+      store.actions.phones.add({ number: '555' });
+      store.actions.clear();
     };
   });
 
   bench('arrayMethods.remove()', function* () {
     const store = createStore(structuredClone(ARRAY_INITIAL), (api) => ({
-      phones: phoneOps.mount(api, 'phones'),
-      reset() {
-        api.set(structuredClone(ARRAY_INITIAL));
+      actions: {
+        phones: phoneOps.mount(api, 'phones'),
+        reset() {
+          api.set(structuredClone(ARRAY_INITIAL));
+        },
       },
     }));
     yield () => {
-      store.phones.remove(1);
-      store.reset();
+      store.actions.phones.remove(1);
+      store.actions.reset();
     };
   });
 
   bench('arrayMethods.set() partial', function* () {
     const store = createStore(structuredClone(ARRAY_INITIAL), (api) => ({
-      phones: phoneOps.mount(api, 'phones'),
+      actions: { phones: phoneOps.mount(api, 'phones') },
     }));
-    yield () => store.phones.set(0, { label: 'work' });
+    yield () => store.actions.phones.set(0, { label: 'work' });
   });
 
   bench('arrayMethods.update()', function* () {
     const store = createStore(structuredClone(ARRAY_INITIAL), (api) => ({
-      phones: phoneOps.mount(api, 'phones'),
-      reset() {
-        api.set(structuredClone(ARRAY_INITIAL));
+      actions: {
+        phones: phoneOps.mount(api, 'phones'),
+        reset() {
+          api.set(structuredClone(ARRAY_INITIAL));
+        },
       },
     }));
     yield () => {
-      store.phones.update((item) => item.label === 'work', { label: 'work' });
+      store.actions.phones.update((item) => item.label === 'work', { label: 'work' });
     };
   });
 
   bench('arrayMethods.setByPath()', function* () {
     const store = createStore(structuredClone(ARRAY_INITIAL), (api) => ({
-      phones: phoneOps.mount(api, 'phones'),
+      actions: { phones: phoneOps.mount(api, 'phones') },
     }));
-    yield () => store.phones.setByPath(0, 'meta.primary', true);
+    yield () => store.actions.phones.setByPath(0, 'meta.primary', true);
   });
 
   bench('arrayMethods.move()', function* () {
     const store = createStore(structuredClone(ARRAY_INITIAL), (api) => ({
-      phones: phoneOps.mount(api, 'phones'),
+      actions: { phones: phoneOps.mount(api, 'phones') },
     }));
     yield () => {
-      store.phones.move(0, 2);
-      store.phones.move(2, 0);
+      store.actions.phones.move(0, 2);
+      store.actions.phones.move(2, 0);
     };
   });
 
   bench('arrayMethods.upsert() hit', function* () {
     const store = createStore(structuredClone(ARRAY_INITIAL), (api) => ({
-      phones: phoneOps.mount(api, 'phones'),
+      actions: { phones: phoneOps.mount(api, 'phones') },
     }));
     const needle: Phone = { number: '9999999999', label: 'work', meta: { primary: false } };
     yield () =>
-      store.phones.upsert(needle, function (item) {
+      store.actions.phones.upsert(needle, function (item) {
         return item.label === this.label;
       });
   });
 
   bench('arrayMethods.upsert() miss', function* () {
     const store = createStore(structuredClone(ARRAY_INITIAL), (api) => ({
-      phones: phoneOps.mount(api, 'phones'),
-      reset() {
-        api.set(structuredClone(ARRAY_INITIAL));
+      actions: {
+        phones: phoneOps.mount(api, 'phones'),
+        reset() {
+          api.set(structuredClone(ARRAY_INITIAL));
+        },
       },
     }));
     const needle: Phone = { number: '9999999999', label: 'fax', meta: { primary: false } };
     yield () => {
-      store.phones.upsert(needle, function (item) {
+      store.actions.phones.upsert(needle, function (item) {
         return item.label === this.label;
       });
-      store.reset();
+      store.actions.reset();
     };
   });
 });

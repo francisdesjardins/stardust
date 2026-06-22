@@ -10,4 +10,7 @@ export type { CreateStoreContextOptions, StoreContextResult } from './create-sto
 export { useStore } from './use-store';
 export type { UseStoreOptions } from './use-store';
 
+export { useStoreCachedSlice } from './use-store-cached-slice';
+export type { UseStoreCachedSliceOptions } from './use-store-cached-slice';
+
 export { useSuspenseStore } from './use-suspense-store';

@@ -29,8 +29,10 @@ export type { ConnectDebugLogOptions, DiffResult } from './connect-debug-log';
 
 export { createStore, createStoreSubscription } from './create-store';
 export type {
+  DomainStore,
+  GenericStore,
   MaybeContext,
-  Store,
+  ReservedStoreKey,
   StoreApi,
   StoreContract,
   StoreSelector,
@@ -38,7 +40,7 @@ export type {
   UnwrapContext,
 } from './create-store';
 
-export { createCachedSlice } from './create-cached';
+export { createCachedSlice, getCachedSliceInstance } from './create-cached';
 export type { Cached, CachedOptions, CachedRefreshOptions } from './create-cached';
 
 export { createArrayMethods } from './create-array-methods';
@@ -48,12 +50,9 @@ export { createDerivedStore } from './create-derived-store';
 export type { DerivedStore, DerivedStoreOptions } from './create-derived-store';
 
 export { createStoreDispatch } from './create-store-dispatch';
-export type {
-  BuiltinDispatchable,
-  DispatchableActions,
-  DispatchOptions,
-  StoreDispatch,
-} from './create-store-dispatch';
+export type { DispatchOptions, LeafAt, LeafPaths, StoreDispatch } from './create-store-dispatch';
+
+export { createBoundActions } from './create-bound-actions';
 
 export { createMutex, safeMutex } from './mutex';
 export type { Mutex } from './mutex';
@@ -65,8 +64,18 @@ export type { SafeAwaitResult } from './safe-await';
 
 export { shallowEqual } from './shallow-equal';
 
-export { createSingleFlight, safeSingleFlight } from './single-flight';
-export type { SingleFlight } from './single-flight';
+export {
+  createSingleFlight,
+  createFirstFlight,
+  createLastFlight,
+  safeSingleFlight,
+} from './single-flight';
+export type {
+  SingleFlight,
+  SingleFlightTask,
+  SingleFlightMode,
+  SingleFlightOptions,
+} from './single-flight';
 
 export { watch } from './watch';
 export type { WatchOptions } from './watch';

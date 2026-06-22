@@ -10,7 +10,7 @@ const initialSnapshot = { todos: [] as Todo[], nextId: 1 };
 
 const todosOps = createArrayMethods<Todo>({ id: 0, text: '', done: false });
 const todoStore = createStore(initialSnapshot, (api) => {
-  const { batch, get, setByPath } = api;
+  const { batch, get, setByPath, reset } = api;
 
   const todos = todosOps.mount(api, 'todos');
 
@@ -29,6 +29,9 @@ const todoStore = createStore(initialSnapshot, (api) => {
           (s) => ({ done: !s.done })
         );
       },
+    },
+    reset() {
+      reset();
     },
   };
 });

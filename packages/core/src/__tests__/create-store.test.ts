@@ -89,8 +89,127 @@ test.describe('createStoreSubscription', () => {
 });
 
 test.describe('createStore', () => {
+  test.describe('no-actions overload', () => {
+    test('built-ins work without an actions callback', () => {
+      const store = createStore({ count: 0 });
+      expect(store.getSnapshot()).toEqual({ count: 0 });
+      store.set({ count: 1 });
+      expect(store.getSnapshot()).toEqual({ count: 1 });
+      store.update((d) => {
+        d.count += 1;
+      });
+      expect(store.getSnapshot()).toEqual({ count: 2 });
+      store.reset();
+      expect(store.getSnapshot()).toEqual({ count: 0 });
+    });
+
+    test('options can be passed as second argument', () => {
+      let calls = 0;
+      const equals = (a: { count: number }, b: { count: number }) => {
+        calls++;
+        return a.count === b.count;
+      };
+      const store = createStore({ count: 0 }, { equals });
+      store.set({ count: 0 });
+      expect(calls).toBeGreaterThan(0);
+      expect(store.getSnapshot()).toEqual({ count: 0 });
+    });
+
+    test('store.actions is not present', () => {
+      const store = createStore({ count: 0 });
+      expect('actions' in store).toBe(false);
+    });
+  });
+
+  test.describe('domain shape', () => {
+    test('domain methods are merged at the store root (no actions wrapper)', () => {
+      const store = createStore({ count: 0 }, ({ update }) => ({
+        increment() {
+          update((d) => {
+            d.count += 1;
+          });
+        },
+      }));
+      expect(typeof store.increment).toBe('function');
+      expect('actions' in store).toBe(false);
+      store.increment();
+      expect(store.getSnapshot().count).toBe(1);
+    });
+
+    test('mutation built-ins are hidden on a domain store', () => {
+      const store = createStore({ count: 0 }, ({ update }) => ({
+        increment() {
+          update((d) => {
+            d.count += 1;
+          });
+        },
+      }));
+      // Mutations live only in the api closure — not exposed on the store root.
+      const keys = new Set(Object.keys(store));
+      expect(keys.has('set')).toBe(false);
+      expect(keys.has('update')).toBe(false);
+      expect(keys.has('setByPath')).toBe(false);
+      expect(keys.has('batch')).toBe(false);
+      expect(keys.has('reset')).toBe(false);
+      expect(keys.has('run')).toBe(false);
+    });
+
+    test('reserved keys are rejected at construction', () => {
+      const reservedKeys = ['subscribe', 'getSnapshot', 'listenerCount', 'getByPath', 'setContext'];
+      for (const key of reservedKeys) {
+        expect(() => {
+          createStore({ count: 0 }, () => ({ [key]: () => undefined }) as never);
+        }).toThrow(new RegExp(`"${key}" conflicts with a reserved store property`));
+      }
+    });
+
+    test('nested namespaces are addressable via getter delegation', () => {
+      const store = createStore({ count: 0 }, ({ update }) => ({
+        counter: {
+          increment() {
+            update((d) => {
+              d.count += 1;
+            });
+          },
+          double() {
+            update((d) => {
+              d.count *= 2;
+            });
+          },
+        },
+      }));
+      store.counter.increment();
+      store.counter.double();
+      expect(store.getSnapshot().count).toBe(2);
+    });
+
+    test('userland can forward built-ins through the domain to expose them publicly', () => {
+      // Pattern: explicitly forward `api.update` (or any other built-in) as a
+      // domain method. The store exposes a public mutation surface chosen by
+      // userland — no anemic wrapper needed.
+      const store = createStore({ count: 0, label: '' }, (api) => ({
+        update: api.update,
+        setByPath: api.setByPath,
+        deleteAll() {
+          api.set({ count: 0, label: '' });
+        },
+      }));
+
+      store.update((d) => {
+        d.count = 5;
+      });
+      expect(store.getSnapshot().count).toBe(5);
+
+      store.setByPath('label', 'hello');
+      expect(store.getSnapshot().label).toBe('hello');
+
+      store.deleteAll();
+      expect(store.getSnapshot()).toEqual({ count: 0, label: '' });
+    });
+  });
+
   test('getSnapshot returns the initial snapshot', () => {
-    const store = createStore({ count: 0 }, () => ({}));
+    const store = createStore({ count: 0 });
     expect(store.getSnapshot()).toEqual({ count: 0 });
   });
 
@@ -159,7 +278,7 @@ test.describe('createStore', () => {
   });
 
   test('subscribe returns an unsubscribe function', () => {
-    const store = createStore(0, () => ({}));
+    const store = createStore(0);
     const unsub = store.subscribe(() => {
       /* noop */
     });
@@ -182,7 +301,7 @@ test.describe('createStore', () => {
   });
 
   test('unsubscribed listener is not called', () => {
-    const store = createStore(0, ({ set }) => ({
+    const store = createStore<number, { setOne(): void }>(0, ({ set }) => ({
       setOne() {
         set(1);
       },
@@ -255,51 +374,51 @@ test.describe('createStore', () => {
   });
 
   test('getByPath returns a top-level key', () => {
-    const store = createStore({ name: 'Alice' }, () => ({}));
+    const store = createStore({ name: 'Alice' });
     expect(store.getByPath('name')).toBe('Alice');
   });
 
   test('getByPath returns a nested key', () => {
-    const store = createStore({ user: { name: 'Bob' } }, () => ({}));
+    const store = createStore({ user: { name: 'Bob' } });
     expect(store.getByPath('user.name')).toBe('Bob');
   });
 
   test('getByPath returns an array element', () => {
-    const store = createStore({ items: ['a', 'b', 'c'] }, () => ({}));
+    const store = createStore({ items: ['a', 'b', 'c'] });
     expect(store.getByPath('items[1]')).toBe('b');
   });
 
   test('getByPath returns an array element property', () => {
-    const store = createStore({ things: [{ name: 'foo' }, { name: 'bar' }] }, () => ({}));
+    const store = createStore({ things: [{ name: 'foo' }, { name: 'bar' }] });
     expect(store.getByPath('things[0].name')).toBe('foo');
   });
 
   test('getByPath returns undefined for a missing path', () => {
-    const store = createStore({ a: { b: 1 } }, () => ({}));
+    const store = createStore({ a: { b: 1 } });
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     expect(store.getByPath('a.c' as any)).toBeUndefined();
   });
 
   test('setByPath updates a top-level key', () => {
-    const store = createStore({ count: 0 }, () => ({}));
+    const store = createStore({ count: 0 });
     store.setByPath('count', 42);
     expect(store.getSnapshot().count).toBe(42);
   });
 
   test('setByPath updates a nested key', () => {
-    const store = createStore({ user: { name: 'Alice' } }, () => ({}));
+    const store = createStore({ user: { name: 'Alice' } });
     store.setByPath('user.name', 'Carol');
     expect(store.getSnapshot().user.name).toBe('Carol');
   });
 
   test('setByPath updates an array element property', () => {
-    const store = createStore({ things: [{ name: 'foo' }] }, () => ({}));
+    const store = createStore({ things: [{ name: 'foo' }] });
     store.setByPath('things[0].name', 'baz');
     expect(store.getSnapshot().things[0]?.name).toBe('baz');
   });
 
   test('setByPath notifies listeners', () => {
-    const store = createStore({ value: 0 }, () => ({}));
+    const store = createStore({ value: 0 });
     let calls = 0;
     store.subscribe(() => {
       calls++;
@@ -309,7 +428,7 @@ test.describe('createStore', () => {
   });
 
   test('setByPath does not mutate the previous snapshot', () => {
-    const store = createStore({ value: 0 }, () => ({}));
+    const store = createStore({ value: 0 });
     const before = store.getSnapshot();
     store.setByPath('value', 99);
     expect(before.value).toBe(0);
@@ -317,7 +436,7 @@ test.describe('createStore', () => {
   });
 
   test('setByPath uses structural sharing — unchanged branches keep identity', () => {
-    const store = createStore({ a: { x: 1 }, b: { y: 2 } }, () => ({}));
+    const store = createStore({ a: { x: 1 }, b: { y: 2 } });
     const before = store.getSnapshot();
     store.setByPath('a.x', 99);
     const after = store.getSnapshot();
@@ -381,7 +500,7 @@ test.describe('createStore', () => {
   });
 
   test('setByPath skips notification when value is identical', () => {
-    const store = createStore({ count: 42 }, () => ({}));
+    const store = createStore({ count: 42 });
     let calls = 0;
     store.subscribe(() => {
       calls++;
@@ -391,7 +510,7 @@ test.describe('createStore', () => {
   });
 
   test('setByPath skips notification for identical nested value', () => {
-    const store = createStore({ user: { name: 'Alice' } }, () => ({}));
+    const store = createStore({ user: { name: 'Alice' } });
     let calls = 0;
     store.subscribe(() => {
       calls++;
@@ -402,7 +521,7 @@ test.describe('createStore', () => {
   });
 
   test('setByPath preserves snapshot identity when value is identical', () => {
-    const store = createStore({ a: 1, b: { c: 2 } }, () => ({}));
+    const store = createStore({ a: 1, b: { c: 2 } });
     const before = store.getSnapshot();
     store.setByPath('b.c', 2);
     expect(store.getSnapshot()).toBe(before);
@@ -411,39 +530,42 @@ test.describe('createStore', () => {
   // ── batch ──────────────────────────────────────────────────────────────
 
   test('batch() defers listener notification until fn completes', () => {
-    const store = createStore({ count: 0 }, ({ set }) => ({
+    const store = createStore({ count: 0 }, ({ set, batch }) => ({
       setCount(n: number) {
         set({ count: n });
+      },
+      runThree() {
+        batch(() => {
+          set({ count: 1 });
+          set({ count: 2 });
+          set({ count: 3 });
+        });
       },
     }));
     const log: number[] = [];
     store.subscribe(() => {
       log.push(store.getSnapshot().count);
     });
-    store.batch(() => {
-      store.setCount(1);
-      store.setCount(2);
-      store.setCount(3);
-    });
+    store.runThree();
     // Only one notification with the final value
     expect(log).toEqual([3]);
   });
 
   test('batch() get() returns the latest value during batch', () => {
-    const store = createStore({ count: 0 }, ({ get, set }) => ({
-      incrementTwice() {
-        set({ count: get().count + 1 });
-        set({ count: get().count + 1 });
+    const store = createStore({ count: 0 }, ({ get, set, batch }) => ({
+      runBatchedIncrement() {
+        batch(() => {
+          set({ count: get().count + 1 });
+          set({ count: get().count + 1 });
+        });
       },
     }));
-    store.batch(() => {
-      store.incrementTwice();
-    });
+    store.runBatchedIncrement();
     expect(store.getSnapshot().count).toBe(2);
   });
 
   test('batch() does not notify when no mutations happen', () => {
-    const store = createStore({ count: 0 }, () => ({}));
+    const store = createStore({ count: 0 });
     let calls = 0;
     store.subscribe(() => {
       calls++;
@@ -455,7 +577,7 @@ test.describe('createStore', () => {
   });
 
   test('batch() supports nesting — notifies only after outermost batch', () => {
-    const store = createStore({ count: 0 }, () => ({}));
+    const store = createStore({ count: 0 });
     const log: number[] = [];
     store.subscribe(() => {
       log.push(store.getSnapshot().count);
@@ -471,13 +593,7 @@ test.describe('createStore', () => {
   });
 
   test('batch() works with setByPath, set, and update together', () => {
-    const store = createStore({ a: 0, b: '', c: false }, ({ update }) => ({
-      toggleC() {
-        update((d) => {
-          d.c = !d.c;
-        });
-      },
-    }));
+    const store = createStore({ a: 0, b: '', c: false });
     let calls = 0;
     store.subscribe(() => {
       calls++;
@@ -485,7 +601,9 @@ test.describe('createStore', () => {
     store.batch(() => {
       store.setByPath('a', 42);
       store.setByPath('b', 'hello');
-      store.toggleC();
+      store.update((d) => {
+        d.c = !d.c;
+      });
     });
     expect(calls).toBe(1);
     expect(store.getSnapshot()).toEqual({ a: 42, b: 'hello', c: true });
@@ -513,19 +631,19 @@ test.describe('createStore', () => {
   // ── store-level set() and update() ─────────────────────────────────────
 
   test('store.set() replaces the snapshot directly', () => {
-    const store = createStore({ count: 0 }, () => ({}));
+    const store = createStore({ count: 0 });
     store.set({ count: 42 });
     expect(store.getSnapshot()).toEqual({ count: 42 });
   });
 
   test('store.set() with updater function', () => {
-    const store = createStore({ count: 0 }, () => ({}));
+    const store = createStore({ count: 0 });
     store.set((prev) => ({ count: prev.count + 10 }));
     expect(store.getSnapshot().count).toBe(10);
   });
 
   test('store.set() notifies listeners', () => {
-    const store = createStore({ count: 0 }, () => ({}));
+    const store = createStore({ count: 0 });
     let calls = 0;
     store.subscribe(() => {
       calls++;
@@ -535,7 +653,7 @@ test.describe('createStore', () => {
   });
 
   test('store.set() skips notification for identical value', () => {
-    const store = createStore({ count: 0 }, () => ({}));
+    const store = createStore({ count: 0 });
     let calls = 0;
     store.subscribe(() => {
       calls++;
@@ -545,7 +663,7 @@ test.describe('createStore', () => {
   });
 
   test('store.update() applies draft mutation directly', () => {
-    const store = createStore({ count: 0, label: 'a' }, () => ({}));
+    const store = createStore({ count: 0, label: 'a' });
     store.update((d) => {
       d.count = 5;
       d.label = 'b';
@@ -554,7 +672,7 @@ test.describe('createStore', () => {
   });
 
   test('store.update() notifies listeners', () => {
-    const store = createStore({ count: 0 }, () => ({}));
+    const store = createStore({ count: 0 });
     let calls = 0;
     store.subscribe(() => {
       calls++;
@@ -634,22 +752,25 @@ test.describe('createStore', () => {
   // ── reset() ─────────────────────────────────────────────────────────────
 
   test('reset() restores the initial snapshot', () => {
-    const store = createStore({ count: 0 }, ({ update }) => ({
+    const store = createStore({ count: 0 }, ({ update, reset }) => ({
       increment() {
         update((d) => {
           d.count += 1;
         });
       },
+      restore() {
+        reset();
+      },
     }));
     store.increment();
     store.increment();
     expect(store.getSnapshot().count).toBe(2);
-    store.reset();
+    store.restore();
     expect(store.getSnapshot()).toEqual({ count: 0 });
   });
 
   test('reset() notifies subscribers', () => {
-    const store = createStore({ count: 0 }, () => ({}));
+    const store = createStore({ count: 0 });
     store.set({ count: 5 });
     let calls = 0;
     store.subscribe(() => {
@@ -660,33 +781,39 @@ test.describe('createStore', () => {
   });
 
   test('reset() is independent of subsequent mutations — initial snapshot is frozen at creation', () => {
-    const store = createStore({ count: 0 }, ({ update }) => ({
+    const store = createStore({ count: 0 }, ({ update, reset }) => ({
       increment() {
         update((d) => {
           d.count += 1;
         });
       },
+      restore() {
+        reset();
+      },
     }));
     store.increment();
-    store.reset();
+    store.restore();
     store.increment();
-    store.reset();
+    store.restore();
     expect(store.getSnapshot()).toEqual({ count: 0 });
   });
 
   test('reset() is callable from a store method via StoreApi', () => {
-    const store = createStore({ count: 3 }, ({ reset }) => ({
+    const store = createStore({ count: 3 }, ({ reset, set }) => ({
+      bump() {
+        set({ count: 99 });
+      },
       clear() {
         reset();
       },
     }));
-    store.set({ count: 99 });
+    store.bump();
     store.clear();
     expect(store.getSnapshot()).toEqual({ count: 3 });
   });
 
   test('reset() inside batch() defers notification until batch completes', () => {
-    const store = createStore({ count: 0 }, () => ({}));
+    const store = createStore({ count: 0 });
     store.set({ count: 5 });
     let calls = 0;
     store.subscribe(() => {
@@ -701,15 +828,17 @@ test.describe('createStore', () => {
   });
 
   test('domain method named reset() calling api.reset() does not infinitely recurse', () => {
-    // Regression: api.reset previously forwarded through store.reset at call time.
-    // Object.assign(store, domainMethods) overwrites store.reset with the domain
-    // method, so domain reset() → api.reset() → store.reset() → domain reset() → …
-    const store = createStore({ count: 5, flag: true }, ({ reset }) => ({
+    // Regression: ensure api.reset (closure-captured) does not resolve back to
+    // the domain method named `reset` on the store root, which would loop.
+    const store = createStore({ count: 5, flag: true }, ({ reset, set }) => ({
+      bump() {
+        set({ count: 99, flag: false });
+      },
       reset() {
         reset(); // built-in api.reset — must not recurse back to this method
       },
     }));
-    store.set({ count: 99, flag: false });
+    store.bump();
     // Must not throw "Maximum call stack size exceeded"
     expect(() => {
       store.reset();
@@ -718,7 +847,7 @@ test.describe('createStore', () => {
   });
 
   test('reset(newSnapshot) commits the value and updates the baseline', () => {
-    const store = createStore({ count: 0 }, () => ({}));
+    const store = createStore({ count: 0 });
     store.set({ count: 5 });
     store.reset({ count: 10 });
     expect(store.getSnapshot()).toEqual({ count: 10 });
@@ -729,7 +858,7 @@ test.describe('createStore', () => {
   });
 
   test('reset(updater fn) receives current baseline and updates it', () => {
-    const store = createStore({ count: 0 }, () => ({}));
+    const store = createStore({ count: 0 });
     store.set({ count: 5 });
     store.reset((initial) => ({ count: initial.count + 1 }));
     // initial is the original baseline (count: 0), so result is count: 1
@@ -742,7 +871,7 @@ test.describe('createStore', () => {
 
   test('reset(newSnapshot) baseline is independent of external mutations', () => {
     const newState = { count: 42 };
-    const store = createStore({ count: 0 }, () => ({}));
+    const store = createStore({ count: 0 });
     store.reset(newState);
     newState.count = 99; // mutate the original — baseline should be unaffected
     store.set({ count: 0 });
@@ -751,7 +880,7 @@ test.describe('createStore', () => {
   });
 
   test('reset(newSnapshot) notifies subscribers', () => {
-    const store = createStore({ count: 0 }, () => ({}));
+    const store = createStore({ count: 0 });
     let calls = 0;
     store.subscribe(() => {
       calls++;
@@ -823,7 +952,7 @@ test.describe('createStore — deepClone option', () => {
       return structuredClone(v);
     };
 
-    const store = createStore({ count: 0 }, () => ({}), { deepClone: customClone });
+    const store = createStore({ count: 0 }, { deepClone: customClone });
     store.update((d) => {
       d.count = 1;
     });
@@ -839,7 +968,7 @@ test.describe('createStore — deepClone option', () => {
       return structuredClone(v);
     };
 
-    const store = createStore({ count: 0 }, () => ({}), { deepClone: customClone });
+    const store = createStore({ count: 0 }, { deepClone: customClone });
     // At creation the baseline is cloned once
     const callsAfterCreate = cloneCalls.length;
 
@@ -859,7 +988,7 @@ test.describe('createStore — deepClone option', () => {
       return structuredClone(v);
     };
 
-    const store = createStore({ count: 0 }, () => ({}), { deepClone: customClone });
+    const store = createStore({ count: 0 }, { deepClone: customClone });
     store.reset({ count: 10 });
     // Bare reset should now restore to 10
     store.update((d) => {
@@ -959,25 +1088,25 @@ test.describe('createStoreSubscription — listenerCount', () => {
 
 test.describe('createStore — listenerCount', () => {
   test('listenerCount is 0 with no subscribers', () => {
-    const store = createStore({ count: 0 }, () => ({}));
+    const store = createStore({ count: 0 });
     expect(store.listenerCount).toBe(0);
   });
 
   test('listenerCount is 1 after one subscribe call', () => {
-    const store = createStore({ count: 0 }, () => ({}));
+    const store = createStore({ count: 0 });
     store.subscribe(() => {});
     expect(store.listenerCount).toBe(1);
   });
 
   test('listenerCount increments with multiple concurrent subscribers', () => {
-    const store = createStore({ count: 0 }, () => ({}));
+    const store = createStore({ count: 0 });
     store.subscribe(() => {});
     store.subscribe(() => {});
     expect(store.listenerCount).toBe(2);
   });
 
   test('listenerCount returns to 0 after all unsubscribes', () => {
-    const store = createStore({ count: 0 }, () => ({}));
+    const store = createStore({ count: 0 });
     const unsub1 = store.subscribe(() => {});
     const unsub2 = store.subscribe(() => {});
     unsub1();
@@ -986,7 +1115,7 @@ test.describe('createStore — listenerCount', () => {
   });
 
   test('listenerCount decrements correctly when only one of two subscribers unsubscribes', () => {
-    const store = createStore({ count: 0 }, () => ({}));
+    const store = createStore({ count: 0 });
     const unsub1 = store.subscribe(() => {});
     store.subscribe(() => {});
     unsub1();

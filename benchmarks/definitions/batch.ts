@@ -14,38 +14,48 @@ const FLAT_INITIAL: Flat = { count: 0, label: 'bench', active: true };
 
 group('batch', () => {
   bench('batch 10× setByPath flat', function* () {
-    const store = createStore({ ...FLAT_INITIAL, a: 0, b: 0, c: 0 }, () => ({}));
+    const store = createStore({ ...FLAT_INITIAL, a: 0, b: 0, c: 0 });
     yield () => {
       store.batch(() => {
-        for (let i = 0; i < 10; i++) store.setByPath('count', i);
+        for (let i = 0; i < 10; i++) {
+          store.setByPath('count', i);
+        }
       });
     };
   });
 
   bench('10× setByPath unbatched + 1 listener', function* () {
-    const store = createStore({ ...FLAT_INITIAL }, () => ({}));
+    const store = createStore({ ...FLAT_INITIAL });
     store.subscribe(() => {});
     yield () => {
-      for (let i = 0; i < 10; i++) store.setByPath('count', i);
+      for (let i = 0; i < 10; i++) {
+        store.setByPath('count', i);
+      }
     };
   });
 
   bench('batch 10× setByPath + 1 listener', function* () {
-    const store = createStore({ ...FLAT_INITIAL }, () => ({}));
+    const store = createStore({ ...FLAT_INITIAL });
     store.subscribe(() => {});
     yield () => {
       store.batch(() => {
-        for (let i = 0; i < 10; i++) store.setByPath('count', i);
+        for (let i = 0; i < 10; i++) {
+          store.setByPath('count', i);
+        }
       });
     };
   });
 
   bench('batch 10× setByPath + 10 listeners', function* () {
-    const store = createStore({ ...FLAT_INITIAL }, () => ({}));
-    for (let i = 0; i < 10; i++) store.subscribe(() => {});
+    const store = createStore({ ...FLAT_INITIAL });
+    for (let i = 0; i < 10; i++) {
+      store.subscribe(() => {});
+    }
     yield () => {
       store.batch(() => {
-        for (let i = 0; i < 10; i++) store.setByPath('count', i);
+        for (let i = 0; i < 10; i++) {
+          store.setByPath('count', i);
+        }
       });
     };
   });
